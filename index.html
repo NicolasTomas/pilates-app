@@ -1,0 +1,1727 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Gestión - Login</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+            max-width: 1000px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 40px 30px;
+            text-align: center;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+
+        .form-container {
+            padding: 40px 30px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        input,
+        select,
+        textarea {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 14px;
+            transition: all 0.3s;
+            background: #f8f9fa;
+            font-family: inherit;
+        }
+
+        textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+
+        input:focus,
+        select:focus,
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            background: white;
+        }
+
+        input:disabled {
+            background: #e9ecef;
+            cursor: not-allowed;
+        }
+
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 10px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #218838;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+        }
+
+        .btn-warning {
+            background: #ffc107;
+            color: #333;
+        }
+
+        .btn-info {
+            background: #17a2b8;
+            color: white;
+        }
+
+        .btn-full {
+            width: 100%;
+        }
+
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+
+        .alert {
+            padding: 12px 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            display: none;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .dashboard {
+            display: none;
+            padding: 40px 30px;
+        }
+
+        .dashboard.active {
+            display: block;
+        }
+
+        .dashboard h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 24px;
+        }
+
+        .user-info {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .user-info p {
+            margin-bottom: 10px;
+            color: #555;
+        }
+
+        .user-info strong {
+            color: #333;
+        }
+
+        .role-badge {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-top: 10px;
+        }
+
+        .badge-superusuario {
+            background: #dc3545;
+            color: white;
+        }
+
+        .badge-administrador {
+            background: #ffc107;
+            color: #333;
+        }
+
+        .badge-profesor {
+            background: #28a745;
+            color: white;
+        }
+
+        .badge-alumno {
+            background: #007bff;
+            color: white;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .section-card {
+            background: #fff;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .section-card h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .generated-link {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            word-break: break-all;
+            font-size: 13px;
+            color: #555;
+            border: 1px solid #dee2e6;
+        }
+
+        .btn-copy {
+            background: #28a745;
+            color: white;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+
+        .gym-info {
+            background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
+            color: #333;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+
+        .invite-banner {
+            background: #e3f2fd;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border-left: 4px solid #2196f3;
+        }
+
+        .invite-banner p {
+            color: #1976d2;
+            margin-bottom: 8px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #e0e0e0;
+            flex-wrap: wrap;
+        }
+
+        .tab {
+            padding: 12px 20px;
+            background: none;
+            border: none;
+            border-bottom: 3px solid transparent;
+            cursor: pointer;
+            font-weight: 600;
+            color: #666;
+            transition: all 0.3s;
+        }
+
+        .tab:hover {
+            color: #667eea;
+        }
+
+        .tab.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .grid-3 {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 15px;
+        }
+
+        .item-list {
+            margin-top: 20px;
+        }
+
+        .item-card {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+        }
+
+        .item-card h4 {
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        .item-card p {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+
+        .item-actions {
+            margin-top: 10px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .class-schedule {
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+
+        .class-schedule label {
+            font-size: 12px;
+            margin-bottom: 5px;
+        }
+
+        .class-schedule input[type="checkbox"] {
+            width: auto;
+            margin-right: 5px;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .status-active {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-expired {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        @media (max-width: 768px) {
+
+            .grid-2,
+            .grid-3 {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏋️ Sistema de Gestión</h1>
+            <p>Acceso al portal</p>
+        </div>
+
+        <div id="alert" class="alert" style="margin: 20px;"></div>
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p style="margin-top: 10px; color: #666;">Cargando...</p>
+        </div>
+
+        <!-- Login Form -->
+        <div id="loginForm" class="form-container">
+            <form id="loginFormElement">
+                <div class="form-group">
+                    <label for="email">Correo electrónico</label>
+                    <input type="email" id="email" placeholder="usuario@ejemplo.com" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Contraseña</label>
+                    <input type="password" id="password" placeholder="••••••••" required>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-full">Iniciar Sesión</button>
+            </form>
+        </div>
+
+        <!-- Register Form -->
+        <!-- Pantalla de ingreso desde invitación -->
+        <div id="dniAccess" class="form-container" style="display: none;">
+            <div class="invite-banner">
+                <p>📨 <strong>Invitación recibida</strong></p>
+                <p><strong>Gimnasio:</strong> <span id="inviteGymName">Cargando...</span></p>
+                <p><strong>Rol asignado:</strong> <span id="inviteRoleName">Cargando...</span></p>
+            </div>
+
+            <form id="dniAccessForm">
+                <div class="form-group">
+                    <label for="dniInput">Ingresá tu DNI para acceder</label>
+                    <input type="text" id="dniInput" placeholder="Ej: 40258473" pattern="[0-9]+" required
+                        maxlength="10">
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-full">Ingresar a la aplicación</button>
+            </form>
+        </div>
+
+
+        <!-- Dashboard -->
+        <div id="dashboard" class="dashboard">
+            <h2>Bienvenido</h2>
+
+            <div id="gymInfoBox" class="gym-info" style="display: none;">
+                🏢 Gimnasio: <span id="displayGymName"></span>
+            </div>
+
+            <div class="user-info">
+                <p><strong>Nombre:</strong> <span id="userName"></span></p>
+                <p><strong>Email:</strong> <span id="userEmail"></span></p>
+                <p><strong>Rol:</strong> <span id="userRole"></span></p>
+                <span id="roleBadge" class="role-badge"></span>
+            </div>
+
+            <!-- Panel de Superusuario -->
+            <div id="superuserPanel" style="display: none;">
+                <div class="section-card">
+                    <h3>👑 Panel de Superusuario</h3>
+                    <p style="color: #666; margin-bottom: 20px;">Crear nuevos administradores de gimnasios</p>
+
+                    <div class="form-group">
+                        <label for="adminEmail">Email del Administrador</label>
+                        <input type="email" id="adminEmail" placeholder="admin@gimnasio.com">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="adminPassword">Contraseña</label>
+                        <input type="password" id="adminPassword" placeholder="Mínimo 6 caracteres" minlength="6">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="gymId">ID del Gimnasio</label>
+                        <input type="text" id="gymId" placeholder="mi-gimnasio" pattern="[a-z0-9-]+">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="gymName">Nombre del Gimnasio</label>
+                        <input type="text" id="gymName" placeholder="Gimnasio Fitness Pro">
+                    </div>
+
+                    <button class="btn btn-primary" onclick="createAdministrator()">Crear Administrador</button>
+                </div>
+            </div>
+
+            <!-- Panel de Administrador -->
+            <div id="adminPanel" style="display: none;">
+                <div class="tabs">
+                    <button class="tab active" onclick="showTab('invites')">🔗 Invitaciones</button>
+                    <button class="tab" onclick="showTab('rooms')">🏠 Salones</button>
+                    <button class="tab" onclick="showTab('classes')">📅 Clases</button>
+                    <button class="tab" onclick="showTab('students')">👥 Alumnos</button>
+                    <button class="tab" onclick="showTab('settings')">⚙️ Configuración</button>
+                </div>
+
+                <!-- Tab: Invitaciones -->
+                <div id="tab-invites" class="tab-content active">
+                    <div class="section-card">
+                        <h3>Generar Link de Invitación</h3>
+
+                        <div class="form-group">
+                            <label for="inviteRole">Rol del nuevo miembro</label>
+                            <select id="inviteRole" onchange="toggleClassSchedule()">
+                                <option value="alumno">Alumno</option>
+                                <option value="profesor">Profesor</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="inviteDNI">DNI del nuevo miembro</label>
+                            <input type="text" id="inviteDNI" placeholder=DNI pattern="[0-9]+" maxlength="15">
+                        </div>
+
+                        <div id="classScheduleSection" class="form-group">
+                            <label>Horarios de Clase (Alumnos)</label>
+                            <div id="availableClasses"></div>
+                        </div>
+
+                        <button class="btn btn-primary" onclick="generateInviteLink()">Generar Link</button>
+
+                        <div id="generatedLinkContainer" style="display: none;">
+                            <div class="generated-link" id="generatedLink"></div>
+                            <button class="btn-copy" onclick="copyLink()">📋 Copiar Link</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab: Salones -->
+                <div id="tab-rooms" class="tab-content">
+                    <div class="section-card">
+                        <h3>Crear Nuevo Salón</h3>
+
+                        <div class="form-group">
+                            <label for="roomName">Nombre del Salón</label>
+                            <input type="text" id="roomName" placeholder="Sala Principal">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="roomCapacity">Cantidad de Camillas</label>
+                            <input type="number" id="roomCapacity" placeholder="10" min="1">
+                        </div>
+
+                        <button class="btn btn-primary" onclick="createRoom()">Crear Salón</button>
+                    </div>
+
+                    <div class="item-list" id="roomsList"></div>
+                </div>
+
+                <!-- Tab: Clases -->
+                <div id="tab-classes" class="tab-content">
+                    <div class="section-card">
+                        <h3>Crear Nueva Clase</h3>
+
+                        <div class="form-group">
+                            <label>Días de la semana</label>
+                            <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+                                <label style="display: flex; align-items: center; gap: 5px; font-weight: normal;">
+                                    <input type="checkbox" value="Lunes" class="day-checkbox"> Lunes
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 5px; font-weight: normal;">
+                                    <input type="checkbox" value="Martes" class="day-checkbox"> Martes
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 5px; font-weight: normal;">
+                                    <input type="checkbox" value="Miércoles" class="day-checkbox"> Miércoles
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 5px; font-weight: normal;">
+                                    <input type="checkbox" value="Jueves" class="day-checkbox"> Jueves
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 5px; font-weight: normal;">
+                                    <input type="checkbox" value="Viernes" class="day-checkbox"> Viernes
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 5px; font-weight: normal;">
+                                    <input type="checkbox" value="Sábado" class="day-checkbox"> Sábado
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 5px; font-weight: normal;">
+                                    <input type="checkbox" value="Domingo" class="day-checkbox"> Domingo
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="classTime">Horario</label>
+                            <input type="time" id="classTime">
+                        </div>
+
+                        <div class="grid-2">
+                            <div class="form-group">
+                                <label for="classRoom">Salón</label>
+                                <select id="classRoom">
+                                    <option value="">Selecciona un salón</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="classTeacher">Profesor</label>
+                                <select id="classTeacher">
+                                    <option value="">Selecciona un profesor</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="classDuration">Duración (minutos)</label>
+                            <input type="number" id="classDuration" placeholder="60" min="15" step="15">
+                        </div>
+
+                        <button class="btn btn-primary" onclick="createClass()">Crear Clase</button>
+                    </div>
+
+                    <div class="item-list" id="classesList"></div>
+                </div>
+
+                <!-- Tab: Alumnos -->
+                <div id="tab-students" class="tab-content">
+                    <div class="item-list" id="studentsList"></div>
+                </div>
+
+                <!-- Tab: Configuración -->
+                <div id="tab-settings" class="tab-content">
+                    <div class="section-card">
+                        <h3>⚙️ Parámetros del Sistema</h3>
+
+                        <div class="grid-2">
+                            <div class="form-group">
+                                <label for="minCancelHours">Horas mínimas de cancelación</label>
+                                <input type="number" id="minCancelHours" placeholder="24" min="1">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="creditExpiration">Vencimiento de créditos (días)</label>
+                                <input type="number" id="creditExpiration" placeholder="30" min="1">
+                            </div>
+                        </div>
+
+                        <div class="grid-2">
+                            <div class="form-group">
+                                <label for="autoUnsubscribe">Baja automática por cuota vencida (días)</label>
+                                <input type="number" id="autoUnsubscribe" placeholder="15" min="1">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="maxCredits">Máximo de créditos acumulables</label>
+                                <input type="number" id="maxCredits" placeholder="12" min="1">
+                            </div>
+                        </div>
+
+                        <button class="btn btn-success" onclick="saveSystemSettings()">Guardar Parámetros</button>
+                    </div>
+
+                    <div class="section-card">
+                        <h3>🏢 Información del Gimnasio</h3>
+
+                        <div class="form-group">
+                            <label for="settingsGymName">Nombre del Gimnasio</label>
+                            <input type="text" id="settingsGymName">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="settingsAddress">Dirección</label>
+                            <input type="text" id="settingsAddress" placeholder="Calle 123, Ciudad">
+                        </div>
+
+                        <div class="grid-2">
+                            <div class="form-group">
+                                <label for="settingsPhone">Teléfono</label>
+                                <input type="tel" id="settingsPhone" placeholder="+54 123 456 7890">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="settingsEmail">Email de Contacto</label>
+                                <input type="email" id="settingsEmail" placeholder="contacto@gimnasio.com">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="settingsDescription">Descripción</label>
+                            <textarea id="settingsDescription" placeholder="Descripción del gimnasio..."></textarea>
+                        </div>
+
+                        <button class="btn btn-success" onclick="saveGymSettings()">Guardar Información</button>
+                    </div>
+
+                    <div class="section-card">
+                        <h3>🔐 Cambiar Contraseña</h3>
+
+                        <div class="form-group">
+                            <label for="currentPassword">Contraseña Actual</label>
+                            <input type="password" id="currentPassword">
+                        </div>
+
+                        <div class="grid-2">
+                            <div class="form-group">
+                                <label for="newPassword">Nueva Contraseña</label>
+                                <input type="password" id="newPassword" minlength="6">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="confirmPassword">Confirmar Nueva Contraseña</label>
+                                <input type="password" id="confirmPassword" minlength="6">
+                            </div>
+                        </div>
+
+                        <button class="btn btn-warning" onclick="changePassword()">Cambiar Contraseña</button>
+                    </div>
+                </div>
+            </div>
+
+            <button class="btn btn-danger btn-full" onclick="logout()">Cerrar Sesión</button>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, updatePassword, reauthenticateWithCredential, EmailAuthProvider } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+        import { getFirestore, doc, setDoc, getDoc, collection, query, where, getDocs, deleteDoc, updateDoc } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBsc8nA2HnXp_j2_gt0X-xbrgmZd4Fqtfc",
+            authDomain: "pilates-app-da715.firebaseapp.com",
+            projectId: "pilates-app-da715",
+            storageBucket: "pilates-app-da715.appspot.com",
+            messagingSenderId: "754788583826",
+            appId: "1:754788583826:web:32e2ceea64f7c29f6cc5a8"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        let currentUserData = {};
+        let selectedClasses = [];
+
+        const loginForm = document.getElementById('loginForm');
+        const registerForm = document.getElementById('registerForm');
+        const dashboard = document.getElementById('dashboard');
+        const alertBox = document.getElementById('alert');
+        const loading = document.getElementById('loading');
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const inviteToken = urlParams.get('invite');
+
+        if (inviteToken) {
+            loadInvitationDNI(inviteToken);
+        }
+
+
+        async function loadInvitationDNI(token) {
+            try {
+                loading.style.display = 'block';
+                const inviteDoc = await getDoc(doc(db, 'invitations', token));
+
+                if (!inviteDoc.exists()) {
+                    showAlert('Invitación inválida o expirada', 'error');
+                    loading.style.display = 'none';
+                    return;
+                }
+
+                const inviteData = inviteDoc.data();
+
+                if (inviteData.used) {
+                    showAlert('Esta invitación ya fue utilizada', 'error');
+                    loading.style.display = 'none';
+                    return;
+                }
+
+                loginForm.style.display = 'none';
+                document.getElementById('dniAccess').style.display = 'block';
+
+                document.getElementById('inviteGymName').textContent = inviteData.gymId;
+                document.getElementById('inviteRoleName').textContent = inviteData.role.charAt(0).toUpperCase() + inviteData.role.slice(1);
+
+                window.currentInvite = inviteData;
+                window.currentInviteToken = token;
+
+            } catch (error) {
+                console.error('Error al cargar invitación:', error);
+                showAlert('Error al cargar la invitación', 'error');
+            } finally {
+                loading.style.display = 'none';
+            }
+            document.getElementById('loginForm').style.display = 'none';
+            dashboard.classList.remove('active');
+
+        }
+        const dniAccessForm = document.getElementById('dniAccessForm');
+        if (dniAccessForm) {
+            dniAccessForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+
+                const dni = document.getElementById('dniInput').value.trim();
+                if (!/^[0-9]+$/.test(dni)) {
+                    showAlert('El DNI debe contener solo números', 'error');
+                    return;
+                }
+
+                loading.style.display = 'block';
+
+                try {
+                    const fakeEmail = `${dni}@fakeuser.com`;
+                    const password = dni; // el DNI actúa como contraseña
+
+                    let userCredential;
+                    try {
+                        userCredential = await signInWithEmailAndPassword(auth, fakeEmail, password);
+                    } catch (error) {
+                        if (error.code === 'auth/user-not-found') {
+                            userCredential = await createUserWithEmailAndPassword(auth, fakeEmail, password);
+                        } else {
+                            throw error;
+                        }
+                    }
+
+                    const user = userCredential.user;
+
+                    // Si el usuario no tiene datos en Firestore, los creamos desde la invitación
+                    const userDoc = await getDoc(doc(db, 'users', user.uid));
+                    if (!userDoc.exists()) {
+                        const userData = {
+                            name: `Usuario ${dni}`,
+                            dni: dni,
+                            email: fakeEmail,
+                            role: window.currentInvite.role,
+                            gymId: window.currentInvite.gymId,
+                            createdAt: new Date().toISOString()
+                        };
+
+                        if (window.currentInvite.role === 'alumno') {
+                            const nextMonth = new Date();
+                            nextMonth.setMonth(nextMonth.getMonth() + 1);
+                            userData.quotaExpiration = nextMonth.toISOString();
+                            userData.credits = 4;
+                            userData.classSchedule = window.currentInvite.classSchedule || [];
+                        }
+
+                        await setDoc(doc(db, 'users', user.uid), userData);
+
+                        // marcar invitación como usada
+                        await updateDoc(doc(db, 'invitations', window.currentInviteToken), {
+                            used: true,
+                            usedAt: new Date().toISOString()
+                        });
+                    }
+
+                    showAlert('✅ Acceso exitoso', 'success');
+                    showDashboard({
+                        name: `Usuario ${dni}`,
+                        email: fakeEmail,
+                        role: window.currentInvite.role,
+                        gymId: window.currentInvite.gymId
+                    });
+
+                } catch (error) {
+                    console.error('Error:', error);
+                    showAlert('Error al ingresar con DNI', 'error');
+                } finally {
+                    loading.style.display = 'none';
+                }
+            });
+        }
+
+
+
+        function showAlert(message, type) {
+            alertBox.textContent = message;
+            alertBox.className = `alert alert-${type}`;
+            alertBox.style.display = 'block';
+            setTimeout(() => {
+                alertBox.style.display = 'none';
+            }, 5000);
+        }
+
+
+
+
+        document.getElementById('loginFormElement').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            loading.style.display = 'block';
+
+            try {
+                const userCredential = await signInWithEmailAndPassword(auth, email, password);
+                const user = userCredential.user;
+
+                const userDoc = await getDoc(doc(db, 'users', user.uid));
+
+                if (userDoc.exists()) {
+                    currentUserData = userDoc.data();
+                    showDashboard(currentUserData);
+                } else {
+                    showAlert('No se encontraron datos del usuario', 'error');
+                    await signOut(auth);
+                }
+
+            } catch (error) {
+                showAlert('Correo o contraseña incorrectos', 'error');
+            } finally {
+                loading.style.display = 'none';
+            }
+        });
+
+        let dashboardLoaded = false; // evita recargas múltiples del panel
+
+        async function showDashboard(userData) {
+            // Previene duplicación del panel por onAuthStateChanged + login manual
+            if (dashboardLoaded) return;
+            dashboardLoaded = true;
+
+            console.log("🔍 Datos del usuario logueado:", userData);
+
+            // Ocultar login y mostrar dashboard
+            document.getElementById('loginForm').style.display = 'none';
+            const dashboard = document.getElementById('dashboard');
+            dashboard.classList.add('active');
+
+            // Mostrar información del usuario
+            document.getElementById('userName').textContent = userData.name || "Usuario sin nombre";
+            document.getElementById('userEmail').textContent = userData.email || "Sin email";
+            document.getElementById('userRole').textContent = userData.role || "Sin rol";
+
+            // Asignar color de insignia según rol
+            const badge = document.getElementById('roleBadge');
+            badge.textContent = userData.role;
+            badge.className = `role-badge badge-${userData.role.toLowerCase()}`;
+
+            // Mostrar nombre de gimnasio si existe
+            if (userData.gymId) {
+                try {
+                    const gymRef = doc(db, 'gyms', userData.gymId);
+                    const gymSnap = await getDoc(gymRef);
+
+                    document.getElementById('gymInfoBox').style.display = 'block';
+
+                    if (gymSnap.exists()) {
+                        const gymData = gymSnap.data();
+                        document.getElementById('displayGymName').textContent =
+                            gymData.name || userData.gymId || "Gimnasio sin nombre";
+
+                        // Si es administrador, precargar ajustes
+                        if (userData.role.toLowerCase() === 'administrador') {
+                            loadGymSettings(gymData);
+                        }
+                    } else {
+                        document.getElementById('displayGymName').textContent = "Sin gimnasio asignado";
+                    }
+                } catch (error) {
+                    console.error("❌ Error al cargar el gimnasio:", error);
+                    document.getElementById('displayGymName').textContent = "Error al cargar gimnasio";
+                }
+            } else {
+                document.getElementById('gymInfoBox').style.display = 'block';
+                document.getElementById('displayGymName').textContent = "Sin gimnasio vinculado";
+            }
+
+            // Mostrar panel correspondiente según rol
+            switch (userData.role.toLowerCase()) {
+                case 'superusuario':
+                    document.getElementById('superuserPanel').style.display = 'block';
+                    break;
+
+                case 'administrador':
+                    document.getElementById('adminPanel').style.display = 'block';
+                    await loadRooms();
+                    await loadClasses();
+                    await loadTeachers();
+                    await loadStudents();
+                    await loadAvailableClassesForInvite();
+                    break;
+
+                case 'profesor':
+                    if (document.getElementById('teacherPanel')) {
+                        document.getElementById('teacherPanel').style.display = 'block';
+                        await loadTeacherClasses(userData);
+                    }
+                    break;
+
+                case 'alumno':
+                    if (document.getElementById('studentPanel')) {
+                        document.getElementById('studentPanel').style.display = 'block';
+                        await loadStudentData(userData);
+                    }
+                    break;
+
+                default:
+                    console.warn("⚠️ Rol desconocido:", userData.role);
+                    break;
+            }
+
+            loading.style.display = 'none';
+        }
+
+
+        function loadGymSettings(gymData) {
+            document.getElementById('settingsGymName').value = gymData.name || '';
+            document.getElementById('settingsAddress').value = gymData.address || '';
+            document.getElementById('settingsPhone').value = gymData.phone || '';
+            document.getElementById('settingsEmail').value = gymData.email || '';
+            document.getElementById('settingsDescription').value = gymData.description || '';
+
+            document.getElementById('minCancelHours').value = gymData.minCancelHours || 24;
+            document.getElementById('creditExpiration').value = gymData.creditExpiration || 30;
+            document.getElementById('autoUnsubscribe').value = gymData.autoUnsubscribe || 15;
+            document.getElementById('maxCredits').value = gymData.maxCredits || 12;
+        }
+
+        window.showTab = function (tabName) {
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+
+            event.target.classList.add('active');
+            document.getElementById('tab-' + tabName).classList.add('active');
+        };
+
+        window.toggleClassSchedule = function () {
+            const role = document.getElementById('inviteRole').value;
+            const section = document.getElementById('classScheduleSection');
+            section.style.display = role === 'alumno' ? 'block' : 'none';
+        };
+
+        async function loadAvailableClassesForInvite() {
+            const container = document.getElementById('availableClasses');
+            container.innerHTML = '';
+
+            try {
+                const q = query(collection(db, 'classes'), where('gymId', '==', currentUserData.gymId));
+                const querySnapshot = await getDocs(q);
+
+                if (querySnapshot.empty) {
+                    container.innerHTML = '<p style="color: #666;">No hay clases creadas aún.</p>';
+                    return;
+                }
+
+                for (const docSnap of querySnapshot.docs) {
+                    const classData = docSnap.data();
+
+                    const roomDoc = await getDoc(doc(db, 'rooms', classData.roomId));
+                    const roomName = roomDoc.exists() ? roomDoc.data().name : 'Salón eliminado';
+
+                    const classDiv = document.createElement('div');
+                    classDiv.className = 'class-schedule';
+                    classDiv.innerHTML = `
+                        <label>
+                            <input type="checkbox" value="${docSnap.id}" onchange="updateSelectedClasses()">
+                            ${classData.name} - ${classData.day} ${classData.time} (${roomName})
+                        </label>
+                    `;
+                    container.appendChild(classDiv);
+                }
+
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        window.updateSelectedClasses = function () {
+            const checkboxes = document.querySelectorAll('#availableClasses input[type="checkbox"]:checked');
+            selectedClasses = Array.from(checkboxes).map(cb => cb.value);
+        };
+
+        window.createAdministrator = async function () {
+            const email = document.getElementById('adminEmail').value;
+            const password = document.getElementById('adminPassword').value;
+            const gymId = document.getElementById('gymId').value.toLowerCase().trim();
+            const gymName = document.getElementById('gymName').value.trim();
+
+            if (!email || !password || !gymId || !gymName) {
+                alert('Por favor completa todos los campos');
+                return;
+            }
+
+            if (!/^[a-z0-9-]+$/.test(gymId)) {
+                alert('El ID del gimnasio solo puede contener letras minúsculas, números y guiones');
+                return;
+            }
+
+            loading.style.display = 'block';
+
+            try {
+                await setDoc(doc(db, 'gyms', gymId), {
+                    name: gymName,
+                    createdAt: new Date().toISOString(),
+                    minCancelHours: 24,
+                    creditExpiration: 30,
+                    autoUnsubscribe: 15,
+                    maxCredits: 12
+                });
+
+                const tempAuth = getAuth(app);
+                const userCredential = await createUserWithEmailAndPassword(tempAuth, email, password);
+
+                await setDoc(doc(db, 'users', userCredential.user.uid), {
+                    name: 'Administrador',
+                    email: email,
+                    role: 'administrador',
+                    gymId: gymId,
+                    createdAt: new Date().toISOString()
+                });
+
+                await signOut(tempAuth);
+
+                alert('✅ Administrador creado exitosamente\n\nEmail: ' + email + '\nContraseña: ' + password);
+
+                document.getElementById('adminEmail').value = '';
+                document.getElementById('adminPassword').value = '';
+                document.getElementById('gymId').value = '';
+                document.getElementById('gymName').value = '';
+
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error al crear administrador: ' + error.message);
+            } finally {
+                loading.style.display = 'none';
+            }
+        };
+
+        window.generateInviteLink = async function () {
+            const role = document.getElementById('inviteRole').value;
+            const dni = document.getElementById('inviteDNI').value.trim();
+
+            if (!dni) {
+                alert('Por favor ingresá el DNI del nuevo miembro');
+                return;
+            }
+
+            if (role === 'alumno' && selectedClasses.length === 0) {
+                alert('Por favor seleccioná al menos un horario de clase para el alumno');
+                return;
+            }
+
+            if (!currentUserData.gymId) {
+                alert('Error: No se encontró el ID del gimnasio');
+                return;
+            }
+
+            loading.style.display = 'block';
+
+            try {
+                const inviteToken = generateToken();
+
+                const inviteData = {
+                    dni: dni,
+                    role: role,
+                    gymId: currentUserData.gymId,
+                    createdBy: auth.currentUser.uid,
+                    createdAt: new Date().toISOString(),
+                    used: false
+                };
+
+                if (role === 'alumno') {
+                    inviteData.classSchedule = selectedClasses;
+                }
+
+                await setDoc(doc(db, 'invitations', inviteToken), inviteData);
+
+                const baseUrl = window.location.origin + window.location.pathname;
+                const inviteLink = `${baseUrl}?invite=${inviteToken}`;
+
+                document.getElementById('generatedLink').textContent = inviteLink;
+                document.getElementById('generatedLinkContainer').style.display = 'block';
+
+                document.getElementById('inviteDNI').value = '';
+                selectedClasses = [];
+                document.querySelectorAll('#availableClasses input[type="checkbox"]').forEach(cb => cb.checked = false);
+
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error al generar link de invitación');
+            } finally {
+                loading.style.display = 'none';
+            }
+        };
+
+
+        window.createRoom = async function () {
+            const name = document.getElementById('roomName').value.trim();
+            const capacity = parseInt(document.getElementById('roomCapacity').value);
+
+            if (!name || !capacity || capacity < 1) {
+                alert('Por favor completa todos los campos correctamente');
+                return;
+            }
+
+            loading.style.display = 'block';
+
+            try {
+                const roomId = generateToken();
+                await setDoc(doc(db, 'rooms', roomId), {
+                    name: name,
+                    capacity: capacity,
+                    gymId: currentUserData.gymId,
+                    createdAt: new Date().toISOString()
+                });
+
+                showAlert('✅ Salón creado exitosamente', 'success');
+                document.getElementById('roomName').value = '';
+                document.getElementById('roomCapacity').value = '';
+
+                loadRooms();
+
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error al crear salón');
+            } finally {
+                loading.style.display = 'none';
+            }
+        };
+
+        async function loadRooms() {
+            const roomsList = document.getElementById('roomsList');
+            roomsList.innerHTML = '<h3>Salones Creados</h3>';
+
+            try {
+                const q = query(collection(db, 'rooms'), where('gymId', '==', currentUserData.gymId));
+                const querySnapshot = await getDocs(q);
+
+                if (querySnapshot.empty) {
+                    roomsList.innerHTML += '<p style="color: #666;">No hay salones creados aún.</p>';
+                    return;
+                }
+
+                const classRoomSelect = document.getElementById('classRoom');
+                classRoomSelect.innerHTML = '<option value="">Selecciona un salón</option>';
+
+                querySnapshot.forEach((doc) => {
+                    const room = doc.data();
+                    const roomCard = `
+                        <div class="item-card">
+                            <h4>${room.name}</h4>
+                            <p>🛏️ Capacidad: ${room.capacity} camillas</p>
+                            <div class="item-actions">
+                                <button class="btn btn-danger btn-small" onclick="deleteRoom('${doc.id}')">Eliminar</button>
+                            </div>
+                        </div>
+                    `;
+                    roomsList.innerHTML += roomCard;
+
+                    classRoomSelect.innerHTML += `<option value="${doc.id}">${room.name}</option>`;
+                });
+
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        window.deleteRoom = async function (roomId) {
+            if (!confirm('¿Estás seguro de eliminar este salón?')) return;
+
+            loading.style.display = 'block';
+            try {
+                await deleteDoc(doc(db, 'rooms', roomId));
+                showAlert('✅ Salón eliminado', 'success');
+                loadRooms();
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error al eliminar salón');
+            } finally {
+                loading.style.display = 'none';
+            }
+        };
+
+        window.createClass = async function () {
+            const time = document.getElementById('classTime').value;
+            const roomId = document.getElementById('classRoom').value || null;
+            const teacherId = document.getElementById('classTeacher').value || null;
+            const duration = document.getElementById('classDuration').value
+                ? parseInt(document.getElementById('classDuration').value)
+                : null;
+
+            const selectedDays = Array.from(document.querySelectorAll('.day-checkbox:checked')).map(cb => cb.value);
+
+            if (selectedDays.length === 0) {
+                alert('Seleccioná al menos un día de la semana');
+                return;
+            }
+
+            if (!time) {
+                alert('Por favor seleccioná un horario');
+                return;
+            }
+
+            loading.style.display = 'block';
+
+            try {
+                // Crear una sola clase con todos los días juntos
+                const classId = generateToken();
+                const daysText = selectedDays.join(', ');
+                const className = `Clase ${daysText} ${time}`;
+
+                await setDoc(doc(db, 'classes', classId), {
+                    name: className,
+                    days: selectedDays,  // array de días
+                    time: time,
+                    roomId: roomId,
+                    teacherId: teacherId,
+                    duration: duration,
+                    gymId: currentUserData.gymId,
+                    createdAt: new Date().toISOString()
+                });
+
+                showAlert('✅ Clase creada exitosamente', 'success');
+
+                // Limpiar formulario
+                document.getElementById('classTime').value = '';
+                document.getElementById('classDuration').value = '';
+                document.querySelectorAll('.day-checkbox').forEach(cb => cb.checked = false);
+
+                await loadClasses();
+                await loadAvailableClassesForInvite();
+
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error al crear clase');
+            } finally {
+                loading.style.display = 'none';
+            }
+        };
+
+
+
+
+
+
+        async function loadClasses() {
+            const classesList = document.getElementById('classesList');
+            classesList.innerHTML = '<h3>Clases Programadas</h3>';
+
+            try {
+                const q = query(collection(db, 'classes'), where('gymId', '==', currentUserData.gymId));
+                const querySnapshot = await getDocs(q);
+
+                if (querySnapshot.empty) {
+                    classesList.innerHTML += '<p style="color: #666;">No hay clases programadas aún.</p>';
+                    return;
+                }
+
+                for (const docSnap of querySnapshot.docs) {
+                    const classData = docSnap.data();
+
+                    // Evitar error si no tiene salón o profesor
+                    let roomName = 'No asignado';
+                    if (classData.roomId) {
+                        const roomDoc = await getDoc(doc(db, 'rooms', classData.roomId));
+                        if (roomDoc.exists()) roomName = roomDoc.data().name;
+                    }
+
+                    let teacherName = 'No asignado';
+                    if (classData.teacherId) {
+                        const teacherDoc = await getDoc(doc(db, 'users', classData.teacherId));
+                        if (teacherDoc.exists()) teacherName = teacherDoc.data().name;
+                    }
+
+                    const classCard = `
+                <div class="item-card">
+                    <h4>${classData.name}</h4>
+                    <p>📅 ${classData.days ? classData.days.join(', ') : classData.day} - ${classData.time}</p>
+                    <p>⏱️ Duración: ${classData.duration || 'No definida'} minutos</p>
+                    <p>🏠 Salón: ${roomName}</p>
+                    <p>👨‍🏫 Profesor: ${teacherName}</p>
+                    <div class="item-actions">
+                        <button class="btn btn-danger btn-small" onclick="deleteClass('${docSnap.id}')">Eliminar</button>
+                    </div>
+                </div>
+            `;
+                    classesList.innerHTML += classCard;
+                }
+
+            } catch (error) {
+                console.error('Error en loadClasses:', error);
+                showAlert('Error al cargar clases', 'error');
+            }
+        }
+
+
+        window.deleteClass = async function (classId) {
+            if (!confirm('¿Estás seguro de eliminar esta clase?')) return;
+
+            loading.style.display = 'block';
+            try {
+                await deleteDoc(doc(db, 'classes', classId));
+                showAlert('✅ Clase eliminada', 'success');
+                loadClasses();
+                loadAvailableClassesForInvite();
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error al eliminar clase');
+            } finally {
+                loading.style.display = 'none';
+            }
+        };
+
+        async function loadTeachers() {
+            try {
+                const q = query(
+                    collection(db, 'users'),
+                    where('gymId', '==', currentUserData.gymId),
+                    where('role', '==', 'profesor')
+                );
+                const querySnapshot = await getDocs(q);
+
+                const teacherSelect = document.getElementById('classTeacher');
+                teacherSelect.innerHTML = '<option value="">Selecciona un profesor</option>';
+
+                querySnapshot.forEach((doc) => {
+                    const teacher = doc.data();
+                    teacherSelect.innerHTML += `<option value="${doc.id}">${teacher.name}</option>`;
+                });
+
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        async function loadStudents() {
+            const studentsList = document.getElementById('studentsList');
+            studentsList.innerHTML = '<h3>📋 Listado de Alumnos</h3>';
+
+            try {
+                const q = query(
+                    collection(db, 'users'),
+                    where('gymId', '==', currentUserData.gymId),
+                    where('role', '==', 'alumno')
+                );
+                const querySnapshot = await getDocs(q);
+
+                if (querySnapshot.empty) {
+                    studentsList.innerHTML += '<p style="color: #666;">No hay alumnos registrados aún.</p>';
+                    return;
+                }
+
+                for (const docSnap of querySnapshot.docs) {
+                    const student = docSnap.data();
+                    const studentId = docSnap.id;
+
+                    const expirationDate = student.quotaExpiration ? new Date(student.quotaExpiration) : null;
+                    const isExpired = expirationDate && expirationDate < new Date();
+                    const statusBadge = isExpired ?
+                        '<span class="status-badge status-expired">Cuota Vencida</span>' :
+                        '<span class="status-badge status-active">Activo</span>';
+
+                    const formattedDate = expirationDate ?
+                        expirationDate.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' }) :
+                        'No definido';
+
+                    let classScheduleText = '';
+                    if (student.classSchedule && student.classSchedule.length > 0) {
+                        classScheduleText = '<p><strong>Horarios:</strong></p>';
+                        for (const classId of student.classSchedule) {
+                            const classDoc = await getDoc(doc(db, 'classes', classId));
+                            if (classDoc.exists()) {
+                                const classData = classDoc.data();
+                                classScheduleText += `<p style="font-size: 13px; margin-left: 10px;">• ${classData.name} - ${classData.day} ${classData.time}</p>`;
+                            }
+                        }
+                    }
+
+                    const studentCard = `
+                        <div class="item-card">
+                            <h4>${student.name}</h4>
+                            <p>📧 ${student.email}</p>
+                            <p>💳 Créditos: ${student.credits || 0}</p>
+                            <p>📅 Vencimiento cuota: ${formattedDate} ${statusBadge}</p>
+                            ${classScheduleText}
+                            <div class="item-actions">
+                                <button class="btn btn-info btn-small" onclick="updateQuotaExpiration('${studentId}')">Actualizar Vencimiento</button>
+                            </div>
+                        </div>
+                    `;
+                    studentsList.innerHTML += studentCard;
+                }
+
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        window.updateQuotaExpiration = async function (studentId) {
+            const newDate = prompt('Ingresa la nueva fecha de vencimiento (DD/MM/AAAA):');
+            if (!newDate) return;
+
+            const parts = newDate.split('/');
+            if (parts.length !== 3) {
+                alert('Formato inválido. Usa DD/MM/AAAA');
+                return;
+            }
+
+            const date = new Date(parts[2], parts[1] - 1, parts[0]);
+            if (isNaN(date.getTime())) {
+                alert('Fecha inválida');
+                return;
+            }
+
+            loading.style.display = 'block';
+
+            try {
+                await updateDoc(doc(db, 'users', studentId), {
+                    quotaExpiration: date.toISOString()
+                });
+
+                showAlert('✅ Fecha de vencimiento actualizada', 'success');
+                loadStudents();
+
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error al actualizar fecha');
+            } finally {
+                loading.style.display = 'none';
+            }
+        };
+
+        window.saveSystemSettings = async function () {
+            const minCancelHours = parseInt(document.getElementById('minCancelHours').value);
+            const creditExpiration = parseInt(document.getElementById('creditExpiration').value);
+            const autoUnsubscribe = parseInt(document.getElementById('autoUnsubscribe').value);
+            const maxCredits = parseInt(document.getElementById('maxCredits').value);
+
+            if (!minCancelHours || !creditExpiration || !autoUnsubscribe || !maxCredits) {
+                alert('Por favor completa todos los campos');
+                return;
+            }
+
+            loading.style.display = 'block';
+
+            try {
+                await updateDoc(doc(db, 'gyms', currentUserData.gymId), {
+                    minCancelHours: minCancelHours,
+                    creditExpiration: creditExpiration,
+                    autoUnsubscribe: autoUnsubscribe,
+                    maxCredits: maxCredits,
+                    updatedAt: new Date().toISOString()
+                });
+
+                showAlert('✅ Parámetros guardados exitosamente', 'success');
+
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error al guardar parámetros');
+            } finally {
+                loading.style.display = 'none';
+            }
+        };
+
+        window.saveGymSettings = async function () {
+            const name = document.getElementById('settingsGymName').value.trim();
+            const address = document.getElementById('settingsAddress').value.trim();
+            const phone = document.getElementById('settingsPhone').value.trim();
+            const email = document.getElementById('settingsEmail').value.trim();
+            const description = document.getElementById('settingsDescription').value.trim();
+
+            if (!name) {
+                alert('El nombre del gimnasio es obligatorio');
+                return;
+            }
+
+            loading.style.display = 'block';
+
+            try {
+                await updateDoc(doc(db, 'gyms', currentUserData.gymId), {
+                    name: name,
+                    address: address,
+                    phone: phone,
+                    email: email,
+                    description: description,
+                    updatedAt: new Date().toISOString()
+                });
+
+                showAlert('✅ Información guardada exitosamente', 'success');
+                document.getElementById('displayGymName').textContent = name;
+
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error al guardar información');
+            } finally {
+                loading.style.display = 'none';
+            }
+        };
+
+        window.changePassword = async function () {
+            const currentPassword = document.getElementById('currentPassword').value;
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+
+            if (!currentPassword || !newPassword || !confirmPassword) {
+                alert('Por favor completa todos los campos');
+                return;
+            }
+
+            if (newPassword !== confirmPassword) {
+                alert('Las contraseñas nuevas no coinciden');
+                return;
+            }
+
+            if (newPassword.length < 6) {
+                alert('La contraseña debe tener al menos 6 caracteres');
+                return;
+            }
+
+            loading.style.display = 'block';
+
+            try {
+                const credential = EmailAuthProvider.credential(
+                    auth.currentUser.email,
+                    currentPassword
+                );
+                await reauthenticateWithCredential(auth.currentUser, credential);
+                await updatePassword(auth.currentUser, newPassword);
+
+                alert('✅ Contraseña actualizada exitosamente');
+                document.getElementById('currentPassword').value = '';
+                document.getElementById('newPassword').value = '';
+                document.getElementById('confirmPassword').value = '';
+
+            } catch (error) {
+                console.error('Error:', error);
+                if (error.code === 'auth/wrong-password') {
+                    alert('La contraseña actual es incorrecta');
+                } else {
+                    alert('Error al cambiar contraseña: ' + error.message);
+                }
+            } finally {
+                loading.style.display = 'none';
+            }
+        };
+
+        function generateToken() {
+            return 'token_' + Math.random().toString(36).substr(2, 9) + Date.now().toString(36);
+        }
+
+        window.copyLink = function () {
+            const linkText = document.getElementById('generatedLink').textContent;
+            navigator.clipboard.writeText(linkText).then(() => {
+                const btn = event.target;
+                const originalText = btn.textContent;
+                btn.textContent = '✅ ¡Copiado!';
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                }, 2000);
+            });
+        };
+
+        window.logout = async function () {
+            try {
+                await signOut(auth);
+                dashboard.classList.remove('active');
+                loginForm.style.display = 'block';
+                currentUserData = {};
+                document.getElementById('superuserPanel').style.display = 'none';
+                document.getElementById('adminPanel').style.display = 'none';
+                document.getElementById('gymInfoBox').style.display = 'none';
+                showAlert('Sesión cerrada correctamente', 'success');
+            } catch (error) {
+                showAlert('Error al cerrar sesión', 'error');
+            }
+        };
+
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                const userDoc = await getDoc(doc(db, 'users', user.uid));
+                if (userDoc.exists()) {
+                    currentUserData = userDoc.data();
+                    showDashboard(currentUserData);
+                }
+            }
+        });
+    </script>
+</body>
+
+</html>
