@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Panel de Administración</title>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+      font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background:#f3f4f6;
+      min-height:100vh;
+    }
+    header {
+      background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);
+      color:white; padding:20px 30px;
+      display:flex; justify-content:space-between; align-items:center;
+    }
+    h1 { font-size:22px; }
+    .btn {
+      background:white; color:#333; border:none; border-radius:8px;
+      padding:8px 14px; font-weight:600; cursor:pointer; transition:0.3s;
+    }
+    .btn:hover { background:#eee; }
+    nav {
+      background:white; display:flex; gap:10px; flex-wrap:wrap;
+      padding:15px 20px; border-bottom:1px solid #ddd;
+    }
+    .tab {
+      border:none; background:none; font-weight:600;
+      color:#555; cursor:pointer; padding:8px 15px;
+      border-bottom:3px solid transparent; transition:0.3s;
+    }
+    .tab.active { border-color:#667eea; color:#667eea; }
+    section { display:none; padding:20px; }
+    section.active { display:block; }
+    .table-container {
+      background:white; border-radius:10px; padding:15px;
+      box-shadow:0 2px 10px rgba(0,0,0,0.05); overflow-x:auto;
+    }
+    table { width:100%; border-collapse:collapse; }
+    th, td { padding:10px 12px; border-bottom:1px solid #eee; text-align:left; }
+    th { background:#f9f9f9; color:#333; font-weight:600; }
+    input, select {
+      width:100%; padding:8px; margin-top:5px;
+      border:2px solid #ddd; border-radius:8px;
+    }
+    .form-group { margin-bottom:15px; }
+    .card {
+      background:white; border-radius:10px; padding:20px;
+      box-shadow:0 2px 10px rgba(0,0,0,0.05); margin-bottom:20px;
+    }
+    #alert {
+      margin:15px; padding:10px;
+      border-radius:8px; display:none; text-align:center;
+    }
+    .alert-success { background:#d4edda; color:#155724; }
+    .alert-error { background:#f8d7da; color:#721c24; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🏋️ Panel de Administración</h1>
+    <button id="logoutBtn" class="btn">Cerrar sesión</button>
+  </header>
+
+  <div id="alert"></div>
+
+  <nav>
+    <button class="tab active" data-target="rooms">🏠 Salones</button>
+    <button class="tab" data-target="classes">📅 Clases</button>
+    <button class="tab" data-target="users">👤 Crear Usuario</button>
+    <button class="tab" data-target="students">👥 Alumnos</button>
+    <button class="tab" data-target="teachers">👩‍🏫 Profesores</button>
+    <button class="tab" data-target="settings">⚙️ Configuración</button>
+  </nav>
+
+  <main>
+    <!-- Salones -->
+    <section id="rooms" class="active">
+      <div class="card">
+        <h2>Crear nuevo salón</h2>
+        <div class="form-group">
+          <label for="roomName">Nombre del salón</label>
+          <input type="text" id="roomName" placeholder="Ej: Sala Principal">
+        </div>
+        <div class="form-group">
+          <label for="roomCapacity">Capacidad</label>
+          <input type="number" id="roomCapacity" min="1" placeholder="10">
+        </div>
+        <button id="createRoomBtn" class="btn">Crear salón</button>
+      </div>
+
+      <div class="table-container">
+        <h3>Salones existentes</h3>
+        <table>
+          <thead>
+            <tr><th>Nombre</th><th>Capacidad</th><th>Acciones</th></tr>
+          </thead>
+          <tbody id="roomsTable"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Clases -->
+    <section id="classes">
+      <div class="card">
+        <h2>Crear nueva clase</h2>
+        <div class="form-group">
+          <label>Días</label>
+          <input type="text" id="classDays" placeholder="Ej: Lunes, Miércoles, Viernes">
+        </div>
+        <div class="form-group">
+          <label for="classTime">Horario</label>
+          <input type="time" id="classTime">
+        </div>
+        <div class="form-group">
+          <label for="classRoom">Salón</label>
+          <select id="classRoom"></select>
+        </div>
+        <div class="form-group">
+          <label for="classTeacher">Profesor</label>
+          <select id="classTeacher"></select>
+        </div>
+        <button id="createClassBtn" class="btn">Crear clase</button>
+      </div>
+
+      <div class="table-container">
+        <h3>Listado de clases</h3>
+        <table>
+          <thead>
+            <tr><th>Días</th><th>Horario</th><th>Salón</th><th>Profesor</th><th>Acciones</th></tr>
+          </thead>
+          <tbody id="classesTable"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Crear usuario -->
+    <section id="users">
+      <div class="card">
+        <h2>Crear usuario</h2>
+        <div class="form-group">
+          <label for="userRole">Rol</label>
+          <select id="userRole">
+            <option value="alumno">Alumno</option>
+            <option value="profesor">Profesor</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="userFirst">Nombre</label>
+          <input type="text" id="userFirst">
+        </div>
+        <div class="form-group">
+          <label for="userLast">Apellido</label>
+          <input type="text" id="userLast">
+        </div>
+        <div class="form-group">
+          <label for="userDNI">DNI</label>
+          <input type="text" id="userDNI">
+        </div>
+        <div class="form-group">
+          <label for="userPhone">Teléfono</label>
+          <input type="text" id="userPhone">
+        </div>
+        <div class="form-group">
+          <label for="userEmergency">Contacto de emergencia</label>
+          <input type="text" id="userEmergency">
+        </div>
+        <button id="createUserBtn" class="btn">Crear usuario</button>
+      </div>
+    </section>
+
+    <!-- Alumnos -->
+    <section id="students">
+      <div class="table-container">
+        <h3>Listado de alumnos</h3>
+        <table>
+          <thead>
+            <tr><th>Nombre</th><th>Apellido</th><th>DNI</th><th>Teléfono</th>
+              <th>Emergencia</th><th>Acciones</th></tr>
+          </thead>
+          <tbody id="studentsTable"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Profesores -->
+    <section id="teachers">
+      <div class="table-container">
+        <h3>Listado de profesores</h3>
+        <table>
+          <thead>
+            <tr><th>Nombre</th><th>Apellido</th><th>DNI</th><th>Teléfono</th><th>Acciones</th></tr>
+          </thead>
+          <tbody id="teachersTable"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Configuración -->
+    <section id="settings">
+      <div class="card">
+        <h2>Información del gimnasio</h2>
+        <div class="form-group">
+          <label for="gymName">Nombre</label>
+          <input type="text" id="gymName">
+        </div>
+        <div class="form-group">
+          <label for="gymAddress">Dirección</label>
+          <input type="text" id="gymAddress">
+        </div>
+        <div class="form-group">
+          <label for="gymPhone">Teléfono</label>
+          <input type="text" id="gymPhone">
+        </div>
+        <button id="saveGymBtn" class="btn">Guardar cambios</button>
+      </div>
+    </section>
+  </main>
+
+  <script type="module" src="./firebase.js"></script>
+  <script type="module" src="./admin.js"></script>
+</body>
+</html>
