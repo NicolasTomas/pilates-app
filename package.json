@@ -1,0 +1,21 @@
+{
+    "name": "pilates-camilla",
+    "version": "1.0.0",
+    "description": "Sistema de gestion de pilates en camilla - backend express y frontend vanilla",
+    "main": "server.js",
+    "scripts": {
+        "start": "node server.js",
+        "seed": "node seed.js"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "MIT",
+    "dependencies": {
+        "cors": "^2.8.5",
+        "dotenv": "^16.0.0",
+        "express": "^4.18.2",
+        "jsonwebtoken": "^9.0.0",
+        "mongodb": "^5.7.0",
+        "bcryptjs": "^2.4.3"
+    }
+}

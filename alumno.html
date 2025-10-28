@@ -1,0 +1,1314 @@
+<!doctype html>
+<html lang="es">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Alumno - Pilates Camilla</title>
+    <link rel="icon"
+        href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='16' fill='%232563eb'/><text x='50' y='62' font-size='56' text-anchor='middle' fill='white' font-family='Arial'>A</text></svg>">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            /* Centralized spacing variables to keep tickets-panel and cards aligned */
+            --content-h: 18px;
+            /* horizontal inset for main content */
+            --content-v: 16px;
+            /* vertical padding used by panels/cards */
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            background-color: #eaeaea;
+
+            display: flex;
+            justify-content: center;
+            flex-direction: column;
+        }
+
+        .top {
+            background: #fff;
+            color: #111827;
+            /* Use the content variables so the top card aligns with other panels */
+            padding: var(--content-v) calc(var(--content-h) + 2px);
+            border-radius: 8px;
+            margin: 12px var(--content-h) 12px var(--content-h);
+            box-shadow: 0 8px 20px rgba(2, 6, 23, 0.04);
+            border: 1px solid rgba(2, 6, 23, 0.04);
+        }
+
+        .top h1 {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .top-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* Header: student info area */
+        .me-area {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .me-panel {
+            text-align: right;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            align-items: flex-end;
+        }
+
+        .top-right {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            justify-content: center;
+            gap: 6px;
+            text-align: right;
+        }
+
+        .me-name {
+            font-weight: 700;
+            font-size: 16px;
+            color: #111827;
+            text-transform: none;
+        }
+
+        .due-box {
+            padding: 6px 10px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 700;
+            color: #155724;
+            background: #e6f4ea;
+            border: 1px solid #c3e6cb;
+            box-shadow: 0 6px 18px rgba(72, 187, 120, 0.08);
+        }
+
+        .due-box.vencida {
+            color: #721c24;
+            background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+        }
+
+        .top button {
+            padding: 10px 20px;
+            border-radius: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.2);
+            color: #fff;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .top button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+
+        .cuota {
+            padding: 12px 24px;
+            border-radius: 16px;
+            font-weight: 600;
+            /* keep vertical spacing but align horizontally with content */
+            margin: 20px var(--content-h);
+            display: inline-block;
+            backdrop-filter: blur(10px);
+        }
+
+        .cuota.vigente {
+            background: rgba(72, 187, 120, 0.9);
+            color: #fff;
+            box-shadow: 0 4px 15px rgba(72, 187, 120, 0.4);
+        }
+
+        .cuota.vencida {
+            background: rgba(229, 62, 62, 0.9);
+            color: #fff;
+            box-shadow: 0 4px 15px rgba(229, 62, 62, 0.4);
+        }
+
+        /* Tabs bar like screenshot - centered responsively */
+        .tabs {
+            background: #fbfdff;
+            border-radius: 10px;
+            padding: 5px;
+            /* force identical outer width as other main containers */
+            width: calc(100% - (var(--content-h) * 2));
+            margin: 0px var(--content-h);
+            box-shadow: none;
+            font-size: 13px;
+            color: #6b7280;
+            border: 1px solid rgba(2, 6, 23, 0.03);
+            display: flex;
+            box-sizing: border-box;
+        }
+
+        .tab {
+
+            background: transparent;
+            color: rgba(0, 0, 0, 0.95);
+            font-weight: 700;
+            cursor: pointer;
+            border: none;
+            outline: none;
+            border-radius: 6px;
+            transition: all 0.18s ease;
+            box-shadow: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex: 0 0 auto;
+            width: 49%;
+            text-align: center;
+        }
+
+        .tab.active {
+            background: linear-gradient(135deg, #e8e8e8 0%, #dcdbdb 100%);
+            color: #111827;
+            box-shadow: 0 6px 18px rgba(2, 6, 23, 0.04);
+        }
+
+        .card {
+            /* Match horizontal spacing with .tickets-panel so inner class cards align */
+
+            /* Force same outer width as other main containers so inner cards align */
+            width: calc(100% - (var(--content-h) * 2));
+            margin: 0px var(--content-h) 40px var(--content-h);
+            box-sizing: border-box;
+        }
+
+        .alert {
+            padding: 14px 20px;
+            border-radius: 12px;
+            margin: 16px 0;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .alert.success {
+            background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+            color: #fff;
+            box-shadow: 0 4px 15px rgba(72, 187, 120, 0.3);
+        }
+
+        .alert.error {
+            background: linear-gradient(135deg, #fc8181 0%, #e53e3e 100%);
+            color: #fff;
+            box-shadow: 0 4px 15px rgba(229, 62, 62, 0.3);
+        }
+
+        .alert.warn {
+            background: linear-gradient(135deg, #f6e05e 0%, #ecc94b 100%);
+            color: #744210;
+            box-shadow: 0 4px 15px rgba(237, 137, 54, 0.3);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            background: #fff;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        th,
+        td {
+            padding: 14px 12px;
+            text-align: left;
+        }
+
+        th {
+            background: #764ba2b6;
+            color: #ffffff;
+            font-weight: 600;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        tbody tr {
+            border-bottom: 1px solid #f1f5f9;
+            transition: all 0.2s ease;
+        }
+
+        tbody tr:hover {
+            background: #f8fafc;
+            transform: scale(1.01);
+        }
+
+        tbody tr:last-child {
+            border-bottom: none;
+        }
+
+        button {
+            padding: 10px 20px;
+            border-radius: 10px;
+            border: none;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        button:hover {
+            /* No translation to avoid moving/creating gap with content below */
+            transform: none;
+            filter: brightness(1.03);
+        }
+
+        button.cancel {
+            background: linear-gradient(135deg, #fe3c3ccc 0%, #e83939db 100%);
+            box-shadow: 0 4px 12px rgba(191, 191, 191, 0.3);
+        }
+
+        button.cancel:hover {
+            box-shadow: 0 6px 16px rgba(58, 58, 58, 0.4);
+        }
+
+        button.recover {
+            background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+            box-shadow: 0 4px 12px rgba(72, 187, 120, 0.3);
+        }
+
+        button.recover:hover {
+            box-shadow: 0 6px 16px rgba(72, 187, 120, 0.4);
+        }
+
+        button:disabled {
+            background: #cbd5e1;
+            color: #94a3b8;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        .tickets-badge {
+            display: inline-block;
+            padding: 12px 18px;
+            color: #111827;
+            background: #f8fafc;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 800;
+            margin-left: 12px;
+            min-width: 44px;
+            text-align: center;
+            box-shadow: 0 6px 18px rgba(2, 6, 23, 0.04);
+        }
+
+        /* Big panel showing classes available to recover */
+        .tickets-panel {
+            background: #fbfdff;
+            border-radius: 10px;
+            padding: 5px;
+            padding-left: 15px;
+            /* Force identical outer width */
+            width: calc(100% - (var(--content-h) * 2));
+            margin: 12px var(--content-h);
+            box-shadow: none;
+            font-size: 13px;
+            color: #6b7280;
+            border: 1px solid rgba(2, 6, 23, 0.03);
+            box-sizing: border-box;
+            margin-bottom: 35px !important;
+            margin-top: 0px !important;
+        }
+
+        .tickets-panel .big-number {
+            font-size: 28px;
+            font-weight: 800;
+            color: #111827;
+            margin-top: 6px;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        .modal-content {
+            background: #fff;
+            padding: 32px;
+            border-radius: 20px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: slideUp 0.3s ease;
+        }
+
+        /* Modal overlay to ensure the modal is visible and centered */
+        .modal {
+            position: fixed;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.35);
+            z-index: 9999;
+            padding: 20px;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .modal-content h3 {
+            margin-top: 0;
+            color: #667eea;
+            font-size: 22px;
+            margin-bottom: 12px;
+        }
+
+        .modal-content p {
+            color: #64748b;
+            line-height: 1.6;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+            margin-top: 24px;
+        }
+
+        .modal-actions button {
+            padding: 12px 24px;
+        }
+
+        @media (max-width: 700px) {
+            body {
+                overflow-x: hidden;
+            }
+
+            .top {
+                padding: 16px;
+            }
+
+            .top h1 {
+                font-size: 20px;
+            }
+
+            .top-header {
+                flex-direction: column;
+                gap: 12px;
+                align-items: center;
+            }
+
+            .top-header>div {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 8px;
+                align-items: center;
+                width: 100%;
+            }
+
+            .top button {
+                padding: 8px 16px;
+                font-size: 14px;
+            }
+
+            #meHeader {
+                font-size: 22px;
+            }
+
+            .cuota {
+                margin: 12px 16px;
+                padding: 10px 16px;
+                font-size: 14px;
+            }
+
+            .tabs {
+
+                gap: 8px;
+                overflow-x: hidden;
+
+            }
+
+            .tab {
+                padding: 12px 20px;
+                font-size: 14px;
+                white-space: nowrap;
+            }
+
+            .card {
+                /* Keep mobile spacing consistent with tickets-panel */
+
+
+                border-radius: 0 16px 16px 16px;
+            }
+
+            /* Hacer tablas responsive con scroll horizontal */
+            table {
+                display: block;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                white-space: nowrap;
+            }
+
+            th,
+            td {
+                padding: 10px 8px;
+                font-size: 13px;
+            }
+
+            button {
+                padding: 8px 14px;
+                font-size: 14px;
+            }
+
+            .tickets-badge {
+                padding: 6px 12px;
+                font-size: 12px;
+                margin-left: 8px;
+            }
+
+            .alert {
+                padding: 12px 16px;
+                font-size: 14px;
+            }
+
+            .modal-content {
+                width: 95%;
+                padding: 24px 20px;
+            }
+
+            .modal-content h3 {
+                font-size: 20px;
+            }
+
+            .modal-content p {
+                font-size: 14px;
+            }
+
+            .modal-actions button {
+                padding: 10px 16px;
+                font-size: 14px;
+            }
+
+            /* Mobile: center header content */
+            .top-header {
+                flex-direction: column;
+                align-items: center;
+                gap: 10px;
+            }
+
+            .top-right {
+                align-items: center;
+                text-align: center;
+                width: 100%;
+            }
+
+            .top-left {
+                width: 100%;
+            }
+
+            .top-left h1 {
+                text-align: center;
+                margin: 0 auto;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .top h1 {
+                font-size: 18px;
+            }
+
+
+            .tab {
+                padding: 10px 16px;
+                font-size: 13px;
+            }
+
+
+
+            th,
+            td {
+                padding: 8px 6px;
+                font-size: 12px;
+            }
+
+            button {
+                padding: 6px 12px;
+                font-size: 13px;
+            }
+
+            /* Small logout button bottom-left */
+            #logoutFooter {
+                position: fixed;
+                bottom: 12px;
+                left: 12px;
+                width: auto !important;
+                padding: 8px 12px !important;
+                border-radius: 8px;
+                font-size: 13px;
+                box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+            }
+
+            /* Ensure header right block is centered on very small screens */
+            .top-header {
+                flex-direction: column;
+                align-items: center;
+                gap: 8px;
+            }
+
+            .top-right {
+                align-items: center;
+                text-align: center;
+            }
+
+            .top-right {
+                width: 100%;
+            }
+
+            .top-left {
+                width: 100%;
+            }
+
+            .top-left h1 {
+                text-align: center;
+                margin: 0 auto;
+            }
+        }
+
+        /* Highlight recovered classes (yellow background) and mark with yellow left border */
+        .recovered-row {
+            background: linear-gradient(90deg, #fff9c4 0%, #fff59d 100%);
+            /* override the default black left border for recovered classes */
+            border-left: 5px solid #f6e05e;
+        }
+
+        /* Card based layout for class lists */
+        .class-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+            /* Remove horizontal padding so cards align with .card / .tickets-panel edges.
+               .card already provides the horizontal inset via var(--content-h). */
+            padding: 12px 0 18px 0;
+
+        }
+
+        .class-card {
+            background: #fff;
+            border-radius: 8px;
+            padding: 16px;
+            border-left: 5px solid rgb(0, 0, 0);
+            box-shadow: 0 6px 18px rgba(2, 6, 23, 0.02);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+
+            transition: transform 0.12s ease, box-shadow 0.12s ease;
+
+        }
+
+        .class-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 30px rgba(16, 24, 40, 0.12);
+        }
+
+        /* Ensure recovered cards show a yellow left border despite .class-card default */
+        .class-card.recovered-row {
+            border-left-color: #fbdc2c;
+        }
+
+        .class-card .date {
+            font-weight: 800;
+            color: #111827;
+            font-size: 15px;
+        }
+
+        .class-card .meta {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            color: #6b7280;
+            font-size: 13px;
+        }
+
+        .class-card .meta .label {
+            color: #6b7280;
+        }
+
+        .card-actions {
+            display: block;
+            margin-top: 12px;
+        }
+
+        .btn-pill {
+            padding: 8px 12px;
+            border-radius: 999px;
+            border: none;
+            cursor: pointer;
+            font-weight: 700;
+            font-size: 13px;
+        }
+
+        .cancel-full {
+            width: 100%;
+            padding: 10px 14px;
+            border-radius: 10px;
+            border: 1px solid rgba(2, 6, 23, 0.06);
+            background: #fff;
+            color: #111827;
+            font-weight: 700;
+            box-shadow: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-size: 14px
+        }
+
+        .recover-full {
+            width: 100%;
+            padding: 10px 14px;
+            border-radius: 10px;
+            border: none;
+            background: linear-gradient(90deg, #10b981 0%, #059669 100%);
+            color: #fff;
+            font-weight: 800;
+            box-shadow: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-size: 14px
+        }
+
+        .btn-cancel {
+            background: linear-gradient(135deg, #fc8181 0%, #e53e3e 100%);
+            color: #fff;
+            box-shadow: 0 6px 18px rgba(229, 62, 62, 0.18);
+        }
+
+        .btn-recover {
+            background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+            color: #fff;
+            box-shadow: 0 6px 18px rgba(72, 187, 120, 0.18);
+        }
+
+        .badge-recovered {
+            display: inline-block;
+            padding: 6px 10px;
+            background: linear-gradient(90deg, #fff9c4 0%, #fff59d 100%);
+            color: #8a6d00;
+            border-radius: 999px;
+            font-weight: 800;
+            font-size: 12px;
+        }
+
+        @media (max-width: 520px) {
+            .class-grid {
+                gap: 12px;
+                grid-template-columns: 1fr;
+            }
+
+            .class-card {
+                padding: 12px;
+                position: relative;
+
+            }
+
+            .class-card .date {
+                font-size: 16px;
+            }
+
+            .class-card .meta {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 6px;
+                font-size: 15px;
+            }
+
+            .card-actions {
+                width: 100%;
+                justify-content: flex-end;
+            }
+
+            /* Stack action buttons on small screens for easier tapping */
+            .card-actions {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            .btn-pill {
+                width: 100%;
+            }
+
+            .badge-recovered {
+                position: absolute;
+                top: 10px;
+                right: 10px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="top">
+        <div class="top-header">
+            <div class="top-left">
+                <!-- Header ahora mostrará nombre y apellido del alumno -->
+                <h1 id="meHeader">Cargando...</h1>
+            </div>
+            <div class="top-right">
+                <div id="dueBox" class="due-box">Cuota: --</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="cuotaStatus" class="cuota">Cargando cuota...</div>
+    <div class="tabs">
+        <button class="tab active" id="tabClases">Mis Clases</button>
+        <button class="tab" id="tabRecuperar">Recuperar Clase</button>
+    </div>
+    <div class="card" id="tabContent">
+        <!-- Content will be loaded here -->
+    </div>
+    <div id="alertContainer"></div>
+    <div id="modalContainer"></div>
+    <div style="max-width:1200px;margin:24px var(--content-h);">
+        <button id="logoutFooter"
+            style="width:100%;padding:12px 16px;border-radius:12px;border:2px solid rgba(0,0,0,0.05);background:#fff;color:#667eea;font-weight:700;">Cerrar
+            sesión</button>
+    </div>
+    <script src="/public/js/auth.js"></script>
+    <script src="/public/js/admin_classes.js"></script>
+    <script src="/public/js/admin_gym.js"></script>
+    <script>
+        let alumno = null;
+        let gymConfig = null;
+        let tickets = [];
+        let ticketsUsed = [];
+    // Client-side synthetic tickets created when backend doesn't return a ticket
+    // after cancelling a previously recovered class. These persist until full reload.
+    let syntheticTickets = [];
+        let classes = [];
+        let activeTab = localStorage.getItem('alumnoTab') || 'clases';
+        let refreshTimer = null;
+
+        function showAlert(type, msg) {
+            const icons = { success: '✅', error: '❌', warn: '⚠️' };
+            document.getElementById('alertContainer').innerHTML = `<div class="alert ${type}">${icons[type]} ${msg}</div>`;
+            setTimeout(() => { document.getElementById('alertContainer').innerHTML = ''; }, 3500);
+        }
+
+        function showModal(title, message, onConfirm) {
+            const modalHTML = `
+                <div class="modal">
+                    <div class="modal-content">
+                        <h3>${title}</h3>
+                        <p>${message}</p>
+                        <div class="modal-actions">
+                            <button onclick="closeModal()" style="background:#e2e8f0;color:#475569;box-shadow:none;">Cancelar</button>
+                            <button onclick="confirmModal()">Confirmar</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.getElementById('modalContainer').innerHTML = modalHTML;
+
+            // Guardar callback
+            window.modalConfirmCallback = onConfirm;
+            // Mark modal open so other logic can avoid interfering
+            window._modalOpen = true;
+        } function closeModal() {
+            document.getElementById('modalContainer').innerHTML = '';
+            window.modalConfirmCallback = null;
+            window._modalOpen = false;
+        }
+
+        function confirmModal() {
+            if (window.modalConfirmCallback) {
+                window.modalConfirmCallback();
+            }
+            closeModal();
+        }
+
+        async function loadConfig() {
+            // usar endpoint público para que funcione con tokens de alumno
+            try {
+                const res = await fetch('/api/gym/config/public');
+                gymConfig = await res.json();
+            } catch (e) {
+                console.warn('No se pudo cargar config pública, fallback a valores por defecto');
+                gymConfig = { minCancellationHours: 24, creditExpirationDays: 30, autoCancelDueOverdueDays: 7, maxCredits: 10 };
+            }
+        }
+
+        async function loadAlumno() {
+            try {
+                const me = await pilatesAuth.getMe();
+                // pedir datos completos del alumno al backend
+                const res = await fetch(`/api/students/${me.id}`, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } });
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                alumno = await res.json();
+                // Normalize name and lastname to start with uppercase
+                function titleCase(str) {
+                    if (!str) return '';
+                    return str.split(' ').map(s => s.charAt(0).toUpperCase() + s.slice(1).toLowerCase()).join(' ');
+                }
+                const displayName = `${titleCase(alumno.name)} ${titleCase(alumno.lastName)}`.trim();
+                // Mostrar nombre completo en el encabezado principal
+                const headerEl = document.getElementById('meHeader');
+                if (headerEl) headerEl.textContent = displayName || 'Alumno';
+                // Update due box inside header
+                const dueBox = document.getElementById('dueBox');
+                if (alumno.dueDate) {
+                    const d = new Date(alumno.dueDate);
+                    if (!isNaN(d.getTime())) {
+                        dueBox.textContent = `Cuota vigente hasta ${d.toLocaleDateString()}`;
+                        dueBox.classList.remove('vencida');
+                    } else {
+                        dueBox.textContent = 'Cuota: --';
+                    }
+                } else {
+                    dueBox.textContent = 'Cuota: --';
+                }
+                // Hide the separate big cuotaStatus box (we show it in header now)
+                const cuotaDiv = document.getElementById('cuotaStatus');
+                if (cuotaDiv) cuotaDiv.style.display = 'none';
+            } catch (e) {
+                console.error('Error loading alumno:', e);
+                const headerError = document.getElementById('meHeader');
+                if (headerError) headerError.textContent = 'Error cargando datos';
+                showAlert('error', 'No se pudieron cargar tus datos. ' + e.message);
+                throw e;
+            }
+        }
+
+        function updateCuotaStatus() {
+            const cuotaDiv = document.getElementById('cuotaStatus');
+            const now = new Date();
+            // Keep behaviour for other consumers but hide it (we now render due info in header)
+            if (!cuotaDiv) return;
+            cuotaDiv.style.display = 'none';
+        }
+
+        async function loadTickets() {
+            // tickets ya vienen en alumno; separar activos de usados para poder marcar recuperadas
+            const now = new Date();
+            const raw = (alumno.tickets || []).map(t => ({
+                id: t.id || t.ticketId || null,
+                classId: t.classId || null,
+                instanceId: t.instanceId || null,
+                status: t.status || (t.used ? 'used' : 'active'),
+                expiresAt: t.expiresAt || t.expiry || t.createdAt,
+                createdAt: t.createdAt || null,
+                usedAt: t.usedAt || null
+            }));
+
+            tickets = raw.filter(t => t.status === 'active' && new Date(t.expiresAt || t.createdAt) > now);
+            ticketsUsed = raw.filter(t => t.status === 'used' || (t.usedAt && new Date(t.usedAt) <= now));
+
+            // Merge any client-side synthetic tickets (avoid duplicates)
+            if (Array.isArray(syntheticTickets) && syntheticTickets.length) {
+                const toAdd = syntheticTickets.filter(st => !tickets.some(t => t.id === st.id));
+                if (toAdd.length) tickets = tickets.concat(toAdd);
+            }
+
+            // Actualizar badge de tickets (mostrar siempre aunque sea 0) con texto solicitado
+            const badge = document.getElementById('ticketsBadge');
+            if (badge) {
+                badge.textContent = `Clases disponibles para recuperar: ${tickets.length}`;
+                badge.style.display = 'inline-block';
+            }
+
+            // Mostrar panel grande con cantidad de clases para recuperar
+            const cuotaDiv = document.getElementById('cuotaStatus');
+            if (cuotaDiv) {
+                cuotaDiv.style.display = 'block';
+                cuotaDiv.className = 'tickets-panel';
+                cuotaDiv.innerHTML = `<div>Clases disponibles para recuperar :</div><div class="big-number">${tickets.length}</div>`;
+            }
+        }
+
+        async function loadClasses() {
+            // Obtener instancias específicas del alumno
+            try {
+                const token = localStorage.getItem('token');
+                if (!token) { classes = []; return; }
+                const me = await pilatesAuth.getMe();
+                const res = await fetch(`/api/students/${me.id}/class-instances`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                if (!res.ok) {
+                    classes = [];
+                    return;
+                }
+                classes = await res.json();
+            } catch (err) {
+                console.warn('Error loading class instances for student', err);
+                classes = [];
+            }
+        }
+
+        function switchTab(tab) {
+            activeTab = tab;
+            localStorage.setItem('alumnoTab', tab);
+            document.getElementById('tabClases').classList.toggle('active', tab === 'clases');
+            document.getElementById('tabRecuperar').classList.toggle('active', tab === 'recuperar');
+            renderTab();
+        }
+
+        function renderTab() {
+            if (activeTab === 'clases') renderMisClases();
+            else renderRecuperarClase();
+        }
+
+        function renderMisClases() {
+            console.log('renderMisClases called');
+            if (!classes.length) {
+                document.getElementById('tabContent').innerHTML = '<div style="margin:24px 0">No tenés clases próximas asignadas</div>';
+                return;
+            }
+
+            // Render as card grid for better responsiveness
+            let html = '<div class="class-grid">';
+            for (const inst of classes) {
+                const dt = new Date(inst.dateTime);
+                const dayNames = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+                const dateStr = `${dayNames[dt.getDay()]} ${dt.getDate()}/${dt.getMonth() + 1} - ${dt.getHours().toString().padStart(2, '0')}:${dt.getMinutes().toString().padStart(2, '0')}`;
+
+                const instId = inst._id && inst._id.toString ? inst._id.toString() : inst._id;
+                const classId = inst.classId && inst.classId.toString ? inst.classId.toString() : inst.classId;
+                const recovered = ticketsUsed.some(t => (t.instanceId && t.instanceId.toString() === instId) || (t.classId && t.classId.toString() === classId));
+
+                html += `
+                    <div class="class-card ${recovered ? 'recovered-row' : ''}" data-id="${inst._id}">
+                        <div style="display:flex;gap:12px;align-items:flex-start;">
+                            <div style="width:56px;flex:0 0 56px;display:flex;align-items:center;justify-content:center;border-radius:10px;background:#f3f4f6;">
+                                <!-- calendar SVG -->
+                                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="4" width="18" height="16" rx="2" stroke="#374151" stroke-width="1.2" fill="#ffffff"/><path d="M8 2v4M16 2v4" stroke="#374151" stroke-width="1.2" stroke-linecap="round"/><path d="M7 11h1M11 11h6M7 15h1" stroke="#374151" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            </div>
+                            <div style="flex:1">
+                                <div class="date">${dateStr}</div>
+                                <div class="meta">
+                                    <div style="display:flex;align-items:center;gap:8px;color:#6b7280"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 12c2.761 0 5-2.239 5-5s-2.239-5-5-5-5 2.239-5 5 2.239 5 5 5z" stroke="#9ca3af" stroke-width="1.2"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6" stroke="#9ca3af" stroke-width="1.2"/></svg> ${inst.professorName || '-'}</div>
+                                    <div style="display:flex;align-items:center;gap:8px;color:#6b7280"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" stroke="#9ca3af" stroke-width="1.2" fill="none"/></svg> ${inst.roomName || '-'}</div>
+                                </div>
+                            </div>
+                            
+                        </div>
+                        <div class="card-actions">
+                            <button type="button" class="cancel-full cancel" data-id="${instId}" data-date="${dateStr}" data-recovered="${recovered ? '1' : '0'}" data-classid="${classId}"><span style="font-weight:900">✖</span> <span>Cancelar</span></button>
+                        </div>
+                    </div>`;
+            }
+
+            html += '</div>';
+            document.getElementById('tabContent').innerHTML = html;
+
+            // Clicks for cancel are handled by the delegated document click handler.
+            // We avoid attaching per-button listeners to prevent duplicate events.
+            console.log('Cancel buttons rendered; delegated handler will manage clicks');
+        }
+
+        function confirmarCancelar(instanceId, dateStr, recovered = false, classId = null) {
+            console.log('confirmarCancelar called, instanceId=', instanceId, 'dateStr=', dateStr, 'recovered=', recovered, 'classId=', classId);
+            showModal(
+                '¿Confirmar cancelación?',
+                `¿Estás seguro que querés cancelar la clase del ${dateStr}?`,
+                () => cancelarInstancia(instanceId, { recovered: !!recovered, classId: classId })
+            );
+        }
+
+        async function cancelarInstancia(instanceId, opts = {}) {
+            // opts: { recovered: boolean, classId: string }
+            try {
+                const myId = (alumno._id || alumno.id).toString();
+                const res = await fetch(`/api/students/${myId}/cancel-instance/${instanceId}`, {
+                    method: 'POST',
+                    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'No se pudo cancelar');
+
+                // If backend returned a ticket, show success as before
+                if (data.ticket) {
+                    showAlert('success', '✅ Clase cancelada. Se generó un ticket para recuperar.');
+                } else if (opts.recovered) {
+                    // If backend didn't return a ticket, attempt to persist one server-side
+                    // so the student can immediately reuse it to recover classes.
+                    try {
+                        const resp = await fetch(`/api/students/${myId}/create-ticket`, {
+                            method: 'POST',
+                            headers: { Authorization: `Bearer ${localStorage.getItem('token')}`, 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ instanceId: instanceId, classId: opts.classId })
+                        });
+
+                        let j = null;
+                        if (resp.ok) {
+                            try {
+                                j = await resp.json();
+                            } catch (parseErr) {
+                                console.warn('create-ticket: response not JSON', parseErr);
+                            }
+                        }
+
+                        if (resp.ok && j && j.ticket) {
+                            // Merge newly created ticket into client lists
+                            syntheticTickets.push(j.ticket);
+                            await loadTickets();
+                            renderTab();
+                            showAlert('success', '✅ Clase cancelada. Se restauró un crédito para recuperar.');
+                        } else {
+                            // log server response for debugging and fallback to client-side
+                            let bodyText = '';
+                            try { bodyText = await resp.text(); } catch (tErr) { bodyText = String(tErr); }
+                            console.warn('create-ticket failed', resp.status, bodyText);
+                            const synthetic = {
+                                id: `local-${Date.now()}`,
+                                classId: opts.classId || null,
+                                instanceId: instanceId,
+                                status: 'active',
+                                createdAt: new Date().toISOString(),
+                                expiresAt: new Date(Date.now() + (30 * 864e5)).toISOString() // 30 days
+                            };
+                            syntheticTickets.push(synthetic);
+                            await loadTickets();
+                            renderTab();
+                            showAlert('success', '✅ Clase cancelada. Se restauró un crédito para recuperar (localmente).');
+                        }
+                    } catch (e2) {
+                        console.error('Failed to persist ticket fetch:', e2);
+                        const synthetic = {
+                            id: `local-${Date.now()}`,
+                            classId: opts.classId || null,
+                            instanceId: instanceId,
+                            status: 'active',
+                            createdAt: new Date().toISOString(),
+                            expiresAt: new Date(Date.now() + (30 * 864e5)).toISOString() // 30 days
+                        };
+                        syntheticTickets.push(synthetic);
+                        await loadTickets();
+                        renderTab();
+                        showAlert('success', '✅ Clase cancelada. Se restauró un crédito para recuperar (localmente).');
+                    }
+                } else {
+                    showAlert('warn', '⚠️ ' + (data.message || 'Clase cancelada.'));
+                }
+            } catch (e) {
+                showAlert('error', `❌ ${e.message}`);
+            }
+            // If we pushed a synthetic ticket we already called loadTickets() above.
+            // Otherwise refresh to get authoritative server state.
+            if (!opts.recovered) await refreshPanel();
+        }
+
+        async function renderRecuperarClase() {
+            console.log('renderRecuperarClase called');
+            if (!tickets.length) {
+                document.getElementById('tabContent').innerHTML = '<div style="margin:24px 0">No tenés clases para recuperar disponibles.</div>';
+                return;
+            }
+
+            const now = new Date();
+            const vencimiento = new Date(alumno.dueDate);
+            const extraDays = gymConfig.autoCancelDueOverdueDays || 0;
+            if (vencimiento < now && (now - vencimiento) / 864e5 > extraDays) {
+                document.getElementById('tabContent').innerHTML = '<div style="margin:24px 0">No puedes recuperar clases, cuota vencida.</div>';
+                return;
+            }
+
+            // Obtener instancias disponibles
+            try {
+                const res = await fetch('/api/class-instances/available', {
+                    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+                });
+                if (!res.ok) throw new Error('No se pudieron cargar instancias disponibles');
+                const disponibles = await res.json();
+
+                // Filtrar las que ya tengo
+                const myId = (alumno._id || alumno.id).toString();
+                const filtered = disponibles.filter(inst => {
+                    return !Array.isArray(inst.students) || !inst.students.map(x => x.toString()).includes(myId);
+                });
+
+                if (!filtered.length) {
+                    document.getElementById('tabContent').innerHTML = '<div style="margin:24px 0">No hay clases disponibles para recuperar.</div>';
+                    return;
+                }
+
+                // Render available instances as cards
+                let html = '<div class="class-grid">';
+                for (const inst of filtered) {
+                    const dt = new Date(inst.dateTime);
+                    const dayNames = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+                    const dateStr = `${dayNames[dt.getDay()]} ${dt.getDate()}/${dt.getMonth() + 1} - ${dt.getHours().toString().padStart(2, '0')}:${dt.getMinutes().toString().padStart(2, '0')}`;
+                    const instId = inst._id && inst._id.toString ? inst._id.toString() : inst._id;
+
+                    html += `
+                        <div class="class-card" data-id="${inst._id}">
+                            <div style="display:flex;gap:12px;align-items:flex-start;">
+                                <div style="width:56px;flex:0 0 56px;display:flex;align-items:center;justify-content:center;border-radius:10px;background:#f3f4f6;">
+                                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="4" width="18" height="16" rx="2" stroke="#374151" stroke-width="1.2" fill="#ffffff"/><path d="M8 2v4M16 2v4" stroke="#374151" stroke-width="1.2" stroke-linecap="round"/><path d="M7 11h1M11 11h6M7 15h1" stroke="#374151" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                </div>
+                                <div style="flex:1">
+                                    <div class="date">${dateStr}</div>
+                                    <div class="meta">
+                                        <div style="display:flex;align-items:center;gap:8px;color:#6b7280"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 12c2.761 0 5-2.239 5-5s-2.239-5-5-5-5 2.239-5 5 2.239 5 5 5z" stroke="#9ca3af" stroke-width="1.2"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6" stroke="#9ca3af" stroke-width="1.2"/></svg> ${inst.professorName || '-'}</div>
+                                        <div style="display:flex;align-items:center;gap:8px;color:#6b7280"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" stroke="#9ca3af" stroke-width="1.2" fill="none"/></svg> ${inst.roomName || '-'}</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-actions">
+                                <button type="button" class="recover-full recover" data-id="${instId}" data-date="${dateStr}"><span style="font-weight:900">✓</span> <span>Recuperar</span></button>
+                            </div>
+                        </div>`;
+                }
+                html += '</div>';
+                document.getElementById('tabContent').innerHTML = html;
+                // Clicks for recover are handled by the delegated document click handler.
+                // We avoid attaching per-button listeners to prevent duplicate events.
+                console.log('Recover buttons rendered; delegated handler will manage clicks');
+            } catch (e) {
+                console.error('Error cargando instancias disponibles:', e);
+                document.getElementById('tabContent').innerHTML = '<div style="margin:24px 0">Error cargando clases disponibles.</div>';
+            }
+        }
+
+        function confirmarRecuperar(instanceId, dateStr) {
+            console.log('confirmarRecuperar called, instanceId=', instanceId, 'dateStr=', dateStr);
+            if (!tickets.length) {
+                showAlert('error', '❌ No tenés tickets válidos.');
+                return;
+            }
+            showModal(
+                '¿Confirmar reserva?',
+                `¿Estás seguro que querés reservar la clase del ${dateStr}? Se usará 1 ticket.`,
+                () => recuperarInstancia(instanceId)
+            );
+        }
+
+        async function recuperarInstancia(instanceId) {
+            if (!tickets.length) {
+                showAlert('error', '❌ No tenés tickets válidos.');
+                return;
+            }
+            try {
+                const myId = (alumno._id || alumno.id).toString();
+                const ticket = tickets[0];
+                const res = await fetch(`/api/students/${myId}/recover-instance/${instanceId}`, {
+                    method: 'POST',
+                    headers: { Authorization: `Bearer ${localStorage.getItem('token')}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ticketId: ticket.id })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'No se pudo recuperar la clase');
+                showAlert('success', '✅ Clase recuperada correctamente.');
+            } catch (e) {
+                showAlert('error', `❌ ${e.message}`);
+            }
+            await refreshPanel();
+        }
+
+        async function refreshPanel() {
+            await loadAlumno();
+            await loadTickets();
+            await loadClasses();
+            renderTab();
+        }
+
+        function startRealtime() {
+            if (refreshTimer) clearInterval(refreshTimer);
+            // Pull every 10s for fresh data (simple and robust)
+            refreshTimer = setInterval(refreshPanel, 10000);
+            document.addEventListener('visibilitychange', () => {
+                if (document.hidden) return;
+                refreshPanel();
+            });
+        }
+
+        // Delegated click handler for dynamic action buttons. This ensures clicks are
+        // handled even if per-button listeners fail to attach for any reason.
+        document.addEventListener('click', function (e) {
+            try {
+                const target = e.target;
+                // Use a robust upward traversal instead of relying only on closest
+                let node = target;
+                while (node && node !== document) {
+                    if (node.classList && (node.classList.contains('cancel-full') || node.classList.contains('cancel'))) {
+                        console.log('delegated cancel click', node.dataset.id);
+                        e.preventDefault();
+                        confirmarCancelar(node.dataset.id, node.dataset.date, node.dataset.recovered === '1', node.dataset.classid);
+                        return;
+                    }
+                    if (node.classList && (node.classList.contains('recover-full') || node.classList.contains('recover'))) {
+                        console.log('delegated recover click', node.dataset.id);
+                        e.preventDefault();
+                        confirmarRecuperar(node.dataset.id, node.dataset.date, node.dataset.classid);
+                        return;
+                    }
+                    node = node.parentNode;
+                }
+            } catch (err) {
+                console.error('Error in delegated click handler', err);
+            }
+        });
+
+        document.getElementById('tabClases').onclick = () => switchTab('clases');
+        document.getElementById('tabRecuperar').onclick = () => switchTab('recuperar');
+        // Logout button moved to footer
+        const logoutBtn = document.getElementById('logoutFooter');
+        if (logoutBtn) logoutBtn.onclick = () => pilatesAuth.logout();
+
+        // Inicialización
+        (async () => {
+            try {
+                // Verificar que hay token
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    window.location.href = '/index.html';
+                    return;
+                }
+
+                await loadConfig();
+                await refreshPanel();
+                startRealtime();
+                switchTab(activeTab);
+            } catch (e) {
+                console.error('Error durante inicialización:', e);
+                const headerErr = document.getElementById('meHeader');
+                if (headerErr) headerErr.textContent = 'Error';
+                document.getElementById('cuotaStatus').textContent = 'Error al cargar';
+                document.getElementById('tabContent').innerHTML = `<div class="alert error">Error: ${e.message}. <br>Revisa la consola del navegador (F12) para más detalles.</div>`;
+            }
+        })();
+    </script>
+</body>
+
+</html>

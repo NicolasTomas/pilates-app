@@ -1,0 +1,1395 @@
+<!doctype html>
+<html lang="es">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Administración - Pilates Camilla</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .top {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            color: #fff;
+            padding: 24px 32px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .top h1 {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 0;
+        }
+
+        .top>div {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .top button {
+            padding: 10px 20px;
+            border-radius: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.2);
+            color: #fff;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .top button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+
+        .card {
+            background: #fff;
+            padding: 40px 32px;
+            border-radius: 24px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+            max-width: 1200px;
+            margin: 32px auto;
+        }
+
+        h1,
+        h3,
+        h4 {
+            font-weight: 700;
+        }
+
+        h3 {
+            color: #667eea;
+            font-size: 24px;
+            margin-bottom: 12px;
+        }
+
+        h4 {
+            color: #764ba2;
+            font-size: 20px;
+            margin-bottom: 16px;
+        }
+
+        section {
+            margin-bottom: 32px;
+        }
+
+        input,
+        select,
+        button {
+            font-family: inherit;
+            font-size: 15px;
+        }
+
+        input,
+        select {
+            padding: 12px 16px;
+            border-radius: 12px;
+            border: 2px solid #e2e8f0;
+            background: #f8fafc;
+            transition: all 0.3s ease;
+        }
+
+        input:focus,
+        select:focus {
+            border-color: #667eea;
+            outline: none;
+            background: #fff;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        button {
+            padding: 12px 24px;
+            border-radius: 12px;
+            border: none;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+        }
+
+        button[style*="background:#38a169"],
+        button[style*="background:#2b6cb0"],
+        button[style*="background:#48bb78"] {
+            background: linear-gradient(135deg, #48bb78 0%, #38a169 100%) !important;
+            box-shadow: 0 4px 12px rgba(72, 187, 120, 0.3);
+        }
+
+        button[style*="background:#e53e3e"] {
+            background: linear-gradient(135deg, #fc8181 0%, #e53e3e 100%) !important;
+            box-shadow: 0 4px 12px rgba(229, 62, 62, 0.3);
+        }
+
+        .navbar {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            border-bottom: 2px solid rgba(102, 126, 234, 0.1);
+            padding: 0;
+            position: sticky;
+            top: 0;
+            z-index: 999;
+        }
+
+        .navbar ul {
+            display: flex;
+            gap: 0;
+            margin: 0;
+            padding: 0 32px;
+            list-style: none;
+            overflow-x: auto;
+        }
+
+        .navbar li {
+            margin: 0;
+        }
+
+        .navbar a {
+            display: block;
+            padding: 20px 28px;
+            color: #64748b;
+            font-weight: 600;
+            text-decoration: none;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .navbar a.active,
+        .navbar a:hover {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+            border-bottom: 3px solid #667eea;
+            color: #667eea;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            background: #fff;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        th,
+        td {
+            padding: 14px 12px;
+            text-align: left;
+        }
+
+        th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+            font-weight: 600;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        tbody tr {
+            border-bottom: 1px solid #f1f5f9;
+            transition: all 0.2s ease;
+        }
+
+        tbody tr:hover {
+            background: #f8fafc;
+        }
+
+        tbody tr:last-child {
+            border-bottom: none;
+        }
+
+        .modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(5px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        .modal>div {
+            background: #fff;
+            padding: 32px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            min-width: 380px;
+            max-width: 95vw;
+            max-height: 90vh;
+            overflow-y: auto;
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 700px) {
+            body {
+                overflow-x: hidden;
+            }
+
+            .top {
+                padding: 16px;
+            }
+
+            .top h1 {
+                font-size: 20px;
+            }
+
+            .top>div {
+                flex-direction: column;
+                gap: 12px;
+                align-items: flex-start;
+            }
+
+            .top button {
+                padding: 8px 16px;
+                font-size: 14px;
+            }
+
+            #meInfo {
+                font-size: 14px;
+            }
+
+            .card {
+                margin: 20px 16px;
+                padding: 24px 16px;
+                border-radius: 16px;
+            }
+
+            h3 {
+                font-size: 20px;
+            }
+
+            h4 {
+                font-size: 18px;
+            }
+
+            .navbar ul {
+                padding: 0 16px;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            .navbar a {
+                padding: 16px 16px;
+                font-size: 14px;
+                white-space: nowrap;
+            }
+
+            /* Hacer tablas scrolleables horizontalmente */
+            table {
+                display: block;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            th,
+            td {
+                padding: 10px 8px;
+                font-size: 13px;
+                white-space: nowrap;
+            }
+
+            button {
+                padding: 8px 14px;
+                font-size: 14px;
+            }
+
+            input,
+            select {
+                padding: 10px 12px;
+                font-size: 14px;
+            }
+
+            section {
+                margin-bottom: 24px;
+            }
+
+            /* Formularios en columna simple en mobile */
+            div[style*="grid-template-columns"] {
+                display: flex !important;
+                flex-direction: column !important;
+                gap: 12px !important;
+            }
+
+            .modal>div {
+                padding: 24px 16px;
+                border-radius: 16px;
+                min-width: auto;
+                width: 90%;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .top h1 {
+                font-size: 18px;
+            }
+
+            .card {
+                margin: 16px 12px;
+                padding: 20px 12px;
+            }
+
+            .navbar a {
+                padding: 12px 12px;
+                font-size: 13px;
+            }
+
+            th,
+            td {
+                padding: 8px 6px;
+                font-size: 12px;
+            }
+
+            button {
+                padding: 6px 12px;
+                font-size: 13px;
+            }
+
+            .modal>div {
+                padding: 20px 12px;
+                width: 95%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="top">
+        <h1>Panel de Administrador</h1>
+        <div>
+            <span id="meInfo">Cargando...</span>
+            <button id="logout">Salir</button>
+        </div>
+    </div>
+    <nav class="navbar">
+        <ul>
+            <li><a href="#" class="nav-link active" data-section="usersSection">Crear Usuario</a></li>
+            <li><a href="#" class="nav-link" data-section="professorsSection">Profesores</a></li>
+            <li><a href="#" class="nav-link" data-section="studentsSection">Alumnos</a></li>
+            <li><a href="#" class="nav-link" data-section="roomsSection">Salones</a></li>
+            <li><a href="#" class="nav-link" data-section="classesSection">Clases</a></li>
+            <li><a href="#" class="nav-link" data-section="gymConfigSection">Configuración</a></li>
+        </ul>
+    </nav>
+    <div class="card">
+        <section id="usersSection">
+            <h4>Crear Usuario</h4>
+            <!-- Formulario de creación de usuario mostrado directamente (sin botón) -->
+        </section>
+        <section id="professorsSection" style="display:none">
+            <h4>Profesores</h4>
+            <div style="display:flex;gap:8px;margin-bottom:8px;align-items:center">
+                <button id="btnNewProfessor" style="background:#2b6cb0;color:#fff;padding:8px 12px;border-radius:6px">
+                    Nuevo profesor
+                </button>
+            </div>
+            <div id="professorsList">Cargando...</div>
+        </section>
+        <section id="studentsSection" style="display:none">
+            <h4>Alumnos</h4>
+            <div style="display:flex;gap:8px;margin-bottom:8px;align-items:center">
+                <input id="searchStudents" placeholder="Buscar por nombre, apellido o DNI"
+                    style="flex:1;padding:8px;border:1px solid #ddd;border-radius:4px" />
+                <button id="btnNewStudent" style="background:#2b6cb0;color:#fff;padding:8px 12px;border-radius:6px">
+                    Nuevo alumno
+                </button>
+            </div>
+            <div id="studentsList">Cargando...</div>
+        </section>
+        <section id="roomsSection" style="display:none">
+            <h4>Salones</h4>
+            <div style="display:flex;gap:8px;margin-bottom:8px;align-items:center">
+                <input id="searchRooms" placeholder="Buscar por nombre"
+                    style="flex:1;padding:8px;border:1px solid #ddd;border-radius:4px" />
+                <button id="btnNewRoom" style="background:#2b6cb0;color:#fff;padding:8px 12px;border-radius:6px">Nuevo
+                    salón</button>
+            </div>
+            <div id="roomsList">Cargando...</div>
+        </section>
+        <section id="classesSection" style="display:none">
+            <h4>Clases</h4>
+            <div style="display:flex;gap:8px;margin-bottom:8px;align-items:center">
+                <input id="searchClasses" placeholder="Buscar clases"
+                    style="flex:1;padding:8px;border:1px solid #ddd;border-radius:4px" />
+                <button id="btnNewClass" style="background:#2b6cb0;color:#fff;padding:8px 12px;border-radius:6px">Nuevo
+                    clase</button>
+            </div>
+            <div id="classesList">Cargando...</div>
+        </section>
+        <section id="gymConfigSection" style="display:none">
+            <h4>Configuración del Gimnasio</h4>
+            <div id="gymConfigForm" style="margin-top:12px">Cargando...</div>
+        </section>
+    </div>
+    <script src="/public/js/auth.js"></script>
+    <script src="/public/js/admin_rooms.js"></script>
+    <script src="/public/js/admin_classes.js"></script>
+    <script src="/public/js/admin_students.js"></script>
+    <script src="/public/js/admin_professors.js"></script>
+    <script src="/public/js/admin_gym.js"></script>
+    <script>
+        // Navbar navegación entre secciones
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.addEventListener('click', e => {
+                e.preventDefault();
+                document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+                link.classList.add('active');
+                const sectionId = link.getAttribute('data-section');
+                document.querySelectorAll('.card section').forEach(sec => {
+                    sec.style.display = sec.id === sectionId ? '' : 'none';
+                });
+            });
+        });
+        // Mostrar sección inicial
+        document.querySelectorAll('.card section').forEach(sec => {
+            sec.style.display = sec.id === 'usersSection' ? '' : 'none';
+        });
+    </script>
+    <script>
+        // Inline form para crear usuario (mostrado directamente)
+        (async function () {
+            const formContainer = document.createElement('div');
+            formContainer.id = 'newUserForm';
+            formContainer.style = 'display:block;margin-top:12px;padding:12px;border-radius:12px;background:linear-gradient(180deg, rgba(102,126,234,0.04), rgba(118,75,162,0.03));border:1px solid rgba(0,0,0,0.04)';
+            formContainer.innerHTML = `
+                <form id="createUserForm">
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:8px 0">
+                        <div>
+                            <div style="font-size:13px;margin-bottom:6px">Rol:</div>
+                            <select id="newUserRole" style="width:100%;padding:10px;border-radius:8px;border:1px solid #ddd">
+                                <option value="alumno">Alumno</option>
+                                <option value="profesor">Profesor</option>
+                            </select>
+                        </div>
+                        <div>
+                            <div style="font-size:13px;margin-bottom:6px">DNI: *</div>
+                            <input id="newUserDni" style="width:100%;padding:10px;border-radius:8px;border:1px solid #ddd" />
+                        </div>
+                        <div>
+                            <div style="font-size:13px;margin-bottom:6px">Nombre: *</div>
+                            <input id="newUserName" style="width:100%;padding:10px;border-radius:8px;border:1px solid #ddd" />
+                        </div>
+                        <div>
+                            <div style="font-size:13px;margin-bottom:6px">Apellido: *</div>
+                            <input id="newUserLastName" style="width:100%;padding:10px;border-radius:8px;border:1px solid #ddd" />
+                        </div>
+                        <div>
+                            <div style="font-size:13px;margin-bottom:6px">Teléfono:</div>
+                            <input id="newUserPhone" style="width:100%;padding:10px;border-radius:8px;border:1px solid #ddd" />
+                        </div>
+                        <div>
+                            <div style="font-size:13px;margin-bottom:6px">Contacto de emergencia:</div>
+                            <input id="newUserEmergency" style="width:100%;padding:10px;border-radius:8px;border:1px solid #ddd" />
+                        </div>
+                        <div>
+                            <div style="font-size:13px;margin-bottom:6px">Tipo de cuota:</div>
+                            <select id="newUserMembership" style="width:100%;padding:10px;border-radius:8px;border:1px solid #ddd">
+                                <option value="mensual">Mensual</option>
+                                <option value="trimestral">Trimestral</option>
+                                <option value="anual">Anual</option>
+                            </select>
+                        </div>
+                        <div>
+                            <div style="font-size:13px;margin-bottom:6px">Vencimiento:</div>
+                            <input type="date" id="newUserDueDate" style="width:100%;padding:10px;border-radius:8px;border:1px solid #ddd" />
+                        </div>
+                    </div>
+                    <div id="classesDivInline" style="margin-top:12px">
+                        <div style="font-size:13px;margin-bottom:6px">Clases asignadas:</div>
+                        <div id="newUserClassesContainer" style="max-height:150px;overflow-y:auto;border:1px solid #ddd;border-radius:8px;padding:6px;background:#fff"></div>
+                    </div>
+                    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
+                        <button type="button" id="cancelNewUser">Cancelar</button>
+                        <button type="submit" id="saveNewUser" style="background:#38a169;color:#fff">Guardar</button>
+                    </div>
+                </form>
+            `;
+            document.querySelector('#usersSection').appendChild(formContainer);
+
+            // populate classes immediately (form is visible by default)
+            try {
+                const classes = await adminClasses.listClasses();
+                const container = document.getElementById('newUserClassesContainer');
+                container.innerHTML = classes.map(c => `
+                    <label style="display:block;padding:8px;border-bottom:1px solid #eee">
+                        <input type="checkbox" value="${c._id}" class="newUserClass" />
+                        ${c.days.join(', ')} ${c.start} - ${c.roomName}
+                    </label>
+                `).join('');
+            } catch (err) {
+                document.getElementById('newUserClassesContainer').innerHTML = '<i>Error cargando clases</i>';
+            }
+
+            function toggleAlumnoFields() {
+                const isAlumno = document.getElementById('newUserRole').value === 'alumno';
+                document.getElementById('newUserEmergency').closest('div').style.display = isAlumno ? '' : 'none';
+                document.getElementById('newUserMembership').closest('div').style.display = isAlumno ? '' : 'none';
+                document.getElementById('newUserDueDate').closest('div').style.display = isAlumno ? '' : 'none';
+                document.getElementById('classesDivInline').style.display = isAlumno ? '' : 'none';
+            }
+
+            // Delegate events
+            document.getElementById('usersSection').addEventListener('change', (e) => {
+                if (e.target && e.target.id === 'newUserRole') toggleAlumnoFields();
+            });
+
+            document.getElementById('usersSection').addEventListener('click', (e) => {
+                if (e.target && e.target.id === 'cancelNewUser') {
+                    // Reset form but keep it visible
+                    const form = document.getElementById('createUserForm');
+                    if (form) form.reset();
+                    toggleAlumnoFields();
+                }
+            });
+
+            document.getElementById('usersSection').addEventListener('submit', async (e) => {
+                if (e.target && e.target.id === 'createUserForm') {
+                    e.preventDefault();
+                    const role = document.getElementById('newUserRole').value;
+                    const user = {
+                        dni: document.getElementById('newUserDni').value.trim(),
+                        name: document.getElementById('newUserName').value.trim(),
+                        lastName: document.getElementById('newUserLastName').value.trim(),
+                        phone: document.getElementById('newUserPhone').value.trim(),
+                    };
+                    if (!user.dni || !user.name || !user.lastName) return alert('DNI, nombre y apellido son requeridos');
+                    if (role === 'alumno') {
+                        user.emergencyContact = document.getElementById('newUserEmergency').value.trim();
+                        user.membershipType = document.getElementById('newUserMembership').value;
+                        user.dueDate = document.getElementById('newUserDueDate').value;
+                        user.classIds = Array.from(document.querySelectorAll('.newUserClass:checked')).map(cb => cb.value);
+                        try {
+                            await adminStudents.createStudent(user);
+                            alert('Alumno creado');
+                            document.getElementById('createUserForm').reset();
+                            await loadStudents();
+                            await loadClasses();
+                        } catch (err) { alert(err.message || 'Error creando alumno'); }
+                    } else if (role === 'profesor') {
+                        try {
+                            await adminProfessors.createProfessor(user);
+                            alert('Profesor creado');
+                            document.getElementById('createUserForm').reset();
+                            await loadProfessors();
+                        } catch (err) { alert(err.message || 'Error creando profesor'); }
+                    }
+                }
+            });
+            // set initial field visibility according to default role
+            toggleAlumnoFields();
+        })();
+    </script>
+    <script>
+        const ensure = pilatesAuth.ensureRole(['administrador', 'superusuario']);
+        ensure().then(async me => {
+            document.getElementById('meInfo').textContent = `${me.email || me.dni} (${me.role})`;
+            await loadRooms();
+        });
+
+        document.getElementById('logout').addEventListener('click', () => pilatesAuth.logout());
+
+        async function loadRooms(filter = '') {
+            try {
+                const rooms = await adminRooms.listRooms();
+                renderRooms(rooms.filter(r => r.name.toLowerCase().includes(filter.toLowerCase())));
+            } catch (err) {
+                document.getElementById('roomsList').textContent = 'Error cargando salones';
+            }
+        }
+
+        function renderRooms(rooms) {
+            if (!rooms.length) { document.getElementById('roomsList').innerHTML = '<i>No hay salones</i>'; return }
+            const html = ['<table style="width:100%;border-collapse:collapse"><thead><tr><th>Nombre</th><th>Camillas</th><th>Acciones</th></tr></thead><tbody>'];
+            for (const r of rooms) {
+                html.push(`<tr data-id="${r._id}"><td style="padding:8px;border-top:1px solid #eee">${r.name}</td><td style="padding:8px;border-top:1px solid #eee">${r.capacity}</td><td style="padding:8px;border-top:1px solid #eee"><button class="editRoom">Editar</button> <button class="delRoom" style="background:#e53e3e;color:#fff">Eliminar</button></td></tr>`);
+            }
+            html.push('</tbody></table>');
+            document.getElementById('roomsList').innerHTML = html.join('');
+
+            document.querySelectorAll('.editRoom').forEach(b => b.addEventListener('click', e => {
+                const id = e.target.closest('tr').dataset.id;
+                const row = e.target.closest('tr');
+                const name = row.children[0].textContent;
+                const capacity = row.children[1].textContent;
+                openEditRoomModal(id, name, capacity);
+            }));
+
+            document.querySelectorAll('.delRoom').forEach(b => b.addEventListener('click', async e => {
+                const id = e.target.closest('tr').dataset.id;
+                if (!confirm('Eliminar salón?')) return;
+                await adminRooms.deleteRoom(id);
+                await loadRooms(document.getElementById('searchRooms').value);
+            }));
+        }
+
+        document.getElementById('btnNewRoom').addEventListener('click', () => openNewRoomModal());
+        document.getElementById('searchRooms').addEventListener('input', (e) => loadRooms(e.target.value));
+
+        function openNewRoomModal() {
+            const modal = document.createElement('div');
+            modal.style = 'position:fixed;inset:0;background:rgba(0,0,0,0.35);display:flex;align-items:center;justify-content:center';
+            modal.innerHTML = `
+                    <div style="background:#fff;padding:16px;border-radius:8px;width:360px">
+                        <h4>Nuevo salón</h4>
+                        <input id="newRoomName" placeholder="Nombre" style="width:100%;padding:8px;margin:8px 0;border:1px solid #ddd;border-radius:4px" />
+                        <input id="newRoomCapacity" type="number" placeholder="Cantidad de camillas" style="width:100%;padding:8px;margin:8px 0;border:1px solid #ddd;border-radius:4px" />
+                        <div style="display:flex;gap:8px;justify-content:flex-end"><button id="cancelNew">Cancelar</button><button id="saveNew" style="background:#2b6cb0;color:#fff">Guardar</button></div>
+                    </div>`;
+            document.body.appendChild(modal);
+            document.getElementById('cancelNew').addEventListener('click', () => modal.remove());
+            document.getElementById('saveNew').addEventListener('click', async () => {
+                const name = document.getElementById('newRoomName').value.trim();
+                const capacity = document.getElementById('newRoomCapacity').value;
+                if (!name || !capacity) return alert('Completá nombre y capacidad');
+                try { await adminRooms.createRoom(name, Number(capacity)); modal.remove(); await loadRooms(); } catch (err) { alert(err.message || 'Error creando salón') }
+            });
+        }
+
+        function openEditRoomModal(id, name, capacity) {
+            const modal = document.createElement('div');
+            modal.style = 'position:fixed;inset:0;background:rgba(0,0,0,0.35);display:flex;align-items:center;justify-content:center';
+            modal.innerHTML = `
+                    <div style="background:#fff;padding:16px;border-radius:8px;width:360px">
+                        <h4>Editar salón</h4>
+                        <input id="editRoomName" value="${name}" style="width:100%;padding:8px;margin:8px 0;border:1px solid #ddd;border-radius:4px" />
+                        <input id="editRoomCapacity" type="number" value="${capacity}" style="width:100%;padding:8px;margin:8px 0;border:1px solid #ddd;border-radius:4px" />
+                        <div style="display:flex;gap:8px;justify-content:flex-end"><button id="cancelEdit">Cancelar</button><button id="saveEdit" style="background:#2b6cb0;color:#fff">Guardar</button></div>
+                    </div>`;
+            document.body.appendChild(modal);
+            document.getElementById('cancelEdit').addEventListener('click', () => modal.remove());
+            document.getElementById('saveEdit').addEventListener('click', async () => {
+                const newName = document.getElementById('editRoomName').value.trim();
+                const newCap = document.getElementById('editRoomCapacity').value;
+                if (!newName || !newCap) return alert('Completá nombre y capacidad');
+                try { await adminRooms.updateRoom(id, newName, Number(newCap)); modal.remove(); await loadRooms(); } catch (err) { alert(err.message || 'Error actualizando salón') }
+            });
+        }
+    </script>
+
+    <script>
+        // Clases
+        async function loadClasses(filter = '') {
+            try {
+                const classes = await adminClasses.listClasses();
+                renderClasses(classes.filter(c => (c.roomName || '').toLowerCase().includes(filter.toLowerCase()) || (c.professorName || '').toLowerCase().includes(filter.toLowerCase())));
+            } catch (err) { document.getElementById('classesList').textContent = 'Error cargando clases' }
+        }
+
+        function renderClasses(classes) {
+            if (!classes.length) { document.getElementById('classesList').innerHTML = '<i>No hay clases</i>'; return }
+            const html = ['<table style="width:100%;border-collapse:collapse"><thead><tr><th>Días</th><th>Horario</th><th>Salón</th><th>Profesor</th><th>Camillas libres</th><th>Acciones</th></tr></thead><tbody>'];
+            for (const c of classes) {
+                html.push(`<tr data-id="${c._id}">
+                    <td style="padding:8px;border-top:1px solid #eee">${c.days.join(', ')}</td>
+                    <td style="padding:8px;border-top:1px solid #eee">${c.start} (${c.duration} min)</td>
+                    <td style="padding:8px;border-top:1px solid #eee">${c.roomName || ''}</td>
+                    <td style="padding:8px;border-top:1px solid #eee">${c.professorName || ''}</td>
+                    <td style="padding:8px;border-top:1px solid #eee">${c.camillasFree}</td>
+                    <td style="padding:8px;border-top:1px solid #eee">
+                        <button class="editClass">Editar</button>
+                        <button class="manageStudents" style="background:#48bb78;color:#fff">Estudiantes</button>
+                        <button class="delClass" style="background:#e53e3e;color:#fff">Eliminar</button>
+                    </td>
+                </tr>`);
+            }
+            html.push('</tbody></table>');
+            document.getElementById('classesList').innerHTML = html.join('');
+
+            document.querySelectorAll('.editClass').forEach(b => b.addEventListener('click', async e => {
+                const id = e.target.closest('tr').dataset.id;
+                openEditClassModal(id);
+            }));
+            document.querySelectorAll('.delClass').forEach(b => b.addEventListener('click', async e => {
+                const id = e.target.closest('tr').dataset.id;
+                if (!confirm('Eliminar clase?')) return;
+                await adminClasses.deleteClass(id);
+                await loadClasses(document.getElementById('searchClasses').value);
+            }));
+
+            document.querySelectorAll('.manageStudents').forEach(b => b.addEventListener('click', async e => {
+                const id = e.target.closest('tr').dataset.id;
+                openManageStudentsModal(id);
+            }));
+        }
+
+        document.getElementById('btnNewClass').addEventListener('click', () => openNewClassModal());
+        document.getElementById('searchClasses').addEventListener('input', (e) => loadClasses(e.target.value));
+
+        async function openNewClassModal() {
+            // fetch rooms and professors
+            const rooms = await adminRooms.listRooms();
+            const profs = await fetch('/api/users?role=profesor', { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }).then(r => r.json());
+            const modal = document.createElement('div');
+            modal.style = 'position:fixed;inset:0;background:rgba(0,0,0,0.35);display:flex;align-items:center;justify-content:center';
+            modal.innerHTML = `
+                    <div style="background:#fff;padding:16px;border-radius:8px;width:420px">
+                        <h4>Crear clase</h4>
+                        <div>Días (Ctrl+click para múltiples):</div>
+                        <select id="classDays" multiple style="width:100%;height:80px;margin:8px 0">
+                            <option>lunes</option><option>martes</option><option>miercoles</option><option>jueves</option><option>viernes</option><option>sabado</option>
+                        </select>
+                        <input id="classStart" placeholder="Horario (HH:MM)" style="width:100%;padding:8px;margin:8px 0;border:1px solid #ddd;border-radius:4px" />
+                        <input id="classDuration" type="number" placeholder="Duración (min)" style="width:100%;padding:8px;margin:8px 0;border:1px solid #ddd;border-radius:4px" />
+                        <select id="classRoom" style="width:100%;padding:8px;margin:8px 0;border:1px solid #ddd;border-radius:4px">
+                            ${rooms.map(r => `<option value="${r._id}">${r.name}</option>`).join('')}
+                        </select>
+                        <select id="classProf" style="width:100%;padding:8px;margin:8px 0;border:1px solid #ddd;border-radius:4px">
+                            <option value="">(sin asignar)</option>
+                            ${profs.map(p => `<option value="${p._id}">${p.name}</option>`).join('')}
+                        </select>
+                        <div style="display:flex;gap:8px;justify-content:flex-end"><button id="cancelClass">Cancelar</button><button id="saveClass" style="background:#2b6cb0;color:#fff">Crear</button></div>
+                    </div>`;
+            document.body.appendChild(modal);
+            document.getElementById('cancelClass').addEventListener('click', () => modal.remove());
+            document.getElementById('saveClass').addEventListener('click', async () => {
+                const days = Array.from(document.getElementById('classDays').selectedOptions).map(o => o.text);
+                const start = document.getElementById('classStart').value.trim();
+                const duration = document.getElementById('classDuration').value;
+                const roomId = document.getElementById('classRoom').value;
+                const professorId = document.getElementById('classProf').value || null;
+                if (!days.length || !start || !duration || !roomId) return alert('Completá todos los campos');
+                try { await adminClasses.createClass({ days, start, duration: Number(duration), roomId, professorId }); modal.remove(); await loadClasses(); } catch (err) { alert(err.message || 'Error creando clase') }
+            });
+        }
+
+        async function openEditClassModal(id) {
+            const classes = await adminClasses.listClasses();
+            const c = classes.find(x => x._id === id || x._id == id);
+            if (!c) return alert('Clase no encontrada');
+            const rooms = await adminRooms.listRooms();
+            const profs = await fetch('/api/users?role=profesor', { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }).then(r => r.json());
+            const modal = document.createElement('div');
+            modal.style = 'position:fixed;inset:0;background:rgba(0,0,0,0.35);display:flex;align-items:center;justify-content:center';
+            modal.innerHTML = `
+                    <div style="background:#fff;padding:16px;border-radius:8px;width:420px">
+                        <h4>Editar clase</h4>
+                        <div>Días (Ctrl+click para múltiples):</div>
+                        <select id="classDaysEdit" multiple style="width:100%;height:80px;margin:8px 0">
+                            <option ${c.days.includes('lunes') ? 'selected' : ''}>lunes</option><option ${c.days.includes('martes') ? 'selected' : ''}>martes</option><option ${c.days.includes('miercoles') ? 'selected' : ''}>miercoles</option><option ${c.days.includes('jueves') ? 'selected' : ''}>jueves</option><option ${c.days.includes('viernes') ? 'selected' : ''}>viernes</option><option ${c.days.includes('sabado') ? 'selected' : ''}>sabado</option>
+                        </select>
+                        <input id="classStartEdit" value="${c.start}" style="width:100%;padding:8px;margin:8px 0;border:1px solid #ddd;border-radius:4px" />
+                        <input id="classDurationEdit" type="number" value="${c.duration}" style="width:100%;padding:8px;margin:8px 0;border:1px solid #ddd;border-radius:4px" />
+                        <select id="classRoomEdit" style="width:100%;padding:8px;margin:8px 0;border:1px solid #ddd;border-radius:4px">
+                            ${rooms.map(r => `<option value="${r._id}" ${c.roomId == r._id ? 'selected' : ''}>${r.name}</option>`).join('')}
+                        </select>
+                        <select id="classProfEdit" style="width:100%;padding:8px;margin:8px 0;border:1px solid #ddd;border-radius:4px">
+                            <option value="">(sin asignar)</option>
+                            ${profs.map(p => `<option value="${p._id}" ${c.professorId == p._id ? 'selected' : ''}>${p.name}</option>`).join('')}
+                        </select>
+                        <div style="display:flex;gap:8px;justify-content:flex-end"><button id="cancelClassEdit">Cancelar</button><button id="saveClassEdit" style="background:#2b6cb0;color:#fff">Guardar</button></div>
+                    </div>`;
+            document.body.appendChild(modal);
+            document.getElementById('cancelClassEdit').addEventListener('click', () => modal.remove());
+            document.getElementById('saveClassEdit').addEventListener('click', async () => {
+                const days = Array.from(document.getElementById('classDaysEdit').selectedOptions).map(o => o.text);
+                const start = document.getElementById('classStartEdit').value.trim();
+                const duration = document.getElementById('classDurationEdit').value;
+                const roomId = document.getElementById('classRoomEdit').value;
+                const professorId = document.getElementById('classProfEdit').value || null;
+                if (!days.length || !start || !duration || !roomId) return alert('Completá todos los campos');
+                try { await adminClasses.updateClass(id, { days, start, duration: Number(duration), roomId, professorId }); modal.remove(); await loadClasses(); } catch (err) { alert(err.message || 'Error actualizando clase') }
+            });
+        }
+
+        // inicializar
+        async function openManageStudentsModal(classId) {
+            // Obtener los estudiantes actuales de la clase
+            const students = await adminClasses.getClassStudents(classId);
+
+            // Obtener todos los estudiantes disponibles
+            const allStudents = await fetch('/api/users?role=alumno', {
+                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+            }).then(r => r.json());
+
+            // Obtener los datos de la clase
+            const classes = await adminClasses.listClasses();
+            const classInfo = classes.find(c => c._id === classId);
+
+            const modal = document.createElement('div');
+            modal.style = 'position:fixed;inset:0;background:rgba(0,0,0,0.35);display:flex;align-items:center;justify-content:center';
+            modal.innerHTML = `
+                <div style="background:#fff;padding:16px;border-radius:8px;width:480px;max-height:90vh;overflow-y:auto">
+                    <h4>Gestionar Estudiantes - ${classInfo.start} (${classInfo.days.join(', ')})</h4>
+                    
+                    <div style="margin:16px 0">
+                        <div>Agregar estudiante:</div>
+                        <div style="display:flex;gap:8px;margin-top:8px">
+                            <select id="newStudent" style="flex:1;padding:8px;border:1px solid #ddd;border-radius:4px">
+                                <option value="">Seleccionar estudiante...</option>
+                                ${allStudents
+                    .filter(s => !students.find(cs => cs._id === s._id))
+                    .map(s => `<option value="${s._id}">${s.name || s.dni}</option>`)
+                    .join('')}
+                            </select>
+                            <button id="addStudent" style="background:#48bb78;color:#fff">Agregar</button>
+                        </div>
+                    </div>
+
+                    <div style="margin:16px 0">
+                        <div>Estudiantes inscritos (${students.length}/${classInfo.roomName ? ` max ${classInfo.camillasFree + students.length}` : ''}):</div>
+                        ${students.length ? `
+                            <table style="width:100%;margin-top:8px;border-collapse:collapse">
+                                <thead>
+                                    <tr>
+                                        <th style="text-align:left">Nombre/DNI</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${students.map(s => `
+                                        <tr>
+                                            <td style="padding:8px;border-top:1px solid #eee">${s.name || s.dni}</td>
+                                            <td style="padding:8px;border-top:1px solid #eee;text-align:right">
+                                                <button class="removeStudent" data-id="${s._id}" style="background:#e53e3e;color:#fff">
+                                                    Dar de baja
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        ` : '<div style="margin-top:8px"><i>No hay estudiantes inscritos</i></div>'}
+                    </div>
+
+                    <div style="display:flex;justify-content:flex-end;margin-top:16px">
+                        <button id="closeStudents">Cerrar</button>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+
+            // Event listeners
+            document.getElementById('closeStudents').addEventListener('click', () => modal.remove());
+
+            document.getElementById('addStudent').addEventListener('click', async () => {
+                const studentId = document.getElementById('newStudent').value;
+                if (!studentId) return alert('Selecciona un estudiante');
+
+                try {
+                    await adminClasses.addStudent(classId, studentId);
+                    modal.remove();
+                    openManageStudentsModal(classId); // Reabrir modal actualizado
+                    await loadClasses(); // Actualizar lista de clases
+                } catch (err) {
+                    alert(err.message || 'Error al inscribir estudiante');
+                }
+            });
+
+            document.querySelectorAll('.removeStudent').forEach(btn => {
+                btn.addEventListener('click', async () => {
+                    const studentId = btn.dataset.id;
+                    if (!confirm('¿Dar de baja al estudiante?')) return;
+
+                    try {
+                        await adminClasses.removeStudent(classId, studentId);
+                        modal.remove();
+                        openManageStudentsModal(classId); // Reabrir modal actualizado
+                        await loadClasses(); // Actualizar lista de clases
+                    } catch (err) {
+                        alert(err.message || 'Error al dar de baja estudiante');
+                    }
+                });
+            });
+        }
+
+        // Gestión de Alumnos
+        async function loadStudents(search = '') {
+            try {
+                const students = await adminStudents.listStudents(search);
+                renderStudents(students);
+            } catch (err) {
+                document.getElementById('studentsList').textContent = 'Error cargando alumnos';
+            }
+        }
+
+        function renderStudents(students) {
+            if (!students.length) {
+                document.getElementById('studentsList').innerHTML = '<i>No hay alumnos</i>';
+                return;
+            }
+
+            const html = [
+                '<table style="width:100%;border-collapse:collapse"><thead><tr>',
+                '<th>Nombre</th><th>Apellido</th><th>DNI</th><th>Teléfono</th>',
+                '<th>Contacto Emergencia</th><th>Vencimiento</th><th>Tipo Cuota</th><th>Acciones</th>',
+                '</tr></thead><tbody>'
+            ];
+
+            for (const s of students) {
+                const dueDate = s.dueDate ? new Date(s.dueDate).toLocaleDateString() : 'No establecida';
+                html.push(`
+                    <tr data-id="${s._id}">
+                        <td style="padding:8px;border-top:1px solid #eee">${s.name || ''}</td>
+                        <td style="padding:8px;border-top:1px solid #eee">${s.lastName || ''}</td>
+                        <td style="padding:8px;border-top:1px solid #eee">${s.dni}</td>
+                        <td style="padding:8px;border-top:1px solid #eee">${s.phone || ''}</td>
+                        <td style="padding:8px;border-top:1px solid #eee">${s.emergencyContact || ''}</td>
+                        <td style="padding:8px;border-top:1px solid #eee">${dueDate}</td>
+                        <td style="padding:8px;border-top:1px solid #eee">${s.membershipType || ''}</td>
+                        <td style="padding:8px;border-top:1px solid #eee">
+                            <button class="editStudent">Editar</button>
+                            <button class="delStudent" style="background:#e53e3e;color:#fff">Eliminar</button>
+                        </td>
+                    </tr>
+                `);
+            }
+
+            html.push('</tbody></table>');
+            document.getElementById('studentsList').innerHTML = html.join('');
+
+            // Event listeners
+            document.querySelectorAll('.editStudent').forEach(b =>
+                b.addEventListener('click', e => {
+                    const id = e.target.closest('tr').dataset.id;
+                    openEditStudentModal(id);
+                })
+            );
+
+            document.querySelectorAll('.delStudent').forEach(b =>
+                b.addEventListener('click', async e => {
+                    const id = e.target.closest('tr').dataset.id;
+                    if (!confirm('¿Eliminar alumno? Se dará de baja de todas sus clases.')) return;
+                    try {
+                        await adminStudents.deleteStudent(id);
+                        await loadStudents(document.getElementById('searchStudents').value);
+                        await loadClasses(); // Actualizar lista de clases
+                    } catch (err) {
+                        alert(err.message || 'Error eliminando alumno');
+                    }
+                })
+            );
+        }
+
+        async function openNewStudentModal() {
+            const classes = await adminClasses.listClasses();
+
+            const modal = document.createElement('div');
+            modal.style = 'position:fixed;inset:0;background:rgba(0,0,0,0.35);display:flex;align-items:center;justify-content:center';
+            modal.innerHTML = `
+                <div style="background:#fff;padding:16px;border-radius:8px;width:600px;max-height:90vh;overflow-y:auto">
+                    <h4>Nuevo Alumno</h4>
+                    
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:16px 0">
+                        <div>
+                            <div>DNI: *</div>
+                            <input id="newStudentDni" style="width:100%;padding:8px;margin:4px 0;border:1px solid #ddd;border-radius:4px" />
+                        </div>
+                        <div>
+                            <div>Nombre: *</div>
+                            <input id="newStudentName" style="width:100%;padding:8px;margin:4px 0;border:1px solid #ddd;border-radius:4px" />
+                        </div>
+                        <div>
+                            <div>Apellido: *</div>
+                            <input id="newStudentLastName" style="width:100%;padding:8px;margin:4px 0;border:1px solid #ddd;border-radius:4px" />
+                        </div>
+                        <div>
+                            <div>Teléfono:</div>
+                            <input id="newStudentPhone" style="width:100%;padding:8px;margin:4px 0;border:1px solid #ddd;border-radius:4px" />
+                        </div>
+                        <div>
+                            <div>Contacto de emergencia:</div>
+                            <input id="newStudentEmergency" style="width:100%;padding:8px;margin:4px 0;border:1px solid #ddd;border-radius:4px" />
+                        </div>
+                        <div>
+                            <div>Tipo de cuota:</div>
+                            <select id="newStudentMembership" style="width:100%;padding:8px;margin:4px 0;border:1px solid #ddd;border-radius:4px">
+                                <option value="mensual">Mensual</option>
+                                <option value="trimestral">Trimestral</option>
+                                <option value="anual">Anual</option>
+                            </select>
+                        </div>
+                        <div>
+                            <div>Vencimiento:</div>
+                            <input type="date" id="newStudentDueDate" style="width:100%;padding:8px;margin:4px 0;border:1px solid #ddd;border-radius:4px" />
+                        </div>
+                    </div>
+
+                    <div style="margin:16px 0">
+                        <div>Clases asignadas:</div>
+                        <div style="max-height:150px;overflow-y:auto;border:1px solid #ddd;border-radius:4px;margin-top:4px">
+                            ${classes.map(c => `
+                                <label style="display:block;padding:8px;border-bottom:1px solid #eee">
+                                    <input type="checkbox" value="${c._id}" class="newStudentClass" />
+                                    ${c.days.join(', ')} ${c.start} - ${c.roomName}
+                                    (${c.camillasFree} lugares libres)
+                                </label>
+                            `).join('')}
+                        </div>
+                    </div>
+
+                    <div style="display:flex;gap:8px;justify-content:flex-end">
+                        <button id="cancelNewStudent">Cancelar</button>
+                        <button id="saveNewStudent" style="background:#2b6cb0;color:#fff">Guardar</button>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+
+            // Event listeners
+            document.getElementById('cancelNewStudent').addEventListener('click', () => modal.remove());
+            document.getElementById('saveNewStudent').addEventListener('click', async () => {
+                const student = {
+                    dni: document.getElementById('newStudentDni').value.trim(),
+                    name: document.getElementById('newStudentName').value.trim(),
+                    lastName: document.getElementById('newStudentLastName').value.trim(),
+                    phone: document.getElementById('newStudentPhone').value.trim(),
+                    emergencyContact: document.getElementById('newStudentEmergency').value.trim(),
+                    membershipType: document.getElementById('newStudentMembership').value,
+                    dueDate: document.getElementById('newStudentDueDate').value,
+                    classIds: Array.from(document.querySelectorAll('.newStudentClass:checked')).map(cb => cb.value)
+                };
+
+                if (!student.dni || !student.name || !student.lastName) {
+                    return alert('DNI, nombre y apellido son requeridos');
+                }
+
+                try {
+                    await adminStudents.createStudent(student);
+                    modal.remove();
+                    await loadStudents();
+                    await loadClasses(); // Actualizar lista de clases
+                } catch (err) {
+                    alert(err.message || 'Error creando alumno');
+                }
+            });
+        }
+
+        async function openEditStudentModal(id) {
+            const students = await adminStudents.listStudents();
+            const student = students.find(s => s._id === id);
+            if (!student) return alert('Alumno no encontrado');
+
+            const classes = await adminClasses.listClasses();
+            const studentClasses = classes.filter(c =>
+                c.students && c.students.some(s => s === id || s._id === id)
+            );
+
+            const modal = document.createElement('div');
+            modal.style = 'position:fixed;inset:0;background:rgba(0,0,0,0.35);display:flex;align-items:center;justify-content:center';
+            modal.innerHTML = `
+                <div style="background:#fff;padding:16px;border-radius:8px;width:600px;max-height:90vh;overflow-y:auto">
+                    <h4>Editar Alumno</h4>
+                    
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:16px 0">
+                        <div>
+                            <div>DNI: *</div>
+                            <input id="editStudentDni" value="${student.dni}" style="width:100%;padding:8px;margin:4px 0;border:1px solid #ddd;border-radius:4px" />
+                        </div>
+                        <div>
+                            <div>Nombre: *</div>
+                            <input id="editStudentName" value="${student.name || ''}" style="width:100%;padding:8px;margin:4px 0;border:1px solid #ddd;border-radius:4px" />
+                        </div>
+                        <div>
+                            <div>Apellido: *</div>
+                            <input id="editStudentLastName" value="${student.lastName || ''}" style="width:100%;padding:8px;margin:4px 0;border:1px solid #ddd;border-radius:4px" />
+                        </div>
+                        <div>
+                            <div>Teléfono:</div>
+                            <input id="editStudentPhone" value="${student.phone || ''}" style="width:100%;padding:8px;margin:4px 0;border:1px solid #ddd;border-radius:4px" />
+                        </div>
+                        <div>
+                            <div>Contacto de emergencia:</div>
+                            <input id="editStudentEmergency" value="${student.emergencyContact || ''}" style="width:100%;padding:8px;margin:4px 0;border:1px solid #ddd;border-radius:4px" />
+                        </div>
+                        <div>
+                            <div>Tipo de cuota:</div>
+                            <select id="editStudentMembership" style="width:100%;padding:8px;margin:4px 0;border:1px solid #ddd;border-radius:4px">
+                                <option value="mensual" ${student.membershipType === 'mensual' ? 'selected' : ''}>Mensual</option>
+                                <option value="trimestral" ${student.membershipType === 'trimestral' ? 'selected' : ''}>Trimestral</option>
+                                <option value="anual" ${student.membershipType === 'anual' ? 'selected' : ''}>Anual</option>
+                            </select>
+                        </div>
+                        <div>
+                            <div>Vencimiento:</div>
+                            <input type="date" id="editStudentDueDate" value="${adminStudents.formatDate(student.dueDate)}" 
+                                style="width:100%;padding:8px;margin:4px 0;border:1px solid #ddd;border-radius:4px" />
+                        </div>
+                    </div>
+
+                    <div style="margin:16px 0">
+                        <div>Clases asignadas:</div>
+                        <div style="max-height:150px;overflow-y:auto;border:1px solid #ddd;border-radius:4px;margin-top:4px">
+                            ${classes.map(c => `
+                                <label style="display:block;padding:8px;border-bottom:1px solid #eee">
+                                    <input type="checkbox" value="${c._id}" class="editStudentClass" 
+                                        ${studentClasses.some(sc => sc._id === c._id) ? 'checked' : ''} />
+                                    ${c.days.join(', ')} ${c.start} - ${c.roomName}
+                                    (${c.camillasFree} lugares libres)
+                                </label>
+                            `).join('')}
+                        </div>
+                    </div>
+
+                    <div style="display:flex;gap:8px;justify-content:flex-end">
+                        <button id="cancelEditStudent">Cancelar</button>
+                        <button id="saveEditStudent" style="background:#2b6cb0;color:#fff">Guardar</button>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+
+            // Event listeners
+            document.getElementById('cancelEditStudent').addEventListener('click', () => modal.remove());
+            document.getElementById('saveEditStudent').addEventListener('click', async () => {
+                const updatedStudent = {
+                    dni: document.getElementById('editStudentDni').value.trim(),
+                    name: document.getElementById('editStudentName').value.trim(),
+                    lastName: document.getElementById('editStudentLastName').value.trim(),
+                    phone: document.getElementById('editStudentPhone').value.trim(),
+                    emergencyContact: document.getElementById('editStudentEmergency').value.trim(),
+                    membershipType: document.getElementById('editStudentMembership').value,
+                    dueDate: document.getElementById('editStudentDueDate').value,
+                    classIds: Array.from(document.querySelectorAll('.editStudentClass:checked')).map(cb => cb.value)
+                };
+
+                if (!updatedStudent.dni || !updatedStudent.name || !updatedStudent.lastName) {
+                    return alert('DNI, nombre y apellido son requeridos');
+                }
+
+                try {
+                    await adminStudents.updateStudent(id, updatedStudent);
+                    modal.remove();
+                    await loadStudents();
+                    await loadClasses(); // Actualizar lista de clases
+                } catch (err) {
+                    alert(err.message || 'Error actualizando alumno');
+                }
+            });
+        }
+
+        // Event listeners para estudiantes
+        document.getElementById('btnNewStudent').addEventListener('click', () => openNewStudentModal());
+        document.getElementById('searchStudents').addEventListener('input', (e) => loadStudents(e.target.value));
+
+        // Gestión de Profesores
+        async function loadProfessors() {
+            try {
+                const professors = await adminProfessors.listProfessors();
+                renderProfessors(professors);
+            } catch (err) {
+                document.getElementById('professorsList').textContent = 'Error cargando profesores';
+            }
+        }
+
+        function renderProfessors(professors) {
+            if (!professors.length) {
+                document.getElementById('professorsList').innerHTML = '<i>No hay profesores</i>';
+                return;
+            }
+
+            const html = [
+                '<table style="width:100%;border-collapse:collapse"><thead><tr>',
+                '<th>Nombre</th><th>Apellido</th><th>DNI</th><th>Teléfono</th><th>Acciones</th>',
+                '</tr></thead><tbody>'
+            ];
+
+            for (const p of professors) {
+                html.push(`
+                    <tr data-id="${p._id}">
+                        <td style="padding:8px;border-top:1px solid #eee">${p.name || ''}</td>
+                        <td style="padding:8px;border-top:1px solid #eee">${p.lastName || ''}</td>
+                        <td style="padding:8px;border-top:1px solid #eee">${p.dni}</td>
+                        <td style="padding:8px;border-top:1px solid #eee">${p.phone || ''}</td>
+                        <td style="padding:8px;border-top:1px solid #eee">
+                            <button class="delProfessor" style="background:#e53e3e;color:#fff">Eliminar</button>
+                        </td>
+                    </tr>
+                `);
+            }
+
+            html.push('</tbody></table>');
+            document.getElementById('professorsList').innerHTML = html.join('');
+
+            document.querySelectorAll('.delProfessor').forEach(b =>
+                b.addEventListener('click', async e => {
+                    const id = e.target.closest('tr').dataset.id;
+                    if (!confirm('¿Eliminar profesor?')) return;
+                    try {
+                        await adminProfessors.deleteProfessor(id);
+                        await loadProfessors();
+                        await loadClasses(); // Actualizar lista de clases
+                    } catch (err) {
+                        alert(err.message || 'Error eliminando profesor');
+                    }
+                })
+            );
+        }
+
+        function openNewProfessorModal() {
+            const modal = document.createElement('div');
+            modal.style = 'position:fixed;inset:0;background:rgba(0,0,0,0.35);display:flex;align-items:center;justify-content:center';
+            modal.innerHTML = `
+                <div style="background:#fff;padding:16px;border-radius:8px;width:400px">
+                    <h4>Nuevo Profesor</h4>
+                    
+                    <div style="margin:16px 0">
+                        <div>DNI: *</div>
+                        <input id="newProfessorDni" style="width:100%;padding:8px;margin:4px 0;border:1px solid #ddd;border-radius:4px" />
+                        
+                        <div style="margin-top:8px">Nombre: *</div>
+                        <input id="newProfessorName" style="width:100%;padding:8px;margin:4px 0;border:1px solid #ddd;border-radius:4px" />
+                        
+                        <div style="margin-top:8px">Apellido: *</div>
+                        <input id="newProfessorLastName" style="width:100%;padding:8px;margin:4px 0;border:1px solid #ddd;border-radius:4px" />
+                        
+                        <div style="margin-top:8px">Teléfono:</div>
+                        <input id="newProfessorPhone" style="width:100%;padding:8px;margin:4px 0;border:1px solid #ddd;border-radius:4px" />
+                    </div>
+
+                    <div style="display:flex;gap:8px;justify-content:flex-end">
+                        <button id="cancelNewProfessor">Cancelar</button>
+                        <button id="saveNewProfessor" style="background:#2b6cb0;color:#fff">Guardar</button>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+
+            document.getElementById('cancelNewProfessor').addEventListener('click', () => modal.remove());
+            document.getElementById('saveNewProfessor').addEventListener('click', async () => {
+                const professor = {
+                    dni: document.getElementById('newProfessorDni').value.trim(),
+                    name: document.getElementById('newProfessorName').value.trim(),
+                    lastName: document.getElementById('newProfessorLastName').value.trim(),
+                    phone: document.getElementById('newProfessorPhone').value.trim()
+                };
+
+                if (!professor.dni || !professor.name || !professor.lastName) {
+                    return alert('DNI, nombre y apellido son requeridos');
+                }
+
+                try {
+                    await adminProfessors.createProfessor(professor);
+                    modal.remove();
+                    await loadProfessors();
+                } catch (err) {
+                    alert(err.message || 'Error creando profesor');
+                }
+            });
+        }
+
+        // Gestión de Configuración
+        async function loadGymConfig() {
+            try {
+                const config = await adminGym.getConfig();
+                renderGymConfig(config);
+            } catch (err) {
+                document.getElementById('gymConfigForm').textContent = 'Error cargando configuración';
+            }
+        }
+
+        function renderGymConfig(config) {
+            const form = document.createElement('form');
+            form.innerHTML = `
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+                    <div>
+                        <div>Horas mínimas de cancelación:</div>
+                        <input type="number" id="minCancellationHours" value="${config.minCancellationHours}"
+                            min="1" style="width:100%;padding:8px;margin:4px 0;border:1px solid #ddd;border-radius:4px" />
+                    </div>
+                    <div>
+                        <div>Días de vencimiento de créditos:</div>
+                        <input type="number" id="creditExpirationDays" value="${config.creditExpirationDays}"
+                            min="1" style="width:100%;padding:8px;margin:4px 0;border:1px solid #ddd;border-radius:4px" />
+                    </div>
+                    <div>
+                        <div>Días para baja automática por cuota vencida:</div>
+                        <input type="number" id="autoCancelDueOverdueDays" value="${config.autoCancelDueOverdueDays}"
+                            min="1" style="width:100%;padding:8px;margin:4px 0;border:1px solid #ddd;border-radius:4px" />
+                    </div>
+                    <div>
+                        <div>Máximo de créditos acumulables:</div>
+                        <input type="number" id="maxCredits" value="${config.maxCredits}"
+                            min="1" style="width:100%;padding:8px;margin:4px 0;border:1px solid #ddd;border-radius:4px" />
+                    </div>
+                </div>
+                <div style="display:flex;justify-content:flex-end;margin-top:16px">
+                    <button type="submit" style="background:#2b6cb0;color:#fff;padding:8px 12px;border-radius:6px">
+                        Guardar cambios
+                    </button>
+                </div>
+            `;
+
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const newConfig = {
+                    minCancellationHours: parseInt(document.getElementById('minCancellationHours').value),
+                    creditExpirationDays: parseInt(document.getElementById('creditExpirationDays').value),
+                    autoCancelDueOverdueDays: parseInt(document.getElementById('autoCancelDueOverdueDays').value),
+                    maxCredits: parseInt(document.getElementById('maxCredits').value)
+                };
+
+                try {
+                    await adminGym.updateConfig(newConfig);
+                    alert('Configuración actualizada');
+                } catch (err) {
+                    alert(err.message || 'Error actualizando configuración');
+                }
+            });
+
+            document.getElementById('gymConfigForm').innerHTML = '';
+            document.getElementById('gymConfigForm').appendChild(form);
+        }
+
+        // Event listeners para profesores
+        document.getElementById('btnNewProfessor').addEventListener('click', () => openNewProfessorModal());
+
+        // Inicializar
+        (async () => {
+            await loadStudents();
+            await loadProfessors();
+            await loadGymConfig();
+            await loadRooms();
+            await loadClasses();
+        })();
+    </script>
+
+</body>
+
+</html>

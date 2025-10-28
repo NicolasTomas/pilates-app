@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="es">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Superusuario - Pilates Camilla</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 32px;
+        }
+
+        .top {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            color: #fff;
+            padding: 24px 32px;
+            border-radius: 20px;
+            margin-bottom: 24px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        .top h1 {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .top>div {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .top button {
+            padding: 10px 24px;
+            border-radius: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.2);
+            color: #fff;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .top button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            border-color: rgba(255, 255, 255, 0.5);
+            transform: translateY(-2px);
+        }
+
+        .card {
+            background: #fff;
+            padding: 48px 40px;
+            border-radius: 24px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .card h3 {
+            color: #667eea;
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 16px;
+        }
+
+        .card p {
+            color: #64748b;
+            font-size: 16px;
+            line-height: 1.6;
+            margin-bottom: 24px;
+        }
+
+        #content {
+            padding: 24px;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+            border-radius: 16px;
+            border: 2px solid rgba(102, 126, 234, 0.2);
+            color: #667eea;
+            font-weight: 600;
+            text-align: center;
+            font-size: 18px;
+        }
+
+        @media (max-width: 700px) {
+            body {
+                padding: 16px;
+            }
+
+            .top {
+                padding: 20px 24px;
+            }
+
+            .top h1 {
+                font-size: 24px;
+            }
+
+            .top button {
+                padding: 8px 16px;
+                font-size: 14px;
+            }
+
+            .card {
+                padding: 32px 24px;
+            }
+
+            .card h3 {
+                font-size: 24px;
+            }
+
+            .card p {
+                font-size: 15px;
+            }
+
+            #content {
+                padding: 20px;
+                font-size: 16px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 12px;
+            }
+
+            .top {
+                padding: 16px 20px;
+                border-radius: 16px;
+            }
+
+            .top h1 {
+                font-size: 20px;
+            }
+
+            .card {
+                padding: 24px 20px;
+            }
+
+            .card h3 {
+                font-size: 22px;
+            }
+
+            .card p {
+                font-size: 14px;
+            }
+
+            #content {
+                padding: 16px;
+                font-size: 15px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="top">
+        <h1>Superusuario</h1>
+        <div>
+            <span id="meInfo">Cargando...</span>
+            <button id="logout">Salir</button>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>Acceso total</h3>
+        <p>Tenés acceso a todas las funcionalidades (demo).</p>
+        <div id="content">
+            <div style="max-width:600px;margin:0 auto;text-align:left">
+                <div style="margin-bottom:12px">Crear nuevo administrador (se generará un gymId único):</div>
+                <input id="newAdminEmail" placeholder="Gmail del administrador"
+                    style="width:100%;padding:12px;margin:6px 0;border-radius:8px;border:1px solid #e6edf7" />
+                <input id="newAdminPass" type="password" placeholder="Contraseña"
+                    style="width:100%;padding:12px;margin:6px 0;border-radius:8px;border:1px solid #e6edf7" />
+                <div style="display:flex;gap:8px;margin-top:12px">
+                    <button id="createAdmin"
+                        style="flex:1;padding:10px;border-radius:8px;background:#667eea;color:#fff;border:none;cursor:pointer">Crear
+                        administrador</button>
+                    <button id="refreshList"
+                        style="padding:10px;border-radius:8px;background:#fff;color:#667eea;border:1px solid #e6edf7;cursor:pointer">Listar
+                        admins</button>
+                </div>
+                <div id="message" style="margin-top:12px;color:#1f2937"></div>
+                <div id="adminsList" style="margin-top:18px"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/public/js/auth.js"></script>
+    <script>
+        const ensure = pilatesAuth.ensureRole(['superusuario']);
+        ensure().then(me => {
+            document.getElementById('meInfo').textContent = `${me.email || me.dni || ''} (${me.role})`;
+        });
+
+        async function listAdmins() {
+            try {
+                const token = localStorage.getItem('token');
+                const res = await fetch('/api/users?role=administrador', { headers: { Authorization: `Bearer ${token}` } });
+                const list = await res.json();
+                const el = document.getElementById('adminsList');
+                if (!list || list.length === 0) {
+                    el.innerHTML = '<div style="color:#64748b">No hay administradores.</div>';
+                    return;
+                }
+                el.innerHTML = '<ul style="list-style:none;padding:0;margin:0">' + list.map(a => `<li style="padding:8px 0;border-bottom:1px solid #f1f5f9">${a.email} — gymId: ${a.gymId || '—'}</li>`).join('') + '</ul>';
+            } catch (e) {
+                document.getElementById('adminsList').textContent = 'Error listando administradores';
+            }
+        }
+
+        document.getElementById('refreshList').addEventListener('click', () => listAdmins());
+
+        document.getElementById('createAdmin').addEventListener('click', async () => {
+            const email = document.getElementById('newAdminEmail').value.trim();
+            const pass = document.getElementById('newAdminPass').value;
+            const msg = document.getElementById('message');
+            msg.textContent = '';
+            if (!email || !pass) return msg.textContent = 'Completá email y contraseña';
+            try {
+                const token = localStorage.getItem('token');
+                const res = await fetch('/api/superusuario/admins', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                    body: JSON.stringify({ email, password: pass })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Error');
+                msg.style.color = '#065f46';
+                msg.textContent = `Administrador creado. gymId: ${data.gymId}`;
+                document.getElementById('newAdminEmail').value = '';
+                document.getElementById('newAdminPass').value = '';
+                listAdmins();
+            } catch (e) {
+                msg.style.color = '#b91c1c';
+                msg.textContent = e.message;
+            }
+        });
+
+        document.getElementById('logout').addEventListener('click', () => pilatesAuth.logout());
+    </script>
+</body>
+
+</html>
