@@ -33,7 +33,15 @@ async function connectDB() {
         db = client.db(DB_NAME);
         console.log('Connected to MongoDB', MONGO_URI, DB_NAME);
     } catch (err) {
-        console.error('Primary Mongo connection failed:', err && err.message ? err.message : err);
+        // Print a concise warning by default (the raw OpenSSL stack is noisy on Windows);
+        // if you need diagnostics, set DEBUG_MONGO=1 in the environment to see the full error.
+        const primaryErrMsg = err && err.message ? err.message : String(err);
+        if (process.env.DEBUG_MONGO) {
+            console.error('Primary Mongo connection failed:', primaryErrMsg, err);
+        } else {
+            console.warn('Primary Mongo connection failed (TLS/SSL). Will attempt fallback if configured.');
+            console.warn('To see the full error set DEBUG_MONGO=1 and restart the server.');
+        }
 
         // If the primary URI is an Atlas SRV and we have a fallback, try it and give the developer guidance
         if (FALLBACK_MONGO_URI && FALLBACK_MONGO_URI !== MONGO_URI) {
@@ -361,12 +369,31 @@ app.get('/api/students/:id/class-instances', async (req, res) => {
         const studentObjectId = new ObjectId(id);
         const now = new Date();
 
-        // Obtener instancias futuras donde el alumno está inscrito
+        // Determine upper bound: from now until (dueDate + autoCancelDueOverdueDays)
+        // If the student has a dueDate, we limit instances to that window so the
+        // UI shows classes until the grace period after quota expiration.
+        let upperLimit = null;
+        try {
+            const userDoc = await db.collection('users').findOne({ _id: studentObjectId });
+            const gym = await db.collection('gyms').findOne({}) || DEFAULT_GYM_CONFIG;
+            const extraDays = (gym && gym.autoCancelDueOverdueDays) ? gym.autoCancelDueOverdueDays : DEFAULT_GYM_CONFIG.autoCancelDueOverdueDays;
+            if (userDoc && userDoc.dueDate) {
+                const venc = new Date(userDoc.dueDate);
+                venc.setDate(venc.getDate() + Number(extraDays || 0));
+                upperLimit = venc;
+            }
+        } catch (e) {
+            console.warn('Warning: failed to compute dueDate upper limit for student class instances', e);
+            upperLimit = null;
+        }
+
+        // Obtener instancias futuras donde el alumno está inscrito (acotadas por upperLimit si existe)
         const q = {
             students: studentObjectId,
             dateTime: { $gte: now },
             status: { $ne: 'cancelled' }
         };
+        if (upperLimit) q.dateTime.$lte = upperLimit;
         if (payload.gymId) q.gymId = payload.gymId;
         const instances = await db.collection('classInstances')
             .find(q)

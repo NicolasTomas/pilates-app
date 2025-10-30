@@ -813,9 +813,14 @@
         let gymConfig = null;
         let tickets = [];
         let ticketsUsed = [];
-    // Client-side synthetic tickets created when backend doesn't return a ticket
-    // after cancelling a previously recovered class. These persist until full reload.
-    let syntheticTickets = [];
+        // Client-side synthetic tickets created when backend doesn't return a ticket
+        // after cancelling a previously recovered class. These persist until full reload.
+        let syntheticTickets = [];
+        // Keep a short-lived client-side history of instances/classes that WERE
+        // recovered at some point. This ensures we keep showing the yellow
+        // recovered border even after the student cancels the recovered class.
+        // It lives only in-memory and won't affect server state.
+        let recoveredHistory = [];
         let classes = [];
         let activeTab = localStorage.getItem('alumnoTab') || 'clases';
         let refreshTimer = null;
@@ -849,6 +854,36 @@
             document.getElementById('modalContainer').innerHTML = '';
             window.modalConfirmCallback = null;
             window._modalOpen = false;
+        }
+
+        // Simple modal with a single OK button (used for informational alerts
+        // where we want the user to acknowledge but still proceed with the
+        // cancellation). onOk will be executed when the user clicks OK.
+        function showOkModal(title, message, onOk) {
+            const modalHTML = `
+                <div class="modal">
+                    <div class="modal-content">
+                        <h3>${title}</h3>
+                        <p>${message}</p>
+                        <div class="modal-actions" style="justify-content:center;">
+                            <button onclick="okModalClick()" style="background:#667eea;color:#fff;">Aceptar</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.getElementById('modalContainer').innerHTML = modalHTML;
+            window._modalOpen = true;
+            window._okModalCallback = onOk;
+        }
+
+        function okModalClick() {
+            try {
+                if (window._okModalCallback) window._okModalCallback();
+            } finally {
+                document.getElementById('modalContainer').innerHTML = '';
+                window._okModalCallback = null;
+                window._modalOpen = false;
+            }
         }
 
         function confirmModal() {
@@ -970,6 +1005,77 @@
                     return;
                 }
                 classes = await res.json();
+                // If there are no upcoming generated instances, fall back to the
+                // student's enrolled classes so the UI still shows what the
+                // student is assigned to. Respect the gym's autoCancelDueOverdueDays
+                // (grace period after quota dueDate).
+                if ((!classes || classes.length === 0) && alumno) {
+                    try {
+                        // If the student's due date is past the admin-defined grace
+                        // period, we should not show the classes.
+                        const now = new Date();
+                        const extraDays = (gymConfig && gymConfig.autoCancelDueOverdueDays) ? gymConfig.autoCancelDueOverdueDays : 0;
+                        if (alumno.dueDate) {
+                            const venc = new Date(alumno.dueDate);
+                            if (venc < now && ((now - venc) / 864e5) > extraDays) {
+                                // quota expired beyond grace period -> don't show classes
+                                classes = [];
+                                return;
+                            }
+                        }
+
+                        const clsRes = await fetch(`/api/students/${me.id}/classes`, {
+                            headers: { Authorization: `Bearer ${token}` }
+                        });
+                        if (clsRes.ok) {
+                            const enrolled = await clsRes.json();
+                            // For each enrolled class, synthesize the next occurrence
+                            // within the next 30 days so the UI can render a card.
+                            const synthesized = [];
+                            const dayMap = { 0: 'domingo', 1: 'lunes', 2: 'martes', 3: 'miércoles', 4: 'jueves', 5: 'viernes', 6: 'sábado' };
+                            const today = new Date();
+                            for (const c of enrolled) {
+                                // compute next date for one of the class days
+                                let found = null;
+                                for (let offset = 0; offset <= 30; offset++) {
+                                    const d = new Date(today);
+                                    d.setDate(today.getDate() + offset);
+                                    const weekdayName = dayMap[d.getDay()];
+                                    // class.days may contain Spanish day names
+                                    if (Array.isArray(c.days) && c.days.includes(weekdayName)) {
+                                        // parse c.start (HH:MM) if present
+                                        let instDate = new Date(d);
+                                        if (c.start && typeof c.start === 'string') {
+                                            const parts = c.start.split(':').map(x => parseInt(x, 10));
+                                            if (!isNaN(parts[0])) instDate.setHours(parts[0]);
+                                            if (!isNaN(parts[1])) instDate.setMinutes(parts[1]);
+                                            instDate.setSeconds(0); instDate.setMilliseconds(0);
+                                        }
+                                        found = instDate;
+                                        break;
+                                    }
+                                }
+                                const pseudo = {
+                                    // create a synthetic id so rendering and canceling won't accidentally treat it as a real instance
+                                    _id: `class-${c._id}`,
+                                    classId: c._id,
+                                    dateTime: (found || new Date()).toISOString(),
+                                    duration: c.duration || null,
+                                    roomName: c.roomName || null,
+                                    professorName: c.professorName || null,
+                                    // keep students so some UI logic which checks membership still works
+                                    students: c.students || [],
+                                    // Mark as 'synthetic' so downstream flows avoid sending instance-level API calls
+                                    _synthetic: true
+                                };
+                                synthesized.push(pseudo);
+                            }
+                            if (synthesized.length) classes = synthesized;
+                        }
+                    } catch (e) {
+                        console.warn('Error loading enrolled classes fallback:', e);
+                    }
+                }
             } catch (err) {
                 console.warn('Error loading class instances for student', err);
                 classes = [];
@@ -992,7 +1098,22 @@
         function renderMisClases() {
             console.log('renderMisClases called');
             if (!classes.length) {
-                document.getElementById('tabContent').innerHTML = '<div style="margin:24px 0">No tenés clases próximas asignadas</div>';
+                // Mejor mensaje explicativo: si la cuota está vencida fuera del periodo
+                // de gracia o si el alumno no está inscrito en ninguna clase, mostrar
+                // instrucciones claras para el usuario.
+                const now = new Date();
+                let msg = 'No tenés clases próximas asignadas.';
+                if (alumno && alumno.dueDate) {
+                    const venc = new Date(alumno.dueDate);
+                    const extra = (gymConfig && gymConfig.autoCancelDueOverdueDays) ? gymConfig.autoCancelDueOverdueDays : 0;
+                    const daysSince = Math.floor((now - venc) / 864e5);
+                    if (venc < now && daysSince > extra) {
+                        msg = 'Tu cuota está vencida y excede el período de gracia. Contactá al administrador para reactivar tu cuenta.';
+                    } else {
+                        msg = 'No estás inscrito en ninguna clase en este momento. Si creés que es un error, contactá al administrador.';
+                    }
+                }
+                document.getElementById('tabContent').innerHTML = `<div style="margin:24px 0">${msg}</div>`;
                 return;
             }
 
@@ -1003,9 +1124,15 @@
                 const dayNames = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
                 const dateStr = `${dayNames[dt.getDay()]} ${dt.getDate()}/${dt.getMonth() + 1} - ${dt.getHours().toString().padStart(2, '0')}:${dt.getMinutes().toString().padStart(2, '0')}`;
 
-                const instId = inst._id && inst._id.toString ? inst._id.toString() : inst._id;
-                const classId = inst.classId && inst.classId.toString ? inst.classId.toString() : inst.classId;
-                const recovered = ticketsUsed.some(t => (t.instanceId && t.instanceId.toString() === instId) || (t.classId && t.classId.toString() === classId));
+                const instId = inst._id && inst._id.toString ? inst._id.toString() : String(inst._id);
+                const classId = inst.classId && inst.classId.toString ? inst.classId.toString() : String(inst.classId || '');
+                // recovered if the instance object was explicitly marked as recovered
+                // (preferred), or a used ticket refers to this exact instance, or
+                // if this exact instance was previously recovered (we store
+                // instance ids in recoveredHistory). Using the instance property
+                // is more robust and prevents accidental matches across many
+                // classes.
+                const recovered = (!!inst._recovered) || ticketsUsed.some(t => (t.instanceId && String(t.instanceId) === instId)) || recoveredHistory.includes(instId);
 
                 html += `
                     <div class="class-card ${recovered ? 'recovered-row' : ''}" data-id="${inst._id}">
@@ -1050,12 +1177,55 @@
             // opts: { recovered: boolean, classId: string }
             try {
                 const myId = (alumno._id || alumno.id).toString();
-                const res = await fetch(`/api/students/${myId}/cancel-instance/${instanceId}`, {
-                    method: 'POST',
-                    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-                });
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.error || 'No se pudo cancelar');
+                // If this is a synthesized class-level pseudo-instance (no real instance id)
+                // use the class-level cancel endpoint so the backend can create a ticket.
+                const isClassCancel = !!opts.classId && String(instanceId).startsWith('class-');
+                let res, data;
+                if (isClassCancel) {
+                    res = await fetch(`/api/students/${myId}/cancel/${opts.classId}`, {
+                        method: 'POST',
+                        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+                    });
+                    try { data = await res.json(); } catch (e) { data = {}; }
+                    if (!res.ok) throw new Error(data.error || 'No se pudo cancelar la clase');
+                } else {
+                    res = await fetch(`/api/students/${myId}/cancel-instance/${instanceId}`, {
+                        method: 'POST',
+                        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+                    });
+                    data = await res.json();
+                    if (!res.ok) throw new Error(data.error || 'No se pudo cancelar');
+                }
+
+                // At this point the server confirmed cancellation. To make the
+                // UI reflect that immediately, remove the canceled instance from
+                // the local `classes` list and re-render.
+                try {
+                    // If the instance was recovered before, keep a record so the
+                    // recovered yellow border continues to show.
+                    const instIdStr = String(instanceId);
+                    const recoveredBefore = ticketsUsed.some(t => (t.instanceId && String(t.instanceId) === instIdStr));
+                    if (recoveredBefore) {
+                        // Only record the instance id to keep recovered highlighting
+                        // scoped to the single instance the student had recovered.
+                        if (!recoveredHistory.includes(instIdStr)) recoveredHistory.push(instIdStr);
+                    }
+
+                    // Remove matching instances (by _id or by classId for class-level cancels)
+                    classes = classes.filter(c => {
+                        const cid = c._id && c._id.toString ? c._id.toString() : String(c._id);
+                        const cclass = c.classId && c.classId.toString ? c.classId.toString() : String(c.classId || '');
+                        if (isClassCancel && opts.classId) return cclass !== String(opts.classId);
+                        return cid !== instIdStr && cclass !== instIdStr;
+                    });
+
+                    // Recompute tickets and re-render immediately so the user sees
+                    // the class disappear without waiting for the next refresh.
+                    await loadTickets();
+                    renderTab();
+                } catch (uiErr) {
+                    console.warn('Error updating UI after cancel:', uiErr);
+                }
 
                 // If backend returned a ticket, show success as before
                 if (data.ticket) {
@@ -1119,7 +1289,16 @@
                         showAlert('success', '✅ Clase cancelada. Se restauró un crédito para recuperar (localmente).');
                     }
                 } else {
-                    showAlert('warn', '⚠️ ' + (data.message || 'Clase cancelada.'));
+                    // No ticket was created. We still cancelled the class; show a
+                    // blocking OK-only modal (so user acknowledges), but don't
+                    // revert the cancellation.
+                    const info = data && data.message ? data.message : 'La clase fue cancelada pero no se generó un ticket (por tiempo mínimo de cancelación).';
+                    showOkModal('Cancelación procesada', info, () => {
+                        // Accept: nothing more to do. We already updated the UI
+                        // above. Keep a short refresh scheduled to reconcile with
+                        // server state if needed.
+                        setTimeout(refreshPanel, 800);
+                    });
                 }
             } catch (e) {
                 showAlert('error', `❌ ${e.message}`);
@@ -1221,14 +1400,74 @@
             }
             try {
                 const myId = (alumno._id || alumno.id).toString();
-                const ticket = tickets[0];
+                // Pick the first server-backed ticket (avoid local synthetic tickets)
+                const ticketIndex = tickets.findIndex(t => !(String(t.id || '').startsWith('local-')));
+                if (ticketIndex === -1) {
+                    showAlert('error', '❌ No tenés tickets válidos para enviar al servidor.');
+                    return;
+                }
+                const ticket = tickets[ticketIndex];
                 const res = await fetch(`/api/students/${myId}/recover-instance/${instanceId}`, {
                     method: 'POST',
                     headers: { Authorization: `Bearer ${localStorage.getItem('token')}`, 'Content-Type': 'application/json' },
                     body: JSON.stringify({ ticketId: ticket.id })
                 });
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.error || 'No se pudo recuperar la clase');
+                // Parse response carefully and surface server message on error.
+                let data = null;
+                let textBody = null;
+                try {
+                    data = await res.json();
+                } catch (parseErr) {
+                    try { textBody = await res.text(); } catch (tErr) { textBody = null; }
+                }
+
+                if (!res.ok) {
+                    const serverMsg = (data && (data.error || data.message)) || textBody || `Error ${res.status}`;
+                    console.warn('recover-instance failed', res.status, serverMsg);
+                    // If server tells us the ticket is already used / inactive,
+                    // remove that ticket from our local lists so it no longer
+                    // appears as available.
+                    const msgLower = String(serverMsg).toLowerCase();
+                    if (msgLower.includes('ya fue usado') || msgLower.includes('no está activo') || msgLower.includes('no esta activo') || msgLower.includes('no está disponible')) {
+                        try {
+                            // Remove from syntheticTickets if it was local, otherwise
+                            // remove from tickets so UI updates.
+                            if (String(ticket.id).startsWith('local-')) {
+                                syntheticTickets = syntheticTickets.filter(st => st.id !== ticket.id);
+                            }
+                            tickets = tickets.filter(t => t.id !== ticket.id);
+                            await loadTickets();
+                            renderTab();
+                        } catch (remErr) {
+                            console.warn('Error removing invalid ticket locally', remErr);
+                        }
+                    }
+                    // Show blocking OK modal so user can acknowledge why recovery failed
+                    showOkModal('No se pudo recuperar', String(serverMsg), () => { });
+                    return;
+                }
+
+                // Successful recovery: mark as recovered in UI and refresh tickets
+                try {
+                    const instIdStr = String(instanceId);
+                    if (!recoveredHistory.includes(instIdStr)) recoveredHistory.push(instIdStr);
+                    // Also mark the matching instance in-memory as recovered so
+                    // only that specific card shows the yellow border.
+                    try {
+                        const found = classes.find(c => {
+                            const cid = c._id && c._id.toString ? c._id.toString() : String(c._id);
+                            return cid === instIdStr;
+                        });
+                        if (found) found._recovered = true;
+                    } catch (eMark) {
+                        console.warn('Could not mark instance as recovered in classes array', eMark);
+                    }
+                    await loadTickets();
+                    renderTab();
+                } catch (uiErr) {
+                    console.warn('Error updating UI after recover:', uiErr);
+                }
+
                 showAlert('success', '✅ Clase recuperada correctamente.');
             } catch (e) {
                 showAlert('error', `❌ ${e.message}`);
