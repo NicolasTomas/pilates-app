@@ -538,7 +538,7 @@
                         </div>
                     </div>
                     <div id="classesDivInline" style="margin-top:12px">
-                        <div style="font-size:13px;margin-bottom:6px">Clases asignadas:</div>
+                        <div style="font-size:13px;margin-bottom:6px">Clases asignadas: *</div>
                         <div id="newUserClassesContainer" style="max-height:150px;overflow-y:auto;border:1px solid #ddd;border-radius:8px;padding:6px;background:#fff"></div>
                     </div>
                     <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
@@ -601,6 +601,10 @@
                         user.membershipType = document.getElementById('newUserMembership').value;
                         user.dueDate = document.getElementById('newUserDueDate').value;
                         user.classIds = Array.from(document.querySelectorAll('.newUserClass:checked')).map(cb => cb.value);
+                        // Validar que al menos una clase esté seleccionada
+                        if (!Array.isArray(user.classIds) || user.classIds.length === 0) {
+                            return alert('Debe asignar al menos una clase al crear un alumno');
+                        }
                         try {
                             await adminStudents.createStudent(user);
                             alert('Alumno creado');
@@ -1088,6 +1092,11 @@
                     return alert('DNI, nombre y apellido son requeridos');
                 }
 
+                // Validar que tenga al menos una clase asignada
+                if (!Array.isArray(student.classIds) || student.classIds.length === 0) {
+                    return alert('Debe asignar al menos una clase al crear un alumno');
+                }
+
                 try {
                     await adminStudents.createStudent(student);
                     modal.remove();
@@ -1339,9 +1348,10 @@
                             min="1" style="width:100%;padding:8px;margin:4px 0;border:1px solid #ddd;border-radius:4px" />
                     </div>
                     <div>
-                        <div>Días para baja automática por cuota vencida:</div>
+                        <div>Días extra para recuperación de clases tras vencimiento de cuota:</div>
+                        <div style="font-size:13px;color:#6b7280;margin:6px 0">Permite definir cuántos días más los alumnos pueden seguir recuperando clases luego de que su cuota haya vencido. Este número se suma a la fecha de vencimiento al mostrar las clases de cada alumno.</div>
                         <input type="number" id="autoCancelDueOverdueDays" value="${config.autoCancelDueOverdueDays}"
-                            min="1" style="width:100%;padding:8px;margin:4px 0;border:1px solid #ddd;border-radius:4px" />
+                            min="0" style="width:100%;padding:8px;margin:4px 0;border:1px solid #ddd;border-radius:4px" />
                     </div>
                     <div>
                         <div>Máximo de créditos acumulables:</div>

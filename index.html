@@ -27,7 +27,7 @@
             min-height: 100vh;
             align-items: center;
             justify-content: center;
-            background: linear-gradient(135deg, #a5b3f5 0%, #ff367a 100%);
+            background-color: #d9d9d9;
             position: relative;
         }
 
@@ -73,8 +73,9 @@
             backdrop-filter: blur(10px);
             padding: 40px 32px;
             border-radius: 25px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
             width: 380px;
+            height: 40vh;
             position: relative;
             z-index: 1;
             /* ensure the card never forces the page to scroll vertically */
@@ -120,7 +121,7 @@
         button {
             width: 100%;
             padding: 14px;
-            background: linear-gradient(135deg, #a5b3f5 0%, #ff367a 100%);
+            background: linear-gradient(135deg, #0c0c0c 0%, #303030 100%);
             color: #fff;
             border: none;
             border-radius: 12px;
@@ -133,7 +134,7 @@
 
         button:hover {
             transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6);
         }
 
         button:active {
@@ -321,12 +322,12 @@
             • Admin: usar botón "admin" arriba a la derecha (email: admin@pilates.local / pass: AdminPass123!)
         </div> -->
         <div class="admin-in-card">
-            <button id="btnAdminCard">👤</button>
+            <button id="btnAdminCard">Admin</button>
         </div>
     </div>
 
     <div class="admin-btn-container">
-        <button id="btnAdmin">👤</button>
+        <button id="btnAdmin">Admin</button>
     </div>
     </div>
 

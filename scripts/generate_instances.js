@@ -17,10 +17,8 @@ const DAYS_AHEAD = process.env.DAYS_AHEAD ? Number(process.env.DAYS_AHEAD) : 30;
         const classes = await db.collection('classes').find({}).toArray();
         console.log('Found', classes.length, 'classes');
 
-        const daysMap = {
-            'domingo': 0, 'lunes': 1, 'martes': 2, 'miércoles': 3,
-            'jueves': 4, 'viernes': 5, 'sábado': 6
-        };
+        const daysNames = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'];
+        const strip = (s = '') => s.toString().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 
         const today = new Date();
         today.setHours(0, 0, 0, 0);
@@ -30,8 +28,9 @@ const DAYS_AHEAD = process.env.DAYS_AHEAD ? Number(process.env.DAYS_AHEAD) : 30;
             for (let dayOffset = 0; dayOffset < DAYS_AHEAD; dayOffset++) {
                 const targetDate = new Date(today);
                 targetDate.setDate(today.getDate() + dayOffset);
-                const dayName = Object.keys(daysMap).find(k => daysMap[k] === targetDate.getDay());
-                if (!clase.days || !clase.days.includes(dayName)) continue;
+                const dayName = daysNames[targetDate.getDay()];
+                const claseDaysNormalized = Array.isArray(clase.days) ? clase.days.map(d => strip(d)) : [];
+                if (!claseDaysNormalized.includes(strip(dayName))) continue;
 
                 const [hours, minutes] = (clase.start || '00:00').split(':').map(Number);
                 const instanceDateTime = new Date(targetDate);

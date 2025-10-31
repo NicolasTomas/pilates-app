@@ -413,6 +413,11 @@ app.get('/api/students/:id/class-instances', async (req, res) => {
             };
         }));
 
+        // If caller requests debug info, include the computed upperLimit for visibility
+        if (req.query && req.query.debug === '1') {
+            return res.json({ upperLimit: upperLimit ? upperLimit.toISOString() : null, instances: populated });
+        }
+
         res.json(populated);
     } catch (err) {
         console.error(err);
@@ -824,6 +829,53 @@ app.put('/api/students/:id', authMiddleware, async (req, res) => {
                 }
             }
         );
+
+        // Si se actualizó la cuota (dueDate) queremos asegurar que las instancias
+        // de clases se generen hasta el nuevo vencimiento + grace (autoCancelDueOverdueDays)
+        // y que el alumno esté registrado en esas instancias para que la UI muestre
+        // todas las clases hasta el vencimiento inmediatamente.
+        if (dueDate) {
+            try {
+                // Calcular upperLimit = dueDate + gym.autoCancelDueOverdueDays
+                const gym = await db.collection('gyms').findOne({}) || DEFAULT_GYM_CONFIG;
+                const extraDays = (gym && gym.autoCancelDueOverdueDays) ? Number(gym.autoCancelDueOverdueDays) : DEFAULT_GYM_CONFIG.autoCancelDueOverdueDays;
+                const venc = new Date(dueDate);
+                const upperLimit = new Date(venc);
+                upperLimit.setDate(upperLimit.getDate() + (extraDays || 0));
+
+                // Calcular días a generar desde hoy (start of day)
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                let daysAhead = Math.ceil((upperLimit - today) / 864e5);
+                if (daysAhead < 0) daysAhead = 0;
+                // Limitar por seguridad (no generar más de 90 días de golpe)
+                const MAX_GENERATE_DAYS = 90;
+                if (daysAhead > MAX_GENERATE_DAYS) daysAhead = MAX_GENERATE_DAYS;
+
+                if (daysAhead > 0) {
+                    // Generar instancias globalmente (la función ya itera por todas las clases)
+                    await generateClassInstances(daysAhead);
+
+                    // Obtener las clases en las que el alumno está inscrito ahora
+                    const enrolledClasses = await db.collection('classes').find({ students: _id }).project({ _id: 1 }).toArray();
+                    const enrolledClassIds = enrolledClasses.map(c => c._id);
+
+                    if (enrolledClassIds.length > 0) {
+                        // Añadir al alumno a las instancias futuras (hasta upperLimit) de sus clases
+                        await db.collection('classInstances').updateMany(
+                            {
+                                classId: { $in: enrolledClassIds },
+                                dateTime: { $gte: new Date(), $lte: upperLimit },
+                                status: 'scheduled'
+                            },
+                            { $addToSet: { students: _id }, $set: { updatedAt: new Date() } }
+                        );
+                    }
+                }
+            } catch (e) {
+                console.warn('Warning: failed to generate/sync classInstances after dueDate update for student', id, e);
+            }
+        }
 
         // Actualizar inscripciones a clases
         if (classesToAdd.length > 0) {
@@ -1242,18 +1294,21 @@ async function generateClassInstances(daysAhead = 30) {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
-        const daysMap = {
-            'domingo': 0, 'lunes': 1, 'martes': 2, 'miércoles': 3,
-            'jueves': 4, 'viernes': 5, 'sábado': 6
-        };
+        // Use unaccented day names to avoid mismatches (some parts of the UI use "miercoles" without accent)
+        const daysNames = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'];
+
+        // helper to strip accents and normalize
+        const strip = (s = '') => s.toString().normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
 
         for (const clase of classes) {
             for (let dayOffset = 0; dayOffset < daysAhead; dayOffset++) {
                 const targetDate = new Date(today);
                 targetDate.setDate(today.getDate() + dayOffset);
-                const dayName = Object.keys(daysMap).find(k => daysMap[k] === targetDate.getDay());
+                const dayName = daysNames[targetDate.getDay()];
 
-                if (!clase.days.includes(dayName)) continue;
+                // Normalize clase.days entries and compare without accents
+                const claseDaysNormalized = Array.isArray(clase.days) ? clase.days.map(d => strip(d)) : [];
+                if (!claseDaysNormalized.includes(strip(dayName))) continue;
 
                 // Parsear hora de inicio
                 const [hours, minutes] = clase.start.split(':').map(Number);
@@ -1310,20 +1365,20 @@ app.put('/api/gym/config', authMiddleware, async (req, res) => {
         maxCredits
     } = req.body;
 
-    // Validar que todos los campos sean números positivos
-    const fields = {
-        minCancellationHours,
-        creditExpirationDays,
-        autoCancelDueOverdueDays,
-        maxCredits
-    };
-
-    for (const [key, value] of Object.entries(fields)) {
-        if (!Number.isInteger(value) || value <= 0) {
-            return res.status(400).json({
-                error: `${key} debe ser un número entero positivo`
-            });
-        }
+    // Validar que los campos sean enteros y respeten límites aceptables.
+    // minCancellationHours and creditExpirationDays must be > 0.
+    // autoCancelDueOverdueDays and maxCredits may be >= 0.
+    if (!Number.isInteger(minCancellationHours) || minCancellationHours <= 0) {
+        return res.status(400).json({ error: 'minCancellationHours debe ser un número entero positivo' });
+    }
+    if (!Number.isInteger(creditExpirationDays) || creditExpirationDays <= 0) {
+        return res.status(400).json({ error: 'creditExpirationDays debe ser un número entero positivo' });
+    }
+    if (!Number.isInteger(autoCancelDueOverdueDays) || autoCancelDueOverdueDays < 0) {
+        return res.status(400).json({ error: 'autoCancelDueOverdueDays debe ser un número entero mayor o igual a 0' });
+    }
+    if (!Number.isInteger(maxCredits) || maxCredits < 0) {
+        return res.status(400).json({ error: 'maxCredits debe ser un número entero mayor o igual a 0' });
     }
 
     try {

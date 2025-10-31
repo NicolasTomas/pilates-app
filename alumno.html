@@ -24,7 +24,7 @@
 
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
-            background-color: #eaeaea;
+            background-color: #d9d9d9;
 
             display: flex;
             justify-content: center;
@@ -91,7 +91,7 @@
             font-size: 13px;
             font-weight: 700;
             color: #155724;
-            background: #e6f4ea;
+            background: #cbefd0;
             border: 1px solid #c3e6cb;
             box-shadow: 0 6px 18px rgba(72, 187, 120, 0.08);
         }
@@ -176,7 +176,7 @@
         }
 
         .tab.active {
-            background: linear-gradient(135deg, #e8e8e8 0%, #dcdbdb 100%);
+            background-color: #d9d9d9;
             color: #111827;
             box-shadow: 0 6px 18px rgba(2, 6, 23, 0.04);
         }
@@ -573,6 +573,7 @@
                 border-radius: 8px;
                 font-size: 13px;
                 box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+                color: rgb(0, 0, 0) !important;
             }
 
             /* Ensure header right block is centered on very small screens */
@@ -919,7 +920,55 @@
                 const displayName = `${titleCase(alumno.name)} ${titleCase(alumno.lastName)}`.trim();
                 // Mostrar nombre completo en el encabezado principal
                 const headerEl = document.getElementById('meHeader');
-                if (headerEl) headerEl.textContent = displayName || 'Alumno';
+                // Show display name and (below it) the assigned days/times for the student's classes
+                if (headerEl) {
+                    // Default to just the name; we'll try to fetch assigned classes and append a schedule line
+                    headerEl.innerHTML = `<div>${displayName || 'Alumno'}</div>`;
+                    try {
+                        const clsRes = await fetch(`/api/students/${me.id}/classes`, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } });
+                        if (clsRes.ok) {
+                            const assigned = await clsRes.json();
+                            // Build a concise schedule string per class: "lunes, miércoles y viernes 20hs"
+                            const formatDays = (days) => {
+                                if (!Array.isArray(days) || days.length === 0) return '';
+                                // Normalize spacing and lowercase
+                                const ds = days.map(d => String(d).trim());
+                                if (ds.length === 1) return ds[0];
+                                if (ds.length === 2) return `${ds[0]} y ${ds[1]}`;
+                                return ds.slice(0, -1).join(', ') + ' y ' + ds[ds.length - 1];
+                            };
+                            const formatStart = (start) => {
+                                if (!start) return '';
+                                const parts = String(start).split(':');
+                                if (parts.length >= 2) {
+                                    if (parts[1] === '00') return `${parts[0]}hs`;
+                                    return `${parts[0]}:${parts[1]}hs`;
+                                }
+                                return `${parts[0]}hs`;
+                            };
+
+                            const entries = assigned.map(c => {
+                                const daysStr = formatDays(c.days || []);
+                                const timeStr = formatStart(c.start || '');
+                                const joined = [daysStr, timeStr].filter(Boolean).join(' ');
+                                return joined;
+                            }).filter(Boolean);
+
+                            const scheduleStr = entries.length ? entries.join(' · ') : '';
+                            if (scheduleStr) {
+                                const node = document.createElement('div');
+                                node.style.fontSize = '13px';
+                                node.style.color = '#6b7280';
+                                node.style.marginTop = '4px';
+                                node.textContent = scheduleStr;
+                                headerEl.appendChild(node);
+                            }
+                        }
+                    } catch (e) {
+                        // silent fallback: leave only name
+                        console.warn('Could not load assigned classes for header schedule', e);
+                    }
+                }
                 // Update due box inside header
                 const dueBox = document.getElementById('dueBox');
                 if (alumno.dueDate) {
@@ -1030,14 +1079,36 @@
                         if (clsRes.ok) {
                             const enrolled = await clsRes.json();
                             // For each enrolled class, synthesize the next occurrence
-                            // within the next 30 days so the UI can render a card.
+                            // within a computed window so the UI can render a card.
+                            // The window is: up to the student's dueDate + gymConfig.autoCancelDueOverdueDays,
+                            // but bounded to a safe maximum to avoid very long computations.
                             const synthesized = [];
-                            const dayMap = { 0: 'domingo', 1: 'lunes', 2: 'martes', 3: 'miércoles', 4: 'jueves', 5: 'viernes', 6: 'sábado' };
+                            const MAX_SYNTH_DAYS = 90;
                             const today = new Date();
+                            let maxOffset = 30; // default fallback
+                            try {
+                                const extraDays = (gymConfig && gymConfig.autoCancelDueOverdueDays) ? gymConfig.autoCancelDueOverdueDays : 0;
+                                if (alumno && alumno.dueDate) {
+                                    const venc = new Date(alumno.dueDate);
+                                    const upper = new Date(venc);
+                                    upper.setDate(upper.getDate() + extraDays);
+                                    const daysUntilUpper = Math.ceil((upper - today) / 864e5);
+                                    if (daysUntilUpper > 0) {
+                                        maxOffset = Math.min(daysUntilUpper, MAX_SYNTH_DAYS);
+                                    } else {
+                                        // Already past the upper limit; no synthesis window
+                                        maxOffset = 0;
+                                    }
+                                }
+                            } catch (eCalc) {
+                                console.warn('Error computing synth window, using default 30 days', eCalc);
+                                maxOffset = 30;
+                            }
+                            const dayMap = { 0: 'domingo', 1: 'lunes', 2: 'martes', 3: 'miércoles', 4: 'jueves', 5: 'viernes', 6: 'sábado' };
                             for (const c of enrolled) {
                                 // compute next date for one of the class days
                                 let found = null;
-                                for (let offset = 0; offset <= 30; offset++) {
+                                for (let offset = 0; offset <= maxOffset; offset++) {
                                     const d = new Date(today);
                                     d.setDate(today.getDate() + offset);
                                     const weekdayName = dayMap[d.getDay()];
@@ -1122,7 +1193,10 @@
             for (const inst of classes) {
                 const dt = new Date(inst.dateTime);
                 const dayNames = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
-                const dateStr = `${dayNames[dt.getDay()]} ${dt.getDate()}/${dt.getMonth() + 1} - ${dt.getHours().toString().padStart(2, '0')}:${dt.getMinutes().toString().padStart(2, '0')}`;
+                const hrs = dt.getHours();
+                const mins = dt.getMinutes();
+                const timeStr = mins === 0 ? `${hrs}hs` : `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}hs`;
+                const dateStr = `${dayNames[dt.getDay()]} ${dt.getDate()}/${dt.getMonth() + 1} - ${timeStr}`;
 
                 const instId = inst._id && inst._id.toString ? inst._id.toString() : String(inst._id);
                 const classId = inst.classId && inst.classId.toString ? inst.classId.toString() : String(inst.classId || '');
@@ -1347,7 +1421,10 @@
                 for (const inst of filtered) {
                     const dt = new Date(inst.dateTime);
                     const dayNames = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
-                    const dateStr = `${dayNames[dt.getDay()]} ${dt.getDate()}/${dt.getMonth() + 1} - ${dt.getHours().toString().padStart(2, '0')}:${dt.getMinutes().toString().padStart(2, '0')}`;
+                    const hrs = dt.getHours();
+                    const mins = dt.getMinutes();
+                    const timeStr = mins === 0 ? `${hrs}hs` : `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}hs`;
+                    const dateStr = `${dayNames[dt.getDay()]} ${dt.getDate()}/${dt.getMonth() + 1} - ${timeStr}`;
                     const instId = inst._id && inst._id.toString ? inst._id.toString() : inst._id;
 
                     html += `
