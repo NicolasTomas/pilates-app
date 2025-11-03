@@ -24,6 +24,17 @@
         return res.json();
     }
 
+    // Assign or unassign a professor to a class without sending full class payload
+    async function assignProfessor(classId, professorId) {
+        const res = await fetch(`${API}/api/classes/${classId}/assign-professor`, {
+            method: 'POST',
+            headers: headers(),
+            body: JSON.stringify({ professorId })
+        });
+        if (!res.ok) throw new Error((await res.json()).error || 'Error asignando profesor a clase');
+        return res.json();
+    }
+
     async function deleteClass(id) {
         const res = await fetch(`${API}/api/classes/${id}`, { method: 'DELETE', headers: headers() });
         if (!res.ok) throw new Error('Error eliminando clase');
@@ -80,5 +91,6 @@
         listClasses, createClass, updateClass, deleteClass,
         getClassStudents, addStudent, removeStudent
         , cancelClassForStudent, recoverClassForStudent
+        , assignProfessor
     };
 })();

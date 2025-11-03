@@ -22,6 +22,16 @@
         return res.json();
     }
 
+    async function updateProfessor(id, professor) {
+        const res = await fetch(`${API}/api/professors/${id}`, {
+            method: 'PUT',
+            headers: headers(),
+            body: JSON.stringify(professor)
+        });
+        if (!res.ok) throw new Error((await res.json()).error || 'Error actualizando profesor');
+        return res.json();
+    }
+
     async function deleteProfessor(id) {
         const res = await fetch(`${API}/api/professors/${id}`, {
             method: 'DELETE',
@@ -34,6 +44,7 @@
     window.adminProfessors = {
         listProfessors,
         createProfessor,
+        updateProfessor,
         deleteProfessor
     };
 })();

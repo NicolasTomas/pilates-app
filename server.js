@@ -132,17 +132,28 @@ app.post('/api/admin/login', async (req, res) => {
     }
 });
 
-app.get('/api/me', (req, res) => {
+app.get('/api/me', async (req, res) => {
     const auth = req.headers.authorization;
     if (!auth) return res.status(401).json({ error: 'No autorizado' });
     const parts = auth.split(' ');
     if (parts.length !== 2) return res.status(401).json({ error: 'Token mal formado' });
     const token = parts[1];
+    let payload;
     try {
-        const payload = jwt.verify(token, JWT_SECRET);
-        res.json({ id: payload.id, role: payload.role, dni: payload.dni, gymId: payload.gymId });
+        payload = jwt.verify(token, JWT_SECRET);
     } catch (err) {
         return res.status(401).json({ error: 'Token inválido' });
+    }
+
+    // Attempt to fetch user details from DB to include name/lastName/email in /api/me
+    try {
+        if (!db) return res.json({ id: payload.id, role: payload.role, dni: payload.dni, gymId: payload.gymId });
+        const user = await db.collection('users').findOne({ _id: new ObjectId(payload.id) }, { projection: { password: 0 } });
+        if (!user) return res.json({ id: payload.id, role: payload.role, dni: payload.dni, gymId: payload.gymId });
+        return res.json({ id: payload.id, role: payload.role, dni: payload.dni, gymId: payload.gymId, name: user.name || null, lastName: user.lastName || null, email: user.email || null });
+    } catch (err) {
+        console.warn('Failed to load full user for /api/me, returning token payload only', err && err.message ? err.message : err);
+        return res.json({ id: payload.id, role: payload.role, dni: payload.dni, gymId: payload.gymId });
     }
 });
 
@@ -1172,6 +1183,38 @@ app.put('/api/classes/:id', authMiddleware, async (req, res) => {
     }
 });
 
+// Focused endpoint to assign/unassign a professor to a class.
+// This avoids triggering full class validation when only changing professorId.
+app.post('/api/classes/:id/assign-professor', authMiddleware, async (req, res) => {
+    const { id } = req.params;
+    const { professorId } = req.body || {};
+    try {
+        const _id = new ObjectId(id);
+        const cls = await db.collection('classes').findOne({ _id });
+        if (!cls) return res.status(404).json({ error: 'Clase no encontrada' });
+
+        // Permission: ensure admin belongs to same gym as class (unless superusuario)
+        if (req.user.role !== 'superusuario' && cls.gymId && cls.gymId !== req.user.gymId) {
+            return res.status(403).json({ error: 'No tenés permisos para modificar esta clase' });
+        }
+
+        // If assigning, ensure professor exists and belongs to same gym
+        if (professorId) {
+            const prof = await db.collection('users').findOne({ _id: new ObjectId(professorId), role: 'profesor' });
+            if (!prof) return res.status(404).json({ error: 'Profesor no encontrado' });
+            if (req.user.role !== 'superusuario' && prof.gymId && prof.gymId !== req.user.gymId) {
+                return res.status(403).json({ error: 'No tenés permisos para asignar ese profesor' });
+            }
+        }
+
+        await db.collection('classes').updateOne({ _id }, { $set: { professorId: professorId || null, updatedAt: new Date() } });
+        res.json({ ok: true });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Error asignando profesor a la clase' });
+    }
+});
+
 app.delete('/api/classes/:id', authMiddleware, async (req, res) => {
     const { id } = req.params;
     try {
@@ -1283,6 +1326,40 @@ app.post('/api/professors', authMiddleware, async (req, res) => {
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: 'Error al crear profesor' });
+    }
+});
+
+// Actualizar profesor
+app.put('/api/professors/:id', authMiddleware, async (req, res) => {
+    const { id } = req.params;
+    const { dni, name, lastName, phone } = req.body;
+
+    if (!dni || !name || !lastName) {
+        return res.status(400).json({ error: 'DNI, nombre y apellido son requeridos' });
+    }
+
+    try {
+        const _id = new ObjectId(id);
+
+        // Verificar que el profesor exista
+        const professor = await db.collection('users').findOne({ _id, role: 'profesor' });
+        if (!professor) return res.status(404).json({ error: 'Profesor no encontrado' });
+
+        // Verificar que el profesor pertenece al mismo gym (salvo superusuario)
+        if (req.user.role !== 'superusuario' && professor.gymId && professor.gymId !== req.user.gymId) {
+            return res.status(403).json({ error: 'No tenés permisos para modificar este profesor' });
+        }
+
+        // Verificar DNI duplicado (excepto si es el mismo profesor)
+        const exists = await db.collection('users').findOne({ dni, _id: { $ne: _id } });
+        if (exists) return res.status(409).json({ error: 'Ya existe otro usuario con ese DNI' });
+
+        await db.collection('users').updateOne({ _id }, { $set: { dni, name, lastName, phone, updatedAt: new Date() } });
+
+        res.json({ ok: true });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Error al actualizar profesor' });
     }
 });
 

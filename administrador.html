@@ -4,6 +4,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&display=swap" rel="stylesheet">
     <title>Administración - Pilates Camilla</title>
     <style>
         * {
@@ -12,24 +13,41 @@
             box-sizing: border-box;
         }
 
+        :root {
+            --sidebar-width: 220px;
+            --sidebar-gap: 20px;
+        }
+
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
+            background-color: #d9d9d9;
+            padding-top: 90px;
         }
 
         .top {
-            background: rgba(255, 255, 255, 0.15);
+            background: rgb(255, 255, 255);
             backdrop-filter: blur(10px);
-            color: #fff;
+            color: #000000;
             padding: 24px 32px;
+            padding-left: 32px;
+            /* espacio por defecto para el botón hamburguesa */
             border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            position: fixed;
+            top: 0;
+            width: 100%;
+
+
         }
 
         .top h1 {
             font-size: 28px;
             font-weight: 700;
             margin-bottom: 0;
+            font-family: 'Orbitron', sans-serif;
         }
 
         .top>div {
@@ -39,11 +57,11 @@
         }
 
         .top button {
-            padding: 10px 20px;
-            border-radius: 20px;
+            padding: 5px 8px 5px 8px !important;
+            border-radius: 8px;
             border: 2px solid rgba(255, 255, 255, 0.3);
             background: rgba(255, 255, 255, 0.2);
-            color: #fff;
+            color: #000000;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
@@ -71,7 +89,7 @@
         }
 
         h3 {
-            color: #667eea;
+            color: #000000;
             font-size: 24px;
             margin-bottom: 12px;
         }
@@ -91,6 +109,14 @@
         button {
             font-family: inherit;
             font-size: 15px;
+        }
+
+        /* Estilo para indicar campos obligatorios (asterisco en rojo) */
+        .required {
+            color: #e53e3e;
+            /* rojo */
+            margin-left: 4px;
+            font-weight: 700;
         }
 
         input,
@@ -114,7 +140,7 @@
             padding: 12px 24px;
             border-radius: 12px;
             border: none;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background-color: #000000c5;
             color: #fff;
             font-weight: 600;
             cursor: pointer;
@@ -140,14 +166,20 @@
         }
 
         .navbar {
-            background: rgba(255, 255, 255, 0.95);
+            display: none;
+            /* esconder la antigua barra horizontal; se mostrará como panel lateral cuando body.nav-open */
+            background: rgb(255, 255, 255);
             backdrop-filter: blur(10px);
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-            border-bottom: 2px solid rgba(102, 126, 234, 0.1);
+
+            /* Permitir scroll horizontal en la barra, pero ocultar la scrollbar mediante reglas específicas */
+            overflow: visible;
+
             padding: 0;
             position: sticky;
             top: 0;
-            z-index: 999;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            /* z-index: 999; */
         }
 
         .navbar ul {
@@ -156,7 +188,20 @@
             margin: 0;
             padding: 0 32px;
             list-style: none;
+            /* Scroll horizontal funcional */
             overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            /* Ocultar scrollbar en distintos navegadores */
+            scrollbar-width: none;
+            /* Firefox */
+            -ms-overflow-style: none;
+            /* IE 10+ */
+        }
+
+        /* WebKit: ocultar barra de scroll horizontal */
+        .navbar ul::-webkit-scrollbar {
+            height: 0;
+            background: transparent;
         }
 
         .navbar li {
@@ -166,25 +211,33 @@
         .navbar a {
             display: block;
             padding: 20px 28px;
-            color: #64748b;
+            color: #696969;
             font-weight: 600;
             text-decoration: none;
-            border-bottom: 3px solid transparent;
+            border-right: 3px solid transparent;
             transition: all 0.3s ease;
+            /* Mantener en una sola línea; el contenedor hará scroll si hace falta */
+            white-space: nowrap;
         }
 
-        .navbar a.active,
+        .navbar a.active {
+            /* background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%); */
+            border-right: 3px solid #000000;
+            color: #000000;
+            overflow-x: hidden;
+
+        }
+
         .navbar a:hover {
-            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
-            border-bottom: 3px solid #667eea;
-            color: #667eea;
+            color: #000000;
+
         }
 
         table {
             width: 100%;
             border-collapse: separate;
             border-spacing: 0;
-            background: #fff;
+            background: #ffffff;
             border-radius: 12px;
             overflow: hidden;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
@@ -197,7 +250,7 @@
         }
 
         th {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background-color: #000000;
             color: #fff;
             font-weight: 600;
             font-size: 13px;
@@ -310,6 +363,8 @@
                 padding: 0 16px;
                 overflow-x: auto;
                 -webkit-overflow-scrolling: touch;
+                scrollbar-width: none;
+                -ms-overflow-style: none;
             }
 
             .navbar a {
@@ -393,15 +448,346 @@
                 width: 95%;
             }
         }
+
+        /* Reglas para desplegar la navbar como panel lateral con el botón */
+        body.nav-open #navOverlay {
+            display: block;
+        }
+
+        body.nav-open .navbar {
+            display: block;
+            position: fixed;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 220px;
+            padding-top: 72px;
+            /* deja espacio al header */
+            overflow-y: auto;
+            z-index: 999;
+            box-shadow: 0 8px 40px rgba(0, 0, 0, 0.12);
+            background: rgb(255, 255, 255);
+        }
+
+        body.nav-open .navbar ul {
+            flex-direction: column;
+            /* leave space at the bottom for the logout footer */
+            padding: 8px 0 96px 0;
+        }
+
+        body.nav-open .navbar a {
+            padding: 12px 18px;
+            border-bottom: none;
+            border-right: 4px solid transparent;
+            white-space: nowrap;
+        }
+
+        body.nav-open .navbar a.active {
+            border-right-color: #000000;
+        }
+
+        /* Hamburger button styles */
+        #sideToggle {
+            width: 44px;
+            height: 44px;
+            padding: 8px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #sideToggle:focus {
+            outline: 2px solid rgba(102, 126, 234, 0.25);
+            outline-offset: 2px;
+        }
+
+        #sideToggle .hamburger {
+            display: inline-block;
+            width: 20px;
+            height: 14px;
+        }
+
+        #sideToggle .hamburger span {
+            display: block;
+            height: 2px;
+            background: #1f2937;
+            border-radius: 2px;
+            margin: 3px 0;
+        }
+
+        @media (prefers-reduced-motion: no-preference) {
+            #sideToggle .hamburger span {
+                transition: transform .18s ease, opacity .18s ease;
+            }
+        }
+
+        /* Animated state: when #sideToggle has .open, transform bars into an X */
+        #sideToggle.open .hamburger span:nth-child(1) {
+            transform: translateY(5px) rotate(45deg);
+        }
+
+        #sideToggle.open .hamburger span:nth-child(2) {
+            opacity: 0;
+            transform: scaleX(.2);
+        }
+
+        /* Footer inside the sidebar for logout */
+        .navbar .nav-footer {
+            position: absolute;
+            bottom: 16px;
+            left: 0;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            padding: 8px 0;
+            box-sizing: border-box;
+        }
+
+        .navbar .nav-footer button {
+            width: calc(100% - 32px);
+            margin: 0 16px;
+            padding: 10px 12px;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #fc8181 0%, #e53e3e 100%);
+            color: #fff;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(229, 62, 62, 0.2);
+        }
+
+        #sideToggle.open .hamburger span:nth-child(3) {
+            transform: translateY(-5px) rotate(-45deg);
+        }
+
+        /* Desktop: keep sidebar visible and hide toggle button */
+        @media (min-width: 768px) {
+            #sideToggle {
+                display: none !important;
+            }
+
+            .navbar {
+                display: block;
+                position: fixed;
+                left: 0;
+                top: 0;
+                bottom: 0;
+                width: 220px;
+                padding-top: 72px;
+            }
+
+            /* push content to the right so the fixed sidebar doesn't cover it */
+            .top,
+            .card {
+                transition: margin-left .22s ease, transform .22s ease;
+                margin-left: calc(var(--sidebar-width) + var(--sidebar-gap));
+            }
+
+            /* make sure links stack vertically when sidebar is fixed */
+            .navbar ul {
+                flex-direction: column;
+                /* ensure footer won't overlap the links when sidebar is fixed */
+                padding: 12px 8px 96px 8px;
+                align-items: stretch;
+            }
+
+            .navbar li {
+                display: block;
+            }
+
+            .navbar a {
+                display: block;
+                padding: 12px 16px;
+                border-left: 4px solid transparent;
+                white-space: normal;
+            }
+        }
+
+        /* When opening on smaller screens, slide the content slightly for a nicer effect */
+        @media (max-width: 767px) {
+
+            body.nav-open .top,
+            body.nav-open .card {
+                transform: translateX(220px);
+                transition: transform .22s ease;
+            }
+        }
+
+        /* Ensure content shifts animate on resize as well */
+        .top,
+        .card {
+            transition: margin-left .22s ease, transform .22s ease;
+        }
+
+        /* When a modal is open we prevent the page from animating the main
+           content (which can move the modal). This keeps the modal centered
+           even if the sidebar opens/closes. */
+        .modal-open-no-shift .top,
+        .modal-open-no-shift .card {
+            transition: none !important;
+            transform: none !important;
+        }
+
+        /* Ensure modal always sits above the sidebar */
+        .modal {
+            z-index: 3000 !important;
+            position: fixed !important;
+            inset: 0 !important;
+        }
+
+        /* Custom confirm modal styles */
+        .confirm-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.45);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+
+        .confirm-modal {
+            background: #fff;
+            border-radius: 12px;
+            padding: 20px 18px;
+            width: 320px;
+            max-width: calc(100% - 32px);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+            text-align: left;
+            font-family: inherit;
+        }
+
+        .confirm-modal h4 {
+            margin-bottom: 8px;
+            font-size: 16px;
+        }
+
+        .confirm-row {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+            margin-top: 12px;
+        }
+
+        .confirm-modal button {
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .confirm-cancel {
+            background: #f1f5f9;
+            color: #111
+        }
+
+        .confirm-ok {
+            background: #e53e3e;
+            color: #fff
+        }
+
+        .modal-actions {
+            margin-top: 15px;
+        }
+
+        /* Cards grid for lists - active for all sizes */
+        .cards-grid {
+            display: grid;
+            gap: 14px;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        }
+
+        /* For better readability, render the classes list as a vertical stack
+           (one class per row). This keeps professors/students/rooms as cards. */
+        #classesList>.cards-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .item-card {
+            background: #fff;
+            padding: 12px;
+            border-radius: 12px;
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .item-card h4 {
+            margin: 0 0 8px 0;
+            font-size: 16px
+        }
+
+        .item-card .meta {
+            color: #555;
+            font-size: 14px;
+            margin-bottom: 10px;
+            white-space: normal
+        }
+
+        .item-card .actions {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end
+        }
+
+        .item-card .actions button {
+            padding: 8px 10px;
+            border-radius: 8px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer
+        }
+
+        .item-card .actions .btn-edit {
+            background: #2b6cb0;
+            color: #fff
+        }
+
+        .item-card .actions .btn-delete {
+            background: #e53e3e;
+            color: #fff
+        }
+
+        .item-card .actions .btn-manage {
+            background: #48bb78;
+            color: #fff
+        }
+
+        /* Professor classes: stack them vertically for readability */
+        .prof-classes {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-top: 8px;
+        }
+
+        .prof-classes .pill {
+            display: block;
+            background: #f1f5f9;
+            color: #111827;
+            padding: 6px 8px;
+            border-radius: 8px;
+            font-size: 13px;
+        }
+
+        /* no media query: cards are used at all viewport sizes */
     </style>
 </head>
 
 <body>
+    <!-- Overlay usado cuando el menú lateral está abierto -->
+    <div id="navOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.35);z-index:998"></div>
+    <!-- Botón lateral fijo para desplegar la navbar (ubicado arriba a la izquierda) -->
+    <button id="sideToggle" aria-label="Abrir menú" aria-expanded="false" title="Menú"
+        style="position:fixed;left:8px;top:18px;z-index:1001;border-radius:10px;border:1px solid rgba(0,0,0,0.06);background:#fff;box-shadow:0 6px 20px rgba(0,0,0,0.08);">
+        <span class="hamburger" aria-hidden="true"><span></span><span></span><span></span></span>
+    </button>
     <div class="top">
         <h1>Panel de Administrador</h1>
         <div>
             <span id="meInfo">Cargando...</span>
-            <button id="logout">Salir</button>
         </div>
     </div>
     <nav class="navbar">
@@ -413,6 +799,10 @@
             <li><a href="#" class="nav-link" data-section="classesSection">Clases</a></li>
             <li><a href="#" class="nav-link" data-section="gymConfigSection">Configuración</a></li>
         </ul>
+        <!-- Logout moved here so it's always at the bottom of the sidebar -->
+        <div class="nav-footer">
+            <button id="logout" type="button" title="Cerrar sesión">cerrar sesión</button>
+        </div>
     </nav>
     <div class="card">
         <section id="usersSection">
@@ -454,7 +844,7 @@
             <div style="display:flex;gap:8px;margin-bottom:8px;align-items:center">
                 <input id="searchClasses" placeholder="Buscar clases"
                     style="flex:1;padding:8px;border:1px solid #ddd;border-radius:4px" />
-                <button id="btnNewClass" style="background:#2b6cb0;color:#fff;padding:8px 12px;border-radius:6px">Nuevo
+                <button id="btnNewClass" style="background:#2b6cb0;color:#fff;padding:8px 12px;border-radius:6px">Nueva
                     clase</button>
             </div>
             <div id="classesList">Cargando...</div>
@@ -481,19 +871,97 @@
                 document.querySelectorAll('.card section').forEach(sec => {
                     sec.style.display = sec.id === sectionId ? '' : 'none';
                 });
+                // Al seleccionar un item, cerrar el panel lateral si está abierto
+                if (document.body.classList.contains('nav-open')) {
+                    document.body.classList.remove('nav-open');
+                    const btn = document.getElementById('sideToggle');
+                    if (btn) {
+                        btn.setAttribute('aria-expanded', 'false');
+                        btn.classList.remove('open');
+                    }
+                }
             });
         });
         // Mostrar sección inicial
         document.querySelectorAll('.card section').forEach(sec => {
             sec.style.display = sec.id === 'usersSection' ? '' : 'none';
         });
+        // Side toggle: abrir/cerrar la navbar como panel lateral
+        (function () {
+            const btn = document.getElementById('sideToggle');
+            const overlay = document.getElementById('navOverlay');
+            const mainNodes = [document.querySelector('.top'), document.querySelector('.card')].filter(Boolean);
+            let _trapListener = null;
+
+            function _setMainAriaHidden(v) {
+                for (const n of mainNodes) {
+                    try { n.setAttribute('aria-hidden', v ? 'true' : 'false'); } catch (e) { }
+                }
+            }
+
+            function openNav() {
+                document.body.classList.add('nav-open');
+                btn.setAttribute('aria-expanded', 'true');
+                btn.classList.add('open');
+                _setMainAriaHidden(true);
+                // focus first focusable element inside nav (first link)
+                const first = document.querySelector('.navbar a');
+                if (first) first.focus();
+                // install focus trap
+                _trapListener = function (e) {
+                    if (e.key !== 'Tab') return;
+                    const focusables = Array.from(document.querySelectorAll('.navbar a, .navbar button, .navbar [href], .navbar [tabindex]:not([tabindex="-1"])')).filter(el => !el.hasAttribute('disabled'));
+                    if (!focusables.length) return;
+                    const firstEl = focusables[0];
+                    const lastEl = focusables[focusables.length - 1];
+                    if (e.shiftKey) {
+                        if (document.activeElement === firstEl) { e.preventDefault(); lastEl.focus(); }
+                    } else {
+                        if (document.activeElement === lastEl) { e.preventDefault(); firstEl.focus(); }
+                    }
+                };
+                document.addEventListener('keydown', _trapListener);
+            }
+
+            function closeNav() {
+                document.body.classList.remove('nav-open');
+                btn.setAttribute('aria-expanded', 'false');
+                btn.classList.remove('open');
+                _setMainAriaHidden(false);
+                // remove focus trap
+                if (_trapListener) { document.removeEventListener('keydown', _trapListener); _trapListener = null; }
+                // return focus to toggle button
+                try { btn.focus(); } catch (e) { }
+            }
+            btn.addEventListener('click', () => {
+                if (document.body.classList.contains('nav-open')) closeNav(); else openNav();
+            });
+            overlay.addEventListener('click', closeNav);
+            // cerrar con ESC
+            document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeNav(); });
+            // On resize, ensure breakpoint consistency: when width >= 768 remove mobile nav-open state
+            window.addEventListener('resize', () => {
+                try {
+                    if (window.innerWidth >= 768) {
+                        // ensure panel is considered closed for mobile-specific classes
+                        if (document.body.classList.contains('nav-open')) {
+                            document.body.classList.remove('nav-open');
+                        }
+                        if (btn) {
+                            btn.setAttribute('aria-expanded', 'false');
+                            btn.classList.remove('open');
+                        }
+                    }
+                } catch (e) { }
+            });
+        })();
     </script>
     <script>
         // Inline form para crear usuario (mostrado directamente)
         (async function () {
             const formContainer = document.createElement('div');
             formContainer.id = 'newUserForm';
-            formContainer.style = 'display:block;margin-top:12px;padding:12px;border-radius:12px;background:linear-gradient(180deg, rgba(102,126,234,0.04), rgba(118,75,162,0.03));border:1px solid rgba(0,0,0,0.04)';
+            formContainer.style = 'display:block;margin-top:12px;padding:12px;border-radius:12px;';
             formContainer.innerHTML = `
                 <form id="createUserForm">
                     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:8px 0">
@@ -505,15 +973,15 @@
                             </select>
                         </div>
                         <div>
-                            <div style="font-size:13px;margin-bottom:6px">DNI: *</div>
+                            <div style="font-size:13px;margin-bottom:6px">DNI: <span class="required">*</span></div>
                             <input id="newUserDni" style="width:100%;padding:10px;border-radius:8px;border:1px solid #ddd" />
                         </div>
                         <div>
-                            <div style="font-size:13px;margin-bottom:6px">Nombre: *</div>
+                            <div style="font-size:13px;margin-bottom:6px">Nombre: <span class="required">*</span></div>
                             <input id="newUserName" style="width:100%;padding:10px;border-radius:8px;border:1px solid #ddd" />
                         </div>
                         <div>
-                            <div style="font-size:13px;margin-bottom:6px">Apellido: *</div>
+                            <div style="font-size:13px;margin-bottom:6px">Apellido: <span class="required">*</span></div>
                             <input id="newUserLastName" style="width:100%;padding:10px;border-radius:8px;border:1px solid #ddd" />
                         </div>
                         <div>
@@ -538,7 +1006,7 @@
                         </div>
                     </div>
                     <div id="classesDivInline" style="margin-top:12px">
-                        <div style="font-size:13px;margin-bottom:6px">Clases asignadas: *</div>
+                        <div style="font-size:13px;margin-bottom:6px">Clases asignadas: <span class="required">*</span></div>
                         <div id="newUserClassesContainer" style="max-height:150px;overflow-y:auto;border:1px solid #ddd;border-radius:8px;padding:6px;background:#fff"></div>
                     </div>
                     <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
@@ -633,7 +1101,135 @@
             await loadRooms();
         });
 
-        document.getElementById('logout').addEventListener('click', () => pilatesAuth.logout());
+        // Attach a simple, robust logout handler: perform the logout directly
+        // (clear storage + navigate) to avoid depending on other modules.
+        (function () {
+            function directLogout() {
+                try {
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('role');
+                } catch (e) { console.error('Clearing storage failed', e); }
+                // replace so back button won't return to admin state
+                window.location.replace('/index.html');
+            }
+
+            // Modal helpers (reused from alumno UI): showModal/closeModal and helpers
+            function showModal(title, message, onConfirm) {
+                const modalHTML = `
+                    <div class="modal">
+                        <div class="modal-content">
+                            <h3>${title}</h3>
+                            <p>${message}</p>
+                            <div class="modal-actions">
+                                <button onclick="closeModal()" style="background:#e2e8f0;color:#475569;box-shadow:none;">Cancelar</button>
+                                <button onclick="confirmModal()">Confirmar</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                let container = document.getElementById('modalContainer');
+                if (!container) {
+                    container = document.createElement('div');
+                    container.id = 'modalContainer';
+                    document.body.appendChild(container);
+                }
+                container.innerHTML = modalHTML;
+                window.modalConfirmCallback = onConfirm;
+                window._modalOpen = true;
+                try { document.body.classList.add('modal-open-no-shift'); } catch (e) { }
+            }
+
+            function closeModal() {
+                const container = document.getElementById('modalContainer');
+                if (container) container.innerHTML = '';
+                window.modalConfirmCallback = null;
+                window._modalOpen = false;
+                try { document.body.classList.remove('modal-open-no-shift'); } catch (e) { }
+            }
+
+            function showOkModal(title, message, onOk) {
+                const modalHTML = `
+                    <div class="modal">
+                        <div class="modal-content">
+                            <h3>${title}</h3>
+                            <p>${message}</p>
+                            <div class="modal-actions" style="justify-content:center;">
+                                <button onclick="okModalClick()" style="background:#667eea;color:#fff;">Aceptar</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                let container = document.getElementById('modalContainer');
+                if (!container) {
+                    container = document.createElement('div');
+                    container.id = 'modalContainer';
+                    document.body.appendChild(container);
+                }
+                container.innerHTML = modalHTML;
+                window._modalOpen = true;
+                try { document.body.classList.add('modal-open-no-shift'); } catch (e) { }
+                window._okModalCallback = onOk;
+            }
+
+            function okModalClick() {
+                try {
+                    if (window._okModalCallback) window._okModalCallback();
+                } finally {
+                    const container = document.getElementById('modalContainer');
+                    if (container) container.innerHTML = '';
+                    window._okModalCallback = null;
+                    window._modalOpen = false;
+                    try { document.body.classList.remove('modal-open-no-shift'); } catch (e) { }
+                }
+            }
+
+            function confirmModal() {
+                if (window.modalConfirmCallback) {
+                    try { window.modalConfirmCallback(); } catch (e) { console.error(e); }
+                }
+                closeModal();
+            }
+            // Expose modal helpers to global scope so inline onclick handlers work
+            try {
+                window.showModal = showModal;
+                window.closeModal = closeModal;
+                window.showOkModal = showOkModal;
+                window.okModalClick = okModalClick;
+                window.confirmModal = confirmModal;
+            } catch (e) { /* ignore in non-browser env */ }
+
+            function bindButton(btn) {
+                // Use pointerdown in capture phase to intercept the user's action
+                // before other handlers can close/hide the sidebar.
+                const onPointerDown = function (e) {
+                    try { e.preventDefault(); e.stopImmediatePropagation(); } catch (er) { }
+                    showModal('Cerrar sesión', '¿Desea cerrar sesión?', directLogout);
+                };
+                // attach in capture so it runs early
+                btn.addEventListener('pointerdown', onPointerDown, { capture: true });
+                // also keep a capture click listener as backup
+                btn.addEventListener('click', function (e) {
+                    try { e.preventDefault(); e.stopImmediatePropagation(); } catch (er) { }
+                    showModal('Cerrar sesión', '¿Desea cerrar sesión?', directLogout);
+                }, { capture: true });
+            }
+
+            const btn = document.getElementById('logout');
+            if (btn) {
+                bindButton(btn);
+            } else {
+                // fallback: delegate on capture so we catch early if button is injected later
+                document.addEventListener('click', function (e) {
+                    const t = e.target;
+                    if (!t) return;
+                    if (t.id === 'logout' || (t.closest && t.closest('#logout'))) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        showModal('Cerrar sesión', '¿Desea cerrar sesión?', directLogout);
+                    }
+                }, { capture: true });
+            }
+        })();
 
         async function loadRooms(filter = '') {
             try {
@@ -643,26 +1239,38 @@
                 document.getElementById('roomsList').textContent = 'Error cargando salones';
             }
         }
+        // helper to escape inserted text
+        function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
 
         function renderRooms(rooms) {
-            if (!rooms.length) { document.getElementById('roomsList').innerHTML = '<i>No hay salones</i>'; return }
-            const html = ['<table style="width:100%;border-collapse:collapse"><thead><tr><th>Nombre</th><th>Camillas</th><th>Acciones</th></tr></thead><tbody>'];
-            for (const r of rooms) {
-                html.push(`<tr data-id="${r._id}"><td style="padding:8px;border-top:1px solid #eee">${r.name}</td><td style="padding:8px;border-top:1px solid #eee">${r.capacity}</td><td style="padding:8px;border-top:1px solid #eee"><button class="editRoom">Editar</button> <button class="delRoom" style="background:#e53e3e;color:#fff">Eliminar</button></td></tr>`);
-            }
-            html.push('</tbody></table>');
-            document.getElementById('roomsList').innerHTML = html.join('');
+            const container = document.getElementById('roomsList');
+            if (!rooms.length) { container.innerHTML = '<i>No hay salones</i>'; return }
+            // always show cards
+            const cards = rooms.map(r => `
+                <div class="item-card" data-id="${esc(r._id)}">
+                    <div>
+                        <h4>${esc(r.name)}</h4>
+                        <div class="meta">Camillas: ${esc(r.capacity)}</div>
+                    </div>
+                    <div class="actions">
+                        <button class="editRoom btn-edit">Editar</button>
+                        <button class="delRoom btn-delete">Eliminar</button>
+                    </div>
+                </div>
+            `).join('');
+            container.innerHTML = `<div class="cards-grid">${cards}</div>`;
 
-            document.querySelectorAll('.editRoom').forEach(b => b.addEventListener('click', e => {
-                const id = e.target.closest('tr').dataset.id;
-                const row = e.target.closest('tr');
-                const name = row.children[0].textContent;
-                const capacity = row.children[1].textContent;
+            container.querySelectorAll('.editRoom').forEach(b => b.addEventListener('click', e => {
+                const card = e.target.closest('.item-card');
+                const id = card.dataset.id;
+                const name = card.querySelector('h4')?.textContent || '';
+                const capText = card.querySelector('.meta')?.textContent || '';
+                const capacity = (capText.match(/\d+/) || [''])[0];
                 openEditRoomModal(id, name, capacity);
             }));
 
-            document.querySelectorAll('.delRoom').forEach(b => b.addEventListener('click', async e => {
-                const id = e.target.closest('tr').dataset.id;
+            container.querySelectorAll('.delRoom').forEach(b => b.addEventListener('click', async e => {
+                const id = e.target.closest('.item-card').dataset.id;
                 if (!confirm('Eliminar salón?')) return;
                 await adminRooms.deleteRoom(id);
                 await loadRooms(document.getElementById('searchRooms').value);
@@ -723,38 +1331,39 @@
         }
 
         function renderClasses(classes) {
-            if (!classes.length) { document.getElementById('classesList').innerHTML = '<i>No hay clases</i>'; return }
-            const html = ['<table style="width:100%;border-collapse:collapse"><thead><tr><th>Días</th><th>Horario</th><th>Salón</th><th>Profesor</th><th>Camillas libres</th><th>Acciones</th></tr></thead><tbody>'];
-            for (const c of classes) {
-                html.push(`<tr data-id="${c._id}">
-                    <td style="padding:8px;border-top:1px solid #eee">${c.days.join(', ')}</td>
-                    <td style="padding:8px;border-top:1px solid #eee">${c.start} (${c.duration} min)</td>
-                    <td style="padding:8px;border-top:1px solid #eee">${c.roomName || ''}</td>
-                    <td style="padding:8px;border-top:1px solid #eee">${c.professorName || ''}</td>
-                    <td style="padding:8px;border-top:1px solid #eee">${c.camillasFree}</td>
-                    <td style="padding:8px;border-top:1px solid #eee">
-                        <button class="editClass">Editar</button>
-                        <button class="manageStudents" style="background:#48bb78;color:#fff">Estudiantes</button>
-                        <button class="delClass" style="background:#e53e3e;color:#fff">Eliminar</button>
-                    </td>
-                </tr>`);
-            }
-            html.push('</tbody></table>');
-            document.getElementById('classesList').innerHTML = html.join('');
+            const container = document.getElementById('classesList');
+            if (!classes.length) { container.innerHTML = '<i>No hay clases</i>'; return }
+            // always render cards
+            const cards = classes.map(c => `
+                <div class="item-card" data-id="${esc(c._id)}">
+                    <div>
+                        <h4>${esc((c.days || []).join(', '))}</h4>
+                        <div class="meta">Horario: ${esc(c.start)} (${esc(c.duration)} min) • Salón: ${esc(c.roomName || '')} • Profesor: ${esc(c.professorName || '')}</div>
+                        <div class="meta">Camillas libres: ${esc(c.camillasFree)}</div>
+                    </div>
+                    <div class="actions">
+                        <button class="editClass btn-edit">Editar</button>
+                        <button class="manageStudents btn-manage">Alumnos</button>
+                        <button class="delClass btn-delete">Eliminar</button>
+                    </div>
+                </div>
+            `).join('');
+            container.innerHTML = `<div class="cards-grid">${cards}</div>`;
 
-            document.querySelectorAll('.editClass').forEach(b => b.addEventListener('click', async e => {
-                const id = e.target.closest('tr').dataset.id;
+            container.querySelectorAll('.editClass').forEach(b => b.addEventListener('click', e => {
+                const id = e.target.closest('.item-card').dataset.id;
                 openEditClassModal(id);
             }));
-            document.querySelectorAll('.delClass').forEach(b => b.addEventListener('click', async e => {
-                const id = e.target.closest('tr').dataset.id;
+
+            container.querySelectorAll('.delClass').forEach(b => b.addEventListener('click', async e => {
+                const id = e.target.closest('.item-card').dataset.id;
                 if (!confirm('Eliminar clase?')) return;
                 await adminClasses.deleteClass(id);
                 await loadClasses(document.getElementById('searchClasses').value);
             }));
 
-            document.querySelectorAll('.manageStudents').forEach(b => b.addEventListener('click', async e => {
-                const id = e.target.closest('tr').dataset.id;
+            container.querySelectorAll('.manageStudents').forEach(b => b.addEventListener('click', e => {
+                const id = e.target.closest('.item-card').dataset.id;
                 openManageStudentsModal(id);
             }));
         }
@@ -944,68 +1553,62 @@
         async function loadStudents(search = '') {
             try {
                 const students = await adminStudents.listStudents(search);
-                renderStudents(students);
+                await renderStudents(students);
             } catch (err) {
                 document.getElementById('studentsList').textContent = 'Error cargando alumnos';
             }
         }
-
-        function renderStudents(students) {
+        async function renderStudents(students) {
             if (!students.length) {
                 document.getElementById('studentsList').innerHTML = '<i>No hay alumnos</i>';
                 return;
             }
+            const container = document.getElementById('studentsList');
 
-            const html = [
-                '<table style="width:100%;border-collapse:collapse"><thead><tr>',
-                '<th>Nombre</th><th>Apellido</th><th>DNI</th><th>Teléfono</th>',
-                '<th>Contacto Emergencia</th><th>Vencimiento</th><th>Tipo Cuota</th><th>Acciones</th>',
-                '</tr></thead><tbody>'
-            ];
+            // fetch classes once to compute assigned classes per student
+            let classes = [];
+            try { classes = await adminClasses.listClasses(); } catch (e) { classes = []; }
 
-            for (const s of students) {
+            const cards = students.map(s => {
+                // find classes where this student is assigned
+                const assigned = classes.filter(c => Array.isArray(c.students) && c.students.some(ss => ss === s._id || (ss && ss._id === s._id))).map(c => `${(c.days || []).join(', ')} ${c.start} - ${c.roomName || ''}`);
+                const assignedText = assigned.length ? assigned.join(' | ') : 'Sin asignar';
                 const dueDate = s.dueDate ? new Date(s.dueDate).toLocaleDateString() : 'No establecida';
-                html.push(`
-                    <tr data-id="${s._id}">
-                        <td style="padding:8px;border-top:1px solid #eee">${s.name || ''}</td>
-                        <td style="padding:8px;border-top:1px solid #eee">${s.lastName || ''}</td>
-                        <td style="padding:8px;border-top:1px solid #eee">${s.dni}</td>
-                        <td style="padding:8px;border-top:1px solid #eee">${s.phone || ''}</td>
-                        <td style="padding:8px;border-top:1px solid #eee">${s.emergencyContact || ''}</td>
-                        <td style="padding:8px;border-top:1px solid #eee">${dueDate}</td>
-                        <td style="padding:8px;border-top:1px solid #eee">${s.membershipType || ''}</td>
-                        <td style="padding:8px;border-top:1px solid #eee">
-                            <button class="editStudent">Editar</button>
-                            <button class="delStudent" style="background:#e53e3e;color:#fff">Eliminar</button>
-                        </td>
-                    </tr>
-                `);
-            }
+                return `
+                    <div class="item-card" data-id="${esc(s._id)}">
+                        <div>
+                            <h4>${esc((s.name || '') + ' ' + (s.lastName || ''))}</h4>
+                            <div class="meta">DNI: ${esc(s.dni || '')} • Tel: ${esc(s.phone || '')}</div>
+                            <div class="meta">Contacto emergencia: ${esc(s.emergencyContact || '')}</div>
+                            <div class="meta">Vencimiento: ${esc(dueDate)} • Tipo cuota: ${esc(s.membershipType || '')}</div>
+                            <div class="meta">Clases: ${esc(assignedText)}</div>
+                        </div>
+                        <div class="actions">
+                            <button class="editStudent btn-edit">Editar</button>
+                            <button class="delStudent btn-delete">Eliminar</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
 
-            html.push('</tbody></table>');
-            document.getElementById('studentsList').innerHTML = html.join('');
+            container.innerHTML = `<div class="cards-grid">${cards}</div>`;
 
-            // Event listeners
-            document.querySelectorAll('.editStudent').forEach(b =>
-                b.addEventListener('click', e => {
-                    const id = e.target.closest('tr').dataset.id;
-                    openEditStudentModal(id);
-                })
-            );
+            container.querySelectorAll('.editStudent').forEach(b => b.addEventListener('click', e => {
+                const id = e.target.closest('.item-card').dataset.id;
+                openEditStudentModal(id);
+            }));
 
-            document.querySelectorAll('.delStudent').forEach(b =>
-                b.addEventListener('click', async e => {
-                    const id = e.target.closest('tr').dataset.id;
-                    if (!confirm('¿Eliminar alumno? Se dará de baja de todas sus clases.')) return;
-                    try {
-                        await adminStudents.deleteStudent(id);
-                        await loadStudents(document.getElementById('searchStudents').value);
-                        await loadClasses(); // Actualizar lista de clases
-                    } catch (err) {
-                        alert(err.message || 'Error eliminando alumno');
-                    }
-                })
-            );
+            container.querySelectorAll('.delStudent').forEach(b => b.addEventListener('click', async e => {
+                const id = e.target.closest('.item-card').dataset.id;
+                if (!confirm('¿Eliminar alumno? Se dará de baja de todas sus clases.')) return;
+                try {
+                    await adminStudents.deleteStudent(id);
+                    await loadStudents(document.getElementById('searchStudents').value);
+                    await loadClasses(); // Actualizar lista de clases
+                } catch (err) {
+                    alert(err.message || 'Error eliminando alumno');
+                }
+            }));
         }
 
         async function openNewStudentModal() {
@@ -1019,16 +1622,16 @@
                     
                     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:16px 0">
                         <div>
-                            <div>DNI: *</div>
-                            <input id="newStudentDni" style="width:100%;padding:8px;margin:4px 0;border:1px solid #ddd;border-radius:4px" />
+                            <div>DNI: <span class="required">*</span></div>
+                                <input id="newStudentDni" style="width:100%;padding:8px;margin:4px 0;border:1px solid #ddd;border-radius:4px" />
                         </div>
                         <div>
-                            <div>Nombre: *</div>
-                            <input id="newStudentName" style="width:100%;padding:8px;margin:4px 0;border:1px solid #ddd;border-radius:4px" />
+                            <div>Nombre: <span class="required">*</span></div>
+                                <input id="newStudentName" style="width:100%;padding:8px;margin:4px 0;border:1px solid #ddd;border-radius:4px" />
                         </div>
                         <div>
-                            <div>Apellido: *</div>
-                            <input id="newStudentLastName" style="width:100%;padding:8px;margin:4px 0;border:1px solid #ddd;border-radius:4px" />
+                            <div>Apellido: <span class="required">*</span></div>
+                                <input id="newStudentLastName" style="width:100%;padding:8px;margin:4px 0;border:1px solid #ddd;border-radius:4px" />
                         </div>
                         <div>
                             <div>Teléfono:</div>
@@ -1126,16 +1729,16 @@
                     
                     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:16px 0">
                         <div>
-                            <div>DNI: *</div>
-                            <input id="editStudentDni" value="${student.dni}" style="width:100%;padding:8px;margin:4px 0;border:1px solid #ddd;border-radius:4px" />
+                            <div>DNI: <span class="required">*</span></div>
+                                <input id="editStudentDni" value="${student.dni}" style="width:100%;padding:8px;margin:4px 0;border:1px solid #ddd;border-radius:4px" />
                         </div>
                         <div>
-                            <div>Nombre: *</div>
-                            <input id="editStudentName" value="${student.name || ''}" style="width:100%;padding:8px;margin:4px 0;border:1px solid #ddd;border-radius:4px" />
+                            <div>Nombre: <span class="required">*</span></div>
+                                <input id="editStudentName" value="${student.name || ''}" style="width:100%;padding:8px;margin:4px 0;border:1px solid #ddd;border-radius:4px" />
                         </div>
                         <div>
-                            <div>Apellido: *</div>
-                            <input id="editStudentLastName" value="${student.lastName || ''}" style="width:100%;padding:8px;margin:4px 0;border:1px solid #ddd;border-radius:4px" />
+                            <div>Apellido: <span class="required">*</span></div>
+                                <input id="editStudentLastName" value="${student.lastName || ''}" style="width:100%;padding:8px;margin:4px 0;border:1px solid #ddd;border-radius:4px" />
                         </div>
                         <div>
                             <div>Teléfono:</div>
@@ -1220,107 +1823,172 @@
         async function loadProfessors() {
             try {
                 const professors = await adminProfessors.listProfessors();
-                renderProfessors(professors);
+                await renderProfessors(professors);
             } catch (err) {
                 document.getElementById('professorsList').textContent = 'Error cargando profesores';
             }
         }
 
-        function renderProfessors(professors) {
-            if (!professors.length) {
-                document.getElementById('professorsList').innerHTML = '<i>No hay profesores</i>';
-                return;
+        async function renderProfessors(professors) {
+            const container = document.getElementById('professorsList');
+            if (!professors.length) { container.innerHTML = '<i>No hay profesores</i>'; return }
+
+            // load classes once to compute assigned classes per professor
+            let classes = [];
+            try { classes = await adminClasses.listClasses(); } catch (e) { classes = []; }
+
+            // build map of professorId -> list of class descriptions
+            const byProf = {};
+            for (const c of classes) {
+                const pid = c.professorId ? String(c.professorId) : null;
+                const desc = `${(c.days || []).join(', ')} ${c.start} - ${c.roomName || ''}`;
+                if (!pid) continue;
+                if (!byProf[pid]) byProf[pid] = [];
+                byProf[pid].push(desc);
             }
 
-            const html = [
-                '<table style="width:100%;border-collapse:collapse"><thead><tr>',
-                '<th>Nombre</th><th>Apellido</th><th>DNI</th><th>Teléfono</th><th>Acciones</th>',
-                '</tr></thead><tbody>'
-            ];
+            // always render cards, including assigned classes as pills
+            const cards = professors.map(p => {
+                const pid = String(p._id);
+                const assigned = byProf[pid] || [];
+                const full = assigned.length ? assigned.join(' • ') : 'Sin asignar';
+                return `
+                    <div class="item-card" data-id="${esc(p._id)}">
+                        <div>
+                            <h4>${esc((p.name || '') + ' ' + (p.lastName || ''))}</h4>
+                            <div class="meta">DNI: ${esc(p.dni || '')} • Tel: ${esc(p.phone || '')}</div>
+                            <div class="prof-classes" title="${esc(full)}">
+                                ${assigned.length ? assigned.map(a => `<span class="pill">${esc(a)}</span>`).join('') : '<span class="pill">Sin asignar</span>'}
+                            </div>
+                        </div>
+                        <div class="actions">
+                            <button class="editProfessor btn-edit" type="button" data-action="edit">Editar</button>
+                            <button class="delProfessor btn-delete" type="button" data-action="delete">Eliminar</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            container.innerHTML = `<div class="cards-grid">${cards}</div>`;
 
-            for (const p of professors) {
-                html.push(`
-                    <tr data-id="${p._id}">
-                        <td style="padding:8px;border-top:1px solid #eee">${p.name || ''}</td>
-                        <td style="padding:8px;border-top:1px solid #eee">${p.lastName || ''}</td>
-                        <td style="padding:8px;border-top:1px solid #eee">${p.dni}</td>
-                        <td style="padding:8px;border-top:1px solid #eee">${p.phone || ''}</td>
-                        <td style="padding:8px;border-top:1px solid #eee">
-                            <button class="delProfessor" style="background:#e53e3e;color:#fff">Eliminar</button>
-                        </td>
-                    </tr>
-                `);
-            }
-
-            html.push('</tbody></table>');
-            document.getElementById('professorsList').innerHTML = html.join('');
-
-            document.querySelectorAll('.delProfessor').forEach(b =>
-                b.addEventListener('click', async e => {
-                    const id = e.target.closest('tr').dataset.id;
-                    if (!confirm('¿Eliminar profesor?')) return;
-                    try {
-                        await adminProfessors.deleteProfessor(id);
-                        await loadProfessors();
-                        await loadClasses(); // Actualizar lista de clases
-                    } catch (err) {
-                        alert(err.message || 'Error eliminando profesor');
+            // Attach a single delegated event handler (attach once)
+            if (!container.dataset.delegateAttached) {
+                container.addEventListener('click', async (e) => {
+                    const btn = e.target.closest('button[data-action]');
+                    if (!btn) return;
+                    const action = btn.getAttribute('data-action');
+                    const card = btn.closest('.item-card');
+                    if (!card) return;
+                    const id = card.dataset.id;
+                    if (action === 'edit') {
+                        e.preventDefault();
+                        openEditProfessorModal(id);
+                        return;
                     }
-                })
-            );
+                    if (action === 'delete') {
+                        e.preventDefault();
+                        if (!confirm('¿Eliminar profesor?')) return;
+                        try {
+                            await adminProfessors.deleteProfessor(id);
+                            await loadProfessors();
+                            await loadClasses();
+                        } catch (err) { alert(err.message || 'Error eliminando profesor'); }
+                        return;
+                    }
+                });
+                container.dataset.delegateAttached = '1';
+            }
         }
 
         function openNewProfessorModal() {
             const modal = document.createElement('div');
             modal.style = 'position:fixed;inset:0;background:rgba(0,0,0,0.35);display:flex;align-items:center;justify-content:center';
+            // Build modal content dynamically so we can load classes
             modal.innerHTML = `
-                <div style="background:#fff;padding:16px;border-radius:8px;width:400px">
+                <div id="newProfessorModalContent" style="background:#fff;padding:16px;border-radius:8px;width:420px;max-height:80vh;overflow:auto">
                     <h4>Nuevo Profesor</h4>
-                    
-                    <div style="margin:16px 0">
-                        <div>DNI: *</div>
-                        <input id="newProfessorDni" style="width:100%;padding:8px;margin:4px 0;border:1px solid #ddd;border-radius:4px" />
-                        
-                        <div style="margin-top:8px">Nombre: *</div>
-                        <input id="newProfessorName" style="width:100%;padding:8px;margin:4px 0;border:1px solid #ddd;border-radius:4px" />
-                        
-                        <div style="margin-top:8px">Apellido: *</div>
-                        <input id="newProfessorLastName" style="width:100%;padding:8px;margin:4px 0;border:1px solid #ddd;border-radius:4px" />
-                        
-                        <div style="margin-top:8px">Teléfono:</div>
-                        <input id="newProfessorPhone" style="width:100%;padding:8px;margin:4px 0;border:1px solid #ddd;border-radius:4px" />
-                    </div>
-
-                    <div style="display:flex;gap:8px;justify-content:flex-end">
-                        <button id="cancelNewProfessor">Cancelar</button>
-                        <button id="saveNewProfessor" style="background:#2b6cb0;color:#fff">Guardar</button>
-                    </div>
+                    <div id="newProfessorFields">Cargando...</div>
                 </div>
             `;
 
             document.body.appendChild(modal);
-
-            document.getElementById('cancelNewProfessor').addEventListener('click', () => modal.remove());
-            document.getElementById('saveNewProfessor').addEventListener('click', async () => {
-                const professor = {
-                    dni: document.getElementById('newProfessorDni').value.trim(),
-                    name: document.getElementById('newProfessorName').value.trim(),
-                    lastName: document.getElementById('newProfessorLastName').value.trim(),
-                    phone: document.getElementById('newProfessorPhone').value.trim()
-                };
-
-                if (!professor.dni || !professor.name || !professor.lastName) {
-                    return alert('DNI, nombre y apellido son requeridos');
-                }
-
+            // populate fields including classes
+            (async function populateNewProfessor() {
                 try {
-                    await adminProfessors.createProfessor(professor);
-                    modal.remove();
-                    await loadProfessors();
+                    const classes = await adminClasses.listClasses();
+                    const html = `
+                        <div style="margin:16px 0">
+                            <div>DNI: <span class="required">*</span></div>
+                            <input id="newProfessorDni" style="width:100%;padding:8px;margin:4px 0;border:1px solid #ddd;border-radius:4px" />
+                            
+                            <div style="margin-top:8px">Nombre: <span class="required">*</span></div>
+                            <input id="newProfessorName" style="width:100%;padding:8px;margin:4px 0;border:1px solid #ddd;border-radius:4px" />
+                            
+                            <div style="margin-top:8px">Apellido: <span class="required">*</span></div>
+                            <input id="newProfessorLastName" style="width:100%;padding:8px;margin:4px 0;border:1px solid #ddd;border-radius:4px" />
+                            
+                            <div style="margin-top:8px">Teléfono:</div>
+                            <input id="newProfessorPhone" style="width:100%;padding:8px;margin:4px 0;border:1px solid #ddd;border-radius:4px" />
+                        </div>
+
+                        <div style="margin:8px 0">
+                            <div>Clases asignadas (opcional):</div>
+                            <div style="max-height:160px;overflow:auto;border:1px solid #ddd;border-radius:4px;margin-top:6px;padding:6px;background:#fff">
+                                ${classes.map(c => `
+                                    <label style="display:block;padding:6px;border-bottom:1px solid #eee">
+                                        <input type="checkbox" value="${c._id}" class="newProfessorClass" />
+                                        ${esc((c.days || []).join(', '))} ${esc(c.start)} - ${esc(c.roomName || '')}
+                                    </label>
+                                `).join('')}
+                            </div>
+                        </div>
+
+                        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
+                            <button id="cancelNewProfessor">Cancelar</button>
+                            <button id="saveNewProfessor" style="background:#2b6cb0;color:#fff">Guardar</button>
+                        </div>
+                    `;
+                    document.getElementById('newProfessorFields').innerHTML = html;
+
+                    document.getElementById('cancelNewProfessor').addEventListener('click', () => modal.remove());
+                    document.getElementById('saveNewProfessor').addEventListener('click', async () => {
+                        const professor = {
+                            dni: document.getElementById('newProfessorDni').value.trim(),
+                            name: document.getElementById('newProfessorName').value.trim(),
+                            lastName: document.getElementById('newProfessorLastName').value.trim(),
+                            phone: document.getElementById('newProfessorPhone').value.trim()
+                        };
+
+                        if (!professor.dni || !professor.name || !professor.lastName) {
+                            return alert('DNI, nombre y apellido son requeridos');
+                        }
+
+                        const selectedClassIds = Array.from(document.querySelectorAll('.newProfessorClass:checked')).map(cb => cb.value);
+
+                        try {
+                            const created = await adminProfessors.createProfessor(professor);
+                            // The API returns { id: <insertedId> } — use created.id
+                            const newProfId = created.id || created._id || null;
+                            // assign professor to selected classes by updating each class
+                            if (newProfId && Array.isArray(selectedClassIds) && selectedClassIds.length) {
+                                const allClasses = await adminClasses.listClasses();
+                                for (const cid of selectedClassIds) {
+                                    const cl = allClasses.find(x => x._id === cid || x._id == cid);
+                                    if (!cl) continue;
+                                    try { await adminClasses.assignProfessor(cid, newProfId); } catch (er) { /* ignore per-class errors */ }
+                                }
+                            }
+
+                            modal.remove();
+                            await loadProfessors();
+                            await loadClasses();
+                        } catch (err) {
+                            alert(err.message || 'Error creando profesor');
+                        }
+                    });
                 } catch (err) {
-                    alert(err.message || 'Error creando profesor');
+                    document.getElementById('newProfessorFields').innerHTML = '<i>Error cargando clases</i>';
                 }
-            });
+            })();
         }
 
         // Gestión de Configuración
@@ -1389,6 +2057,102 @@
 
         // Event listeners para profesores
         document.getElementById('btnNewProfessor').addEventListener('click', () => openNewProfessorModal());
+
+        async function openEditProfessorModal(id) {
+            const modal = document.createElement('div');
+            modal.style = 'position:fixed;inset:0;background:rgba(0,0,0,0.35);display:flex;align-items:center;justify-content:center';
+            modal.innerHTML = `
+                <div id="editProfessorModalContent" style="background:#fff;padding:16px;border-radius:8px;width:420px;max-height:80vh;overflow:auto">
+                    <h4>Editar Profesor</h4>
+                    <div id="editProfessorFields">Cargando...</div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            try {
+                const professors = await adminProfessors.listProfessors();
+                const prof = professors.find(p => p._id === id || p._id == id);
+                if (!prof) {
+                    modal.remove();
+                    return alert('Profesor no encontrado');
+                }
+
+                const classes = await adminClasses.listClasses();
+                const html = `
+                    <div style="margin:16px 0">
+                        <div>DNI: <span class="required">*</span></div>
+                        <input id="editProfessorDni" value="${esc(prof.dni || '')}" style="width:100%;padding:8px;margin:4px 0;border:1px solid #ddd;border-radius:4px" />
+                        
+                        <div style="margin-top:8px">Nombre: <span class="required">*</span></div>
+                        <input id="editProfessorName" value="${esc(prof.name || '')}" style="width:100%;padding:8px;margin:4px 0;border:1px solid #ddd;border-radius:4px" />
+                        
+                        <div style="margin-top:8px">Apellido: <span class="required">*</span></div>
+                        <input id="editProfessorLastName" value="${esc(prof.lastName || '')}" style="width:100%;padding:8px;margin:4px 0;border:1px solid #ddd;border-radius:4px" />
+                        
+                        <div style="margin-top:8px">Teléfono:</div>
+                        <input id="editProfessorPhone" value="${esc(prof.phone || '')}" style="width:100%;padding:8px;margin:4px 0;border:1px solid #ddd;border-radius:4px" />
+                    </div>
+
+                    <div style="margin:8px 0">
+                        <div>Clases asignadas:</div>
+                        <div style="max-height:160px;overflow:auto;border:1px solid #ddd;border-radius:4px;margin-top:6px;padding:6px;background:#fff">
+                            ${classes.map(c => `
+                                <label style="display:block;padding:6px;border-bottom:1px solid #eee">
+                                    <input type="checkbox" value="${c._id}" class="editProfessorClass" ${c.professorId === prof._id ? 'checked' : ''} />
+                                    ${esc((c.days || []).join(', '))} ${esc(c.start)} - ${esc(c.roomName || '')}
+                                </label>
+                            `).join('')}
+                        </div>
+                    </div>
+
+                    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
+                        <button id="cancelEditProfessor">Cancelar</button>
+                        <button id="saveEditProfessor" style="background:#2b6cb0;color:#fff">Guardar</button>
+                    </div>
+                `;
+
+                document.getElementById('editProfessorFields').innerHTML = html;
+
+                document.getElementById('cancelEditProfessor').addEventListener('click', () => modal.remove());
+                document.getElementById('saveEditProfessor').addEventListener('click', async () => {
+                    const updated = {
+                        dni: document.getElementById('editProfessorDni').value.trim(),
+                        name: document.getElementById('editProfessorName').value.trim(),
+                        lastName: document.getElementById('editProfessorLastName').value.trim(),
+                        phone: document.getElementById('editProfessorPhone').value.trim()
+                    };
+                    if (!updated.dni || !updated.name || !updated.lastName) return alert('DNI, nombre y apellido son requeridos');
+
+                    const selectedClassIds = Array.from(document.querySelectorAll('.editProfessorClass:checked')).map(cb => cb.value);
+
+                    try {
+                        await adminProfessors.updateProfessor(id, updated);
+
+                        // update classes: assign professorId for selected, unassign for others
+                        const allClasses = await adminClasses.listClasses();
+                        for (const cl of allClasses) {
+                            const shouldHave = selectedClassIds.includes(String(cl._id));
+                            const currentlyHas = cl.professorId === prof._id || cl.professorId == prof._id;
+                            if (shouldHave && !currentlyHas) {
+                                try { await adminClasses.assignProfessor(cl._id, id); } catch (er) { /* ignore per-class */ }
+                            } else if (!shouldHave && currentlyHas) {
+                                try { await adminClasses.assignProfessor(cl._id, null); } catch (er) { /* ignore per-class */ }
+                            }
+                        }
+
+                        modal.remove();
+                        await loadProfessors();
+                        await loadClasses();
+                    } catch (err) {
+                        alert(err.message || 'Error actualizando profesor');
+                    }
+                });
+            } catch (err) {
+                modal.remove();
+                alert('Error cargando datos del profesor o clases');
+            }
+        }
+
+        // breakpoint re-render removed: cards are active for all sizes, no layout switch needed
 
         // Inicializar
         (async () => {

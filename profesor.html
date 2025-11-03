@@ -4,6 +4,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&display=swap" rel="stylesheet">
     <title>Profesor - Pilates Camilla</title>
     <style>
         * {
@@ -12,30 +13,54 @@
             box-sizing: border-box;
         }
 
+        :root {
+            --sidebar-width: 220px;
+            --sidebar-gap: 20px;
+            --top-height: 72px;
+        }
+
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background-color: #f4f6f8;
+            padding-top: calc(var(--top-height) + 18px);
             min-height: 100vh;
         }
 
         .top {
-            background: rgba(255, 255, 255, 0.15);
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: var(--top-height);
+            background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(10px);
-            color: #fff;
-            padding: 24px 32px;
+            color: #000;
+            padding: 16px 32px;
             border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            z-index: 1002;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.04);
         }
 
         .top h1 {
-            font-size: 28px;
+            font-size: 24px;
             font-weight: 700;
             margin-bottom: 0;
+            font-family: 'Orbitron', sans-serif;
         }
 
         .top>div {
             display: flex;
-            justify-content: space-between;
+            justify-content: center;
             align-items: center;
+            width: 100%;
+            max-width: 1100px;
+            padding-inline: 16px;
+            box-sizing: border-box;
+            margin: 0 auto;
         }
 
         .top button {
@@ -43,23 +68,18 @@
             border-radius: 20px;
             border: 2px solid rgba(255, 255, 255, 0.3);
             background: rgba(255, 255, 255, 0.2);
-            color: #fff;
+            color: #111;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
             backdrop-filter: blur(10px);
         }
 
-        .top button:hover {
-            background: rgba(255, 255, 255, 0.3);
-            border-color: rgba(255, 255, 255, 0.5);
-        }
-
         .card {
             background: #fff;
             padding: 40px 32px;
             border-radius: 24px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
             max-width: 1200px;
             margin: 32px auto;
         }
@@ -67,86 +87,19 @@
         h1,
         h3,
         h4 {
-            font-weight: 700;
+            font-weight: 700
         }
 
-        h3 {
-            color: #667eea;
-            font-size: 24px;
-            margin-bottom: 12px;
-        }
-
-        h4 {
-            color: #764ba2;
-            font-size: 20px;
-            margin-bottom: 16px;
-        }
-
-        section {
-            margin-bottom: 32px;
-        }
-
-        input,
-        select,
-        button {
-            font-family: inherit;
-            font-size: 15px;
-        }
-
-        input,
-        select {
-            padding: 12px 16px;
-            border-radius: 12px;
-            border: 2px solid #e2e8f0;
-            background: #f8fafc;
-            transition: all 0.3s ease;
-        }
-
-        input:focus,
-        select:focus {
-            border-color: #667eea;
-            outline: none;
-            background: #fff;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        }
-
-        button {
-            padding: 12px 24px;
-            border-radius: 12px;
-            border: none;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: #fff;
-            font-weight: 600;
-            cursor: pointer;
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-            transition: all 0.3s ease;
-        }
-
-        button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
-        }
-
-        button[style*="background:#38a169"],
-        button[style*="background:#48bb78"] {
-            background: linear-gradient(135deg, #48bb78 0%, #38a169 100%) !important;
-            box-shadow: 0 4px 12px rgba(72, 187, 120, 0.3);
-        }
-
-        button[style*="background:#e53e3e"] {
-            background: linear-gradient(135deg, #fc8181 0%, #e53e3e 100%) !important;
-            box-shadow: 0 4px 12px rgba(229, 62, 62, 0.3);
-        }
-
+        /* Navbar / sidebar styles and hamburger animation (same as administrador) */
         .navbar {
-            background: rgba(255, 255, 255, 0.95);
+            display: none;
+            background: rgb(255, 255, 255);
             backdrop-filter: blur(10px);
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-            border-bottom: 2px solid rgba(102, 126, 234, 0.1);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
             padding: 0;
             position: sticky;
             top: 0;
-            z-index: 999;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
         }
 
         .navbar ul {
@@ -156,6 +109,15 @@
             padding: 0 32px;
             list-style: none;
             overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+            -ms-overflow-style: none
+        }
+
+        /* hide horizontal scrollbar on WebKit */
+        .navbar ul::-webkit-scrollbar {
+            height: 0;
+            background: transparent;
         }
 
         .navbar li {
@@ -165,199 +127,314 @@
         .navbar a {
             display: block;
             padding: 20px 28px;
-            color: #64748b;
+            color: #696969;
             font-weight: 600;
             text-decoration: none;
             border-bottom: 3px solid transparent;
-            transition: all 0.3s ease;
+            transition: all .3s ease;
+            white-space: nowrap;
         }
 
-        .navbar a.active,
+        .navbar a.active {
+            border-right: 3px solid #000000;
+            color: #000000;
+            overflow-x: hidden;
+        }
+
         .navbar a:hover {
-            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
-            border-bottom: 3px solid #667eea;
-            color: #667eea;
+            color: #000000;
+            overflow-x: hidden;
         }
 
-        table {
+        /* Sidebar open state */
+        body.nav-open #navOverlay {
+            display: block
+        }
+
+        body.nav-open .navbar {
+            display: block;
+            position: fixed;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 220px;
+            padding-top: 72px;
+            overflow-y: auto;
+            z-index: 999
+        }
+
+        body.nav-open .navbar ul {
+            flex-direction: column;
+            padding: 8px 0 96px 0;
+        }
+
+        body.nav-open .navbar a {
+            padding: 12px 18px;
+            border-bottom: none;
+            border-right: 4px solid transparent;
+            white-space: nowrap;
+        }
+
+        body.nav-open .navbar a.active {
+            border-right-color: #000000;
+        }
+
+        /* Hamburger */
+        #sideToggle {
+            width: 44px;
+            height: 44px;
+            padding: 8px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1103
+        }
+
+        #sideToggle .hamburger {
+            display: inline-block;
+            width: 20px;
+            height: 14px
+        }
+
+        #sideToggle .hamburger span {
+            display: block;
+            height: 2px;
+            background: #1f2937;
+            border-radius: 2px;
+            margin: 3px 0
+        }
+
+        @media (prefers-reduced-motion: no-preference) {
+            #sideToggle .hamburger span {
+                transition: transform .18s ease, opacity .18s ease
+            }
+        }
+
+        #sideToggle.open .hamburger span:nth-child(1) {
+            transform: translateY(5px) rotate(45deg)
+        }
+
+        #sideToggle.open .hamburger span:nth-child(2) {
+            opacity: 0;
+            transform: scaleX(.2)
+        }
+
+        #sideToggle.open .hamburger span:nth-child(3) {
+            transform: translateY(-5px) rotate(-45deg)
+        }
+
+        /* Responsive behavior */
+        @media (min-width:768px) {
+            #sideToggle {
+                display: none !important;
+            }
+
+            .navbar {
+                display: block;
+                position: fixed;
+                left: 0;
+                top: 0;
+                bottom: 0;
+                width: 220px;
+                padding-top: 72px
+            }
+
+            .top,
+            .card {
+                margin-left: calc(var(--sidebar-width) + var(--sidebar-gap))
+            }
+
+            /* ensure sidebar links stack vertically and occupy full width on desktop */
+            .navbar ul {
+                flex-direction: column;
+                padding: 12px 8px 96px 8px;
+                align-items: stretch
+            }
+
+            .navbar li {
+                display: block;
+            }
+
+            /* On desktop show the active/hover indicator on the RIGHT side to match admin preference */
+            .navbar a {
+                display: block;
+                padding: 12px 16px;
+                border-right: 4px solid transparent;
+                width: 100%;
+                white-space: normal;
+            }
+
+
+            .navbar a.active {
+                color: #000;
+                border-right-color: #000;
+            }
+
+            .navbar a:hover {
+                color: #000;
+
+            }
+        }
+
+        /* When opening on smaller screens, slide the content slightly for a nicer effect */
+        @media (max-width: 767px) {
+
+            body.nav-open .top,
+            body.nav-open .card {
+                transform: translateX(220px);
+                transition: transform .22s ease;
+            }
+        }
+
+        /* Ensure content shifts animate consistently */
+        .top,
+        .card {
+            transition: margin-left .22s ease, transform .22s ease;
+        }
+
+        /* When a modal is open we prevent the page from animating the main
+           content (which can move the modal). This keeps the modal centered
+           even if the sidebar opens/closes. */
+        .modal-open-no-shift .top,
+        .modal-open-no-shift .card {
+            transition: none !important;
+            transform: none !important;
+        }
+
+        /* Ensure modal always sits above the sidebar */
+        .modal {
+            z-index: 3000 !important;
+            position: fixed !important;
+            inset: 0 !important;
+        }
+
+        /* small helpers */
+        .nav-footer {
+            position: absolute;
+            bottom: 16px;
+            left: 0;
             width: 100%;
-            border-collapse: separate;
-            border-spacing: 0;
+            display: flex;
+            justify-content: center;
+            padding: 8px 0
+        }
+
+        .nav-footer button {
+            width: calc(100% - 32px);
+            margin: 0 16px;
+            padding: 10px 12px;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #fc8181 0%, #e53e3e 100%);
+            color: #fff;
+            border: none
+        }
+
+        /* cards grid */
+        .cards-grid {
+            display: grid;
+            gap: 14px;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr))
+        }
+
+        .item-card {
             background: #fff;
+            padding: 12px;
             border-radius: 12px;
-            overflow: hidden;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06)
         }
 
-        th,
-        td {
-            padding: 14px 12px;
-            text-align: left;
+        /* modal helpers */
+        .modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.45);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 3000
         }
 
-        th {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        .modal>div {
+            background: #ffffff;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+            max-width: 95vw;
+            max-height: 90vh;
+            overflow: auto;
+            backdrop-filter: blur(5px);
+            animation: fadeIn 0.3s ease;
+            width: 90%;
+        }
+
+        .modal {
+            backdrop-filter: blur(5px);
+            display: flex !important;
+            justify-content: center !important;
+            align-items: center !important;
+        }
+
+        .modal-content h3 {
+            color: rgb(0, 0, 0);
+            font-size: 23px;
+        }
+
+        .modal-content p {
+            margin: 12px 0 15px 0;
+
+        }
+
+        #__confirmModalOk {
+            border-radius: 12px;
+            border: none;
+            background-color: #000000c5;
             color: #fff;
             font-weight: 600;
-            font-size: 13px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+            transition: all 0.3s ease;
+            padding: 8px;
         }
 
-        tbody tr {
-            border-bottom: 1px solid #f1f5f9;
-            transition: all 0.2s ease;
-        }
-
-        tbody tr:hover {
-            background: #f8fafc;
-        }
-
-        tbody tr:last-child {
-            border-bottom: none;
-        }
-
-        @media (max-width: 700px) {
-            body {
-                overflow-x: hidden;
-            }
-
-            .top {
-                padding: 16px;
-            }
-
-            .top h1 {
-                font-size: 20px;
-            }
-
-            .top > div {
-                flex-direction: column;
-                gap: 12px;
-                align-items: flex-start;
-            }
-
-            .top button {
-                padding: 8px 16px;
-                font-size: 14px;
-            }
-
-            #meInfo {
-                font-size: 14px;
-            }
-
-            .card {
-                margin: 20px 16px;
-                padding: 24px 16px;
-                border-radius: 16px;
-            }
-
-            h3 {
-                font-size: 20px;
-            }
-
-            h4 {
-                font-size: 18px;
-            }
-
-            .navbar ul {
-                padding: 0 16px;
-                overflow-x: auto;
-                -webkit-overflow-scrolling: touch;
-            }
-
-            .navbar a {
-                padding: 16px 16px;
-                font-size: 14px;
-                white-space: nowrap;
-            }
-
-            /* Tablas scrolleables */
-            table {
-                display: block;
-                overflow-x: auto;
-                -webkit-overflow-scrolling: touch;
-            }
-
-            th, td {
-                padding: 10px 8px;
-                font-size: 13px;
-                white-space: nowrap;
-            }
-
-            button {
-                padding: 8px 14px;
-                font-size: 14px;
-            }
-
-            input, select {
-                padding: 10px 12px;
-                font-size: 14px;
-            }
-
-            section {
-                margin-bottom: 24px;
-            }
-
-            /* Formularios en columna en mobile */
-            div[style*="grid-template-columns"] {
-                display: flex !important;
-                flex-direction: column !important;
-                gap: 12px !important;
-            }
-
-            /* Modales */
-            div[style*="position:fixed"] > div {
-                width: 90% !important;
-                max-width: 90% !important;
-                padding: 20px 16px !important;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .top h1 {
-                font-size: 18px;
-            }
-
-            .card {
-                margin: 16px 12px;
-                padding: 20px 12px;
-            }
-
-            .navbar a {
-                padding: 12px 12px;
-                font-size: 13px;
-            }
-
-            th, td {
-                padding: 8px 6px;
-                font-size: 12px;
-            }
-
-            button {
-                padding: 6px 12px;
-                font-size: 13px;
-            }
+        .modal-actions button:first-child {
+            border-radius: 12px;
+            border: none;
+            background-color: #000000c5;
+            color: #fff;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+            transition: all 0.3s ease;
+            padding: 8px;
         }
     </style>
 </head>
 
 <body>
+    <!-- Overlay usado cuando el menú lateral está abierto -->
+    <div id="navOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.35);z-index:998"></div>
+    <!-- Botón lateral fijo para desplegar la navbar (ubicado arriba a la izquierda) -->
+    <button id="sideToggle" aria-label="Abrir menú" aria-expanded="false" title="Menú"
+        style="position:fixed;left:8px;top:18px;z-index:1103;border-radius:10px;border:1px solid rgba(0,0,0,0.06);background:#fff;box-shadow:0 6px 20px rgba(0,0,0,0.08);">
+        <span class="hamburger" aria-hidden="true"><span></span><span></span><span></span></span>
+    </button>
     <div class="top">
         <h1>Panel de Profesor</h1>
         <div>
             <span id="meInfo">Cargando...</span>
-            <button id="logout">Salir</button>
         </div>
     </div>
-
     <nav class="navbar">
         <ul>
             <li><a href="#" class="nav-link active" data-section="newStudentSection">Crear Alumno</a></li>
-            <li><a href="#" class="nav-link" data-section="studentsSection">Mis Alumnos</a></li>
             <li><a href="#" class="nav-link" data-section="classesSection">Mis Clases</a></li>
+            <li><a href="#" class="nav-link" data-section="studentsSection">Mis Alumnos</a></li>
         </ul>
+        <!-- Logout moved here so it's always at the bottom of the sidebar -->
+        <div class="nav-footer">
+            <button id="logout" type="button" title="Cerrar sesión">cerrar sesión</button>
+        </div>
     </nav>
-
     <div class="card">
         <section id="newStudentSection">
             <h4>Crear Alumno</h4>
@@ -367,7 +444,6 @@
                 </button>
             </div>
         </section>
-
         <section id="studentsSection" style="display:none">
             <h4>Mis Alumnos</h4>
             <div style="display:flex;gap:8px;margin-bottom:8px;align-items:center">
@@ -376,18 +452,17 @@
             </div>
             <div id="studentsList">Cargando...</div>
         </section>
-
         <section id="classesSection" style="display:none">
             <h4>Mis Clases</h4>
             <div id="classesList">Cargando...</div>
         </section>
     </div>
-
     <script src="/public/js/auth.js"></script>
     <script src="/public/js/admin_classes.js"></script>
     <script src="/public/js/admin_students.js"></script>
     <script>
-        // Navegación
+        // Copy of administrador's side toggle and modal helpers but trimmed for professor
+        // Navbar navegación entre secciones
         document.querySelectorAll('.nav-link').forEach(link => {
             link.addEventListener('click', e => {
                 e.preventDefault();
@@ -397,15 +472,176 @@
                 document.querySelectorAll('.card section').forEach(sec => {
                     sec.style.display = sec.id === sectionId ? '' : 'none';
                 });
+                // Al seleccionar un item, cerrar el panel lateral si está abierto
+                if (document.body.classList.contains('nav-open')) {
+                    document.body.classList.remove('nav-open');
+                    const btn = document.getElementById('sideToggle');
+                    if (btn) {
+                        btn.setAttribute('aria-expanded', 'false');
+                        btn.classList.remove('open');
+                    }
+                }
             });
         });
 
-        // Modal para crear alumno
+        // Side toggle: abrir/cerrar la navbar como panel lateral
+        (function () {
+            const btn = document.getElementById('sideToggle');
+            const overlay = document.getElementById('navOverlay');
+            const mainNodes = [document.querySelector('.top'), document.querySelector('.card')].filter(Boolean);
+            let _trapListener = null;
+
+            function _setMainAriaHidden(v) {
+                for (const n of mainNodes) {
+                    try { n.setAttribute('aria-hidden', v ? 'true' : 'false'); } catch (e) { }
+                }
+            }
+
+            function openNav() {
+                document.body.classList.add('nav-open');
+                btn.setAttribute('aria-expanded', 'true');
+                btn.classList.add('open');
+                _setMainAriaHidden(true);
+                // focus first focusable element inside nav (first link)
+                const first = document.querySelector('.navbar a');
+                if (first) first.focus();
+                // install focus trap
+                _trapListener = function (e) {
+                    if (e.key !== 'Tab') return;
+                    const focusables = Array.from(document.querySelectorAll('.navbar a, .navbar button, .navbar [href], .navbar [tabindex]:not([tabindex="-1"])')).filter(el => !el.hasAttribute('disabled'));
+                    if (!focusables.length) return;
+                    const firstEl = focusables[0];
+                    const lastEl = focusables[focusables.length - 1];
+                    if (e.shiftKey) {
+                        if (document.activeElement === firstEl) { e.preventDefault(); lastEl.focus(); }
+                    } else {
+                        if (document.activeElement === lastEl) { e.preventDefault(); firstEl.focus(); }
+                    }
+                };
+                document.addEventListener('keydown', _trapListener);
+            }
+
+            function closeNav() {
+                document.body.classList.remove('nav-open');
+                btn.setAttribute('aria-expanded', 'false');
+                btn.classList.remove('open');
+                _setMainAriaHidden(false);
+                // remove focus trap
+                if (_trapListener) { document.removeEventListener('keydown', _trapListener); _trapListener = null; }
+                // return focus to toggle button
+                try { btn.focus(); } catch (e) { }
+            }
+            btn.addEventListener('click', () => {
+                if (document.body.classList.contains('nav-open')) closeNav(); else openNav();
+            });
+            overlay.addEventListener('click', closeNav);
+            // cerrar con ESC
+            document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeNav(); });
+            // On resize, ensure breakpoint consistency: when width >= 768 remove mobile nav-open state
+            window.addEventListener('resize', () => {
+                try {
+                    if (window.innerWidth >= 768) {
+                        // ensure panel is considered closed for mobile-specific classes
+                        if (document.body.classList.contains('nav-open')) {
+                            document.body.classList.remove('nav-open');
+                        }
+                        if (btn) {
+                            btn.setAttribute('aria-expanded', 'false');
+                            btn.classList.remove('open');
+                        }
+                    }
+                } catch (e) { }
+            });
+        })();
+
+        // Modal helpers and logout confirmation (same behaviour as administrador)
+        (function () {
+            function directLogout() {
+                try {
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('role');
+                } catch (e) { console.error('Clearing storage failed', e); }
+                window.location.replace('/index.html');
+            }
+
+            function showModal(title, message, onConfirm) {
+                const modalHTML = `
+                    <div class="modal">
+                        <div class="modal-content">
+                            <h3>${title}</h3>
+                            <p>${message}</p>
+                            <div class="modal-actions">
+                                <button onclick="closeModal()" style="background:#e2e8f0;color:#475569;box-shadow:none;">Cancelar</button>
+                                <button id="__confirmModalOk">Confirmar</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                let container = document.getElementById('modalContainer');
+                if (!container) {
+                    container = document.createElement('div');
+                    container.id = 'modalContainer';
+                    document.body.appendChild(container);
+                }
+                container.innerHTML = modalHTML;
+                window.modalConfirmCallback = onConfirm;
+                window._modalOpen = true;
+                try { document.body.classList.add('modal-open-no-shift'); } catch (e) { }
+                const okBtn = document.getElementById('__confirmModalOk');
+                if (okBtn) okBtn.addEventListener('click', function () { try { if (window.modalConfirmCallback) window.modalConfirmCallback(); } finally { closeModal(); } });
+            }
+
+            function closeModal() {
+                const container = document.getElementById('modalContainer');
+                if (container) container.innerHTML = '';
+                window.modalConfirmCallback = null;
+                window._modalOpen = false;
+                try { document.body.classList.remove('modal-open-no-shift'); } catch (e) { }
+            }
+
+            try {
+                window.showModal = showModal;
+                window.closeModal = closeModal;
+            } catch (e) { }
+
+            function bindButton(btn) {
+                const onPointerDown = function (e) {
+                    try { e.preventDefault(); e.stopImmediatePropagation(); } catch (er) { }
+                    showModal('Cerrar sesión', '¿Desea cerrar sesión?', directLogout);
+                };
+                btn.addEventListener('pointerdown', onPointerDown, { capture: true });
+                btn.addEventListener('click', function (e) {
+                    try { e.preventDefault(); e.stopImmediatePropagation(); } catch (er) { }
+                    showModal('Cerrar sesión', '¿Desea cerrar sesión?', directLogout);
+                }, { capture: true });
+            }
+
+            const btn = document.getElementById('logout');
+            if (btn) {
+                bindButton(btn);
+            } else {
+                document.addEventListener('click', function (e) {
+                    const t = e.target;
+                    if (!t) return;
+                    if (t.id === 'logout' || (t.closest && t.closest('#logout'))) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        showModal('Cerrar sesión', '¿Desea cerrar sesión?', directLogout);
+                    }
+                }, { capture: true });
+            }
+        })();
+
+        // Profesor functions: crear alumno, mis alumnos, mis clases
+        // helper to escape inserted text
+        function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
+        // Modal para crear alumno (solo clases donde el prof está asignado)
         document.getElementById('btnNewStudent').addEventListener('click', async () => {
-            const classes = await adminClasses.listClasses();
+            let classes = [];
+            try { classes = await adminClasses.listClasses(); } catch (e) { classes = []; }
             const me = await pilatesAuth.me();
-            // Filtrar solo las clases donde el profesor está asignado
-            const myClasses = classes.filter(c => c.professorId === me._id);
+            const myClasses = classes.filter(c => String(c.professorId) === String(me._id));
 
             const modal = document.createElement('div');
             modal.style = 'position:fixed;inset:0;background:rgba(0,0,0,0.35);display:flex;align-items:center;justify-content:center;z-index:1000';
@@ -414,15 +650,15 @@
                     <h4>Nuevo Alumno</h4>
                     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:16px 0">
                         <div>
-                            <div>DNI: *</div>
+                            <div>DNI: <span class="required">*</span></div>
                             <input id="newStudentDni" style="width:100%;padding:8px;margin:4px 0;border:1px solid #ddd;border-radius:4px" />
                         </div>
                         <div>
-                            <div>Nombre: *</div>
+                            <div>Nombre: <span class="required">*</span></div>
                             <input id="newStudentName" style="width:100%;padding:8px;margin:4px 0;border:1px solid #ddd;border-radius:4px" />
                         </div>
                         <div>
-                            <div>Apellido: *</div>
+                            <div>Apellido: <span class="required">*</span></div>
                             <input id="newStudentLastName" style="width:100%;padding:8px;margin:4px 0;border:1px solid #ddd;border-radius:4px" />
                         </div>
                         <div>
@@ -451,9 +687,9 @@
                         <div style="max-height:150px;overflow-y:auto;border:1px solid #ddd;border-radius:4px;margin-top:4px">
                             ${myClasses.map(c => `
                                 <label style="display:block;padding:8px;border-bottom:1px solid #eee">
-                                    <input type="checkbox" value="${c._id}" class="newStudentClass" />
-                                    ${c.days.join(', ')} ${c.start} - ${c.roomName}
-                                    (${c.camillasFree} lugares libres)
+                                    <input type="checkbox" value="${esc(c._id)}" class="newStudentClass" />
+                                    ${esc((c.days || []).join(', '))} ${esc(c.start)} - ${esc(c.roomName || '')}
+                                    (${esc(c.camillasFree) || 0} lugares libres)
                                 </label>
                             `).join('')}
                         </div>
@@ -483,6 +719,10 @@
                     return alert('DNI, nombre y apellido son requeridos');
                 }
 
+                if (!Array.isArray(student.classIds) || student.classIds.length === 0) {
+                    return alert('Debe asignar al menos una clase al crear un alumno');
+                }
+
                 try {
                     await adminStudents.createStudent(student);
                     modal.remove();
@@ -494,18 +734,15 @@
             });
         });
 
-        // Listado de alumnos
+        // Listado de alumnos (solo los de mis clases)
         async function loadStudents(search = '') {
             try {
                 const me = await pilatesAuth.me();
                 const students = await adminStudents.listStudents(search);
-                // Obtener las clases para filtrar alumnos
                 const classes = await adminClasses.listClasses();
-                const myClasses = classes.filter(c => c.professorId === me._id);
+                const myClasses = classes.filter(c => String(c.professorId) === String(me._id));
                 const myStudentIds = new Set(myClasses.flatMap(c => c.students || []));
-
-                // Filtrar solo los alumnos en mis clases
-                const myStudents = students.filter(s => myStudentIds.has(s._id));
+                const myStudents = students.filter(s => myStudentIds.has(String(s._id)));
                 renderStudents(myStudents);
             } catch (err) {
                 document.getElementById('studentsList').textContent = 'Error cargando alumnos';
@@ -517,40 +754,36 @@
                 document.getElementById('studentsList').innerHTML = '<i>No hay alumnos en tus clases</i>';
                 return;
             }
-
             const html = [
                 '<table><thead><tr>',
                 '<th>Nombre</th><th>Apellido</th><th>DNI</th><th>Teléfono</th>',
                 '<th>Contacto Emergencia</th><th>Vencimiento</th><th>Tipo Cuota</th>',
                 '</tr></thead><tbody>'
             ];
-
             for (const s of students) {
                 const dueDate = s.dueDate ? new Date(s.dueDate).toLocaleDateString() : 'No establecida';
                 html.push(`
                     <tr>
-                        <td>${s.name || ''}</td>
-                        <td>${s.lastName || ''}</td>
-                        <td>${s.dni}</td>
-                        <td>${s.phone || ''}</td>
-                        <td>${s.emergencyContact || ''}</td>
-                        <td>${dueDate}</td>
-                        <td>${s.membershipType || ''}</td>
+                        <td>${esc(s.name || '')}</td>
+                        <td>${esc(s.lastName || '')}</td>
+                        <td>${esc(s.dni || '')}</td>
+                        <td>${esc(s.phone || '')}</td>
+                        <td>${esc(s.emergencyContact || '')}</td>
+                        <td>${esc(dueDate)}</td>
+                        <td>${esc(s.membershipType || '')}</td>
                     </tr>
                 `);
             }
-
             html.push('</tbody></table>');
             document.getElementById('studentsList').innerHTML = html.join('');
         }
 
-        // Clases
+        // Clases (solo las asignadas al prof)
         async function loadClasses() {
             try {
                 const me = await pilatesAuth.me();
                 const classes = await adminClasses.listClasses();
-                // Filtrar solo las clases donde el profesor está asignado
-                const myClasses = classes.filter(c => c.professorId === me._id);
+                const myClasses = classes.filter(c => String(c.professorId) === String(me._id));
                 renderClasses(myClasses);
             } catch (err) {
                 document.getElementById('classesList').textContent = 'Error cargando clases';
@@ -562,26 +795,22 @@
                 document.getElementById('classesList').innerHTML = '<i>No tienes clases asignadas</i>';
                 return;
             }
-
             const html = ['<table><thead><tr><th>Días</th><th>Horario</th><th>Salón</th><th>Camillas libres</th><th>Acciones</th></tr></thead><tbody>'];
-
             for (const c of classes) {
                 html.push(`
-                    <tr data-id="${c._id}">
-                        <td>${c.days.join(', ')}</td>
-                        <td>${c.start} (${c.duration} min)</td>
-                        <td>${c.roomName || ''}</td>
-                        <td>${c.camillasFree}</td>
+                    <tr data-id="${esc(c._id)}">
+                        <td>${esc((c.days || []).join(', '))}</td>
+                        <td>${esc(c.start || '')} (${esc(c.duration || '')} min)</td>
+                        <td>${esc(c.roomName || '')}</td>
+                        <td>${esc(c.camillasFree || 0)}</td>
                         <td>
                             <button class="viewStudents" style="background:#48bb78">Ver estudiantes</button>
                         </td>
                     </tr>
                 `);
             }
-
             html.push('</tbody></table>');
             document.getElementById('classesList').innerHTML = html.join('');
-
             document.querySelectorAll('.viewStudents').forEach(b =>
                 b.addEventListener('click', async e => {
                     const id = e.target.closest('tr').dataset.id;
@@ -593,16 +822,14 @@
         async function openViewStudentsModal(classId) {
             const students = await adminClasses.getClassStudents(classId);
             const classes = await adminClasses.listClasses();
-            const classInfo = classes.find(c => c._id === classId);
-
+            const classInfo = classes.find(c => String(c._id) === String(classId)) || { days: [], start: '' };
             const modal = document.createElement('div');
             modal.style = 'position:fixed;inset:0;background:rgba(0,0,0,0.35);display:flex;align-items:center;justify-content:center';
             modal.innerHTML = `
                 <div style="background:#fff;padding:16px;border-radius:8px;width:480px;max-height:90vh;overflow-y:auto">
-                    <h4>Estudiantes - ${classInfo.start} (${classInfo.days.join(', ')})</h4>
-                    
+                    <h4>Estudiantes - ${esc(classInfo.start)} (${esc((classInfo.days || []).join(', '))})</h4>
                     <div style="margin:16px 0">
-                        <div>Estudiantes inscritos (${students.length}/${classInfo.roomName ? ` max ${classInfo.camillasFree + students.length}` : ''}):</div>
+                        <div>Estudiantes inscritos (${esc(String(students.length))}/${classInfo.roomName ? ` max ${esc(String((classInfo.camillasFree || 0) + students.length))}` : ''}):</div>
                         ${students.length ? `
                             <table>
                                 <thead>
@@ -615,38 +842,38 @@
                                 <tbody>
                                     ${students.map(s => `
                                         <tr>
-                                            <td>${s.name} ${s.lastName}</td>
-                                            <td>${s.phone || '-'}</td>
-                                            <td>${s.emergencyContact || '-'}</td>
+                                            <td>${esc((s.name || '') + ' ' + (s.lastName || ''))}</td>
+                                            <td>${esc(s.phone || '-')}</td>
+                                            <td>${esc(s.emergencyContact || '-')}</td>
                                         </tr>
                                     `).join('')}
                                 </tbody>
                             </table>
                         ` : '<div style="margin-top:8px"><i>No hay estudiantes inscritos</i></div>'}
                     </div>
-
                     <div style="display:flex;justify-content:flex-end;margin-top:16px">
                         <button id="closeStudents">Cerrar</button>
                     </div>
                 </div>
             `;
-
             document.body.appendChild(modal);
             document.getElementById('closeStudents').addEventListener('click', () => modal.remove());
         }
 
-        // Event listeners
+        // Buscador
         document.getElementById('searchStudents').addEventListener('input', (e) => loadStudents(e.target.value));
 
         // Inicialización
         const ensure = pilatesAuth.ensureRole(['profesor']);
         ensure().then(async me => {
-            document.getElementById('meInfo').textContent = `${me.name} ${me.lastName} (${me.role})`;
+            // Prefer explicit name + lastName; fallback to dni or email if missing
+            const full = ((me.name || '') + ' ' + (me.lastName || '')).trim();
+            const display = full || me.dni || me.email || '';
+            const el = document.getElementById('meInfo');
+            if (el) el.textContent = display;
             await loadStudents();
             await loadClasses();
         });
-
-        document.getElementById('logout').addEventListener('click', () => pilatesAuth.logout());
     </script>
 </body>
 
