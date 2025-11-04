@@ -7,11 +7,41 @@
     }
 
     async function listStudents(search = '') {
+        // If role says 'profesor', call the professor-specific endpoint directly
+        const role = localStorage.getItem('role');
+        if (role === 'profesor') {
+            try {
+                if (!window.pilatesAuth || !window.pilatesAuth.getMe) throw new Error('No auth helper');
+                const me = await window.pilatesAuth.getMe();
+                const token = localStorage.getItem('token');
+                const q = search ? `?search=${encodeURIComponent(search)}` : '';
+                const profRes = await fetch(`${API}/api/professors/${me.id}/students${q}`, { headers: { Authorization: `Bearer ${token}` } });
+                if (!profRes.ok) throw new Error('Error listando alumnos');
+                return profRes.json();
+            } catch (err) {
+                throw new Error('Error listando alumnos');
+            }
+        }
+
+        // Otherwise try admin users endpoint and fall back to professor endpoint on 403
         const res = await fetch(`${API}/api/users?role=alumno${search ? `&search=${search}` : ''}`, {
             headers: headers()
         });
-        if (!res.ok) throw new Error('Error listando alumnos');
-        return res.json();
+        if (res.ok) return res.json();
+        if (res.status === 401 || res.status === 403) {
+            // fallback to professor endpoint if possible
+            try {
+                if (!window.pilatesAuth || !window.pilatesAuth.getMe) throw new Error('No auth helper');
+                const me = await window.pilatesAuth.getMe();
+                const profRes = await fetch(`${API}/api/professors/${me.id}/students${search ? `?search=${encodeURIComponent(search)}` : ''}`, { headers: headers() });
+                if (!profRes.ok) throw new Error('Error listando alumnos');
+                return profRes.json();
+            } catch (err) {
+                throw new Error('Error listando alumnos');
+            }
+        }
+
+        throw new Error('Error listando alumnos');
     }
 
     async function createStudent(student) {

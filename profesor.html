@@ -438,10 +438,58 @@
     <div class="card">
         <section id="newStudentSection">
             <h4>Crear Alumno</h4>
-            <div style="display:flex;gap:8px;margin-bottom:8px;align-items:center">
-                <button id="btnNewStudent" style="background:#38a169;color:#fff;padding:8px 12px;border-radius:6px">
-                    Nuevo alumno
-                </button>
+            <!-- Inline form (same fields as admin's create user) -->
+            <div id="newStudentFormContainer"
+                style="margin-top:12px;padding:12px;border-radius:12px;background:#fff;border:1px solid #eee">
+                <form id="createStudentForm">
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:8px 0">
+                        <div>
+                            <div style="font-size:13px;margin-bottom:6px">DNI: <span class="required">*</span></div>
+                            <input id="newStudentDni"
+                                style="width:100%;padding:10px;border-radius:8px;border:1px solid #ddd" />
+                        </div>
+                        <div>
+                            <div style="font-size:13px;margin-bottom:6px">Nombre: <span class="required">*</span></div>
+                            <input id="newStudentName"
+                                style="width:100%;padding:10px;border-radius:8px;border:1px solid #ddd" />
+                        </div>
+                        <div>
+                            <div style="font-size:13px;margin-bottom:6px">Apellido: <span class="required">*</span>
+                            </div>
+                            <input id="newStudentLastName"
+                                style="width:100%;padding:10px;border-radius:8px;border:1px solid #ddd" />
+                        </div>
+                        <div>
+                            <div style="font-size:13px;margin-bottom:6px">Teléfono:</div>
+                            <input id="newStudentPhone"
+                                style="width:100%;padding:10px;border-radius:8px;border:1px solid #ddd" />
+                        </div>
+                        <div>
+                            <div style="font-size:13px;margin-bottom:6px">Contacto de emergencia:</div>
+                            <input id="newStudentEmergency"
+                                style="width:100%;padding:10px;border-radius:8px;border:1px solid #ddd" />
+                        </div>
+                        <div>
+                            <div style="font-size:13px;margin-bottom:6px">Vencimiento:</div>
+                            <input type="date" id="newStudentDueDate"
+                                style="width:100%;padding:10px;border-radius:8px;border:1px solid #ddd" />
+                        </div>
+                    </div>
+
+                    <div id="classesDivInline" style="margin-top:12px">
+                        <div style="font-size:13px;margin-bottom:6px">Clases asignadas: <span class="required">*</span>
+                        </div>
+                        <div id="newStudentClassesContainer"
+                            style="max-height:150px;overflow-y:auto;border:1px solid #ddd;border-radius:8px;padding:6px;background:#fff">
+                            Cargando...</div>
+                    </div>
+
+                    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
+                        <button type="button" id="cancelCreateStudent">Cancelar</button>
+                        <button type="submit" id="saveCreateStudent"
+                            style="background:#38a169;color:#fff;padding:8px 12px;border-radius:8px">Guardar</button>
+                    </div>
+                </form>
             </div>
         </section>
         <section id="studentsSection" style="display:none">
@@ -636,111 +684,91 @@
         // helper to escape inserted text
         function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
 
-        // Modal para crear alumno (solo clases donde el prof está asignado)
-        document.getElementById('btnNewStudent').addEventListener('click', async () => {
-            let classes = [];
-            try { classes = await adminClasses.listClasses(); } catch (e) { classes = []; }
-            const me = await pilatesAuth.me();
-            const myClasses = classes.filter(c => String(c.professorId) === String(me._id));
-
-            const modal = document.createElement('div');
-            modal.style = 'position:fixed;inset:0;background:rgba(0,0,0,0.35);display:flex;align-items:center;justify-content:center;z-index:1000';
-            modal.innerHTML = `
-                <div style="background:#fff;padding:16px;border-radius:8px;width:600px;max-height:90vh;overflow-y:auto">
-                    <h4>Nuevo Alumno</h4>
-                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:16px 0">
-                        <div>
-                            <div>DNI: <span class="required">*</span></div>
-                            <input id="newStudentDni" style="width:100%;padding:8px;margin:4px 0;border:1px solid #ddd;border-radius:4px" />
-                        </div>
-                        <div>
-                            <div>Nombre: <span class="required">*</span></div>
-                            <input id="newStudentName" style="width:100%;padding:8px;margin:4px 0;border:1px solid #ddd;border-radius:4px" />
-                        </div>
-                        <div>
-                            <div>Apellido: <span class="required">*</span></div>
-                            <input id="newStudentLastName" style="width:100%;padding:8px;margin:4px 0;border:1px solid #ddd;border-radius:4px" />
-                        </div>
-                        <div>
-                            <div>Teléfono:</div>
-                            <input id="newStudentPhone" style="width:100%;padding:8px;margin:4px 0;border:1px solid #ddd;border-radius:4px" />
-                        </div>
-                        <div>
-                            <div>Contacto de emergencia:</div>
-                            <input id="newStudentEmergency" style="width:100%;padding:8px;margin:4px 0;border:1px solid #ddd;border-radius:4px" />
-                        </div>
-                        <div>
-                            <div>Tipo de cuota:</div>
-                            <select id="newStudentMembership" style="width:100%;padding:8px;margin:4px 0;border:1px solid #ddd;border-radius:4px">
-                                <option value="mensual">Mensual</option>
-                                <option value="trimestral">Trimestral</option>
-                                <option value="anual">Anual</option>
-                            </select>
-                        </div>
-                        <div>
-                            <div>Vencimiento:</div>
-                            <input type="date" id="newStudentDueDate" style="width:100%;padding:8px;margin:4px 0;border:1px solid #ddd;border-radius:4px" />
-                        </div>
-                    </div>
-                    <div style="margin:16px 0">
-                        <div>Clases asignadas:</div>
-                        <div style="max-height:150px;overflow-y:auto;border:1px solid #ddd;border-radius:4px;margin-top:4px">
-                            ${myClasses.map(c => `
-                                <label style="display:block;padding:8px;border-bottom:1px solid #eee">
-                                    <input type="checkbox" value="${esc(c._id)}" class="newStudentClass" />
-                                    ${esc((c.days || []).join(', '))} ${esc(c.start)} - ${esc(c.roomName || '')}
-                                    (${esc(c.camillasFree) || 0} lugares libres)
-                                </label>
-                            `).join('')}
-                        </div>
-                    </div>
-                    <div style="display:flex;gap:8px;justify-content:flex-end">
-                        <button id="cancelNewStudent">Cancelar</button>
-                        <button id="saveNewStudent" style="background:#38a169;color:#fff">Guardar</button>
-                    </div>
-                </div>
-            `;
-            document.body.appendChild(modal);
-
-            document.getElementById('cancelNewStudent').addEventListener('click', () => modal.remove());
-            document.getElementById('saveNewStudent').addEventListener('click', async () => {
-                const student = {
-                    dni: document.getElementById('newStudentDni').value.trim(),
-                    name: document.getElementById('newStudentName').value.trim(),
-                    lastName: document.getElementById('newStudentLastName').value.trim(),
-                    phone: document.getElementById('newStudentPhone').value.trim(),
-                    emergencyContact: document.getElementById('newStudentEmergency').value.trim(),
-                    membershipType: document.getElementById('newStudentMembership').value,
-                    dueDate: document.getElementById('newStudentDueDate').value,
-                    classIds: Array.from(document.querySelectorAll('.newStudentClass:checked')).map(cb => cb.value)
-                };
-
-                if (!student.dni || !student.name || !student.lastName) {
-                    return alert('DNI, nombre y apellido son requeridos');
+        // Populate inline create-student form (professor creates alumnos for their classes)
+        (async function initInlineCreateStudent() {
+            try {
+                const me = await pilatesAuth.getMe();
+                // load classes and filter to those taught by this professor
+                let classes = [];
+                try { classes = await adminClasses.listClasses(); } catch (e) { classes = []; }
+                const myClasses = classes.filter(c => String(c.professorId) === String(me.id));
+                const container = document.getElementById('newStudentClassesContainer');
+                if (!container) return;
+                if (!myClasses.length) {
+                    container.innerHTML = '<i>No tienes clases para asignar</i>';
+                } else {
+                    container.innerHTML = myClasses.map(c => `
+                        <label style="display:block;padding:8px;border-bottom:1px solid #eee">
+                            <input type="checkbox" value="${c._id}" class="newStudentClass" />
+                            ${(c.days || []).join(', ')} ${c.start} - ${c.roomName || ''} (${(c.camillasFree || 0)} lugares libres)
+                        </label>
+                    `).join('');
                 }
 
-                if (!Array.isArray(student.classIds) || student.classIds.length === 0) {
-                    return alert('Debe asignar al menos una clase al crear un alumno');
-                }
+                // Cancel button resets the form
+                const cancel = document.getElementById('cancelCreateStudent');
+                if (cancel) cancel.addEventListener('click', () => {
+                    const form = document.getElementById('createStudentForm');
+                    if (form) form.reset();
+                });
 
-                try {
-                    await adminStudents.createStudent(student);
-                    modal.remove();
-                    await loadStudents();
-                    await loadClasses();
-                } catch (err) {
-                    alert(err.message || 'Error creando alumno');
+                // Handle submit
+                const form = document.getElementById('createStudentForm');
+                if (form) {
+                    form.addEventListener('submit', async (e) => {
+                        e.preventDefault();
+                        const student = {
+                            dni: document.getElementById('newStudentDni').value.trim(),
+                            name: document.getElementById('newStudentName').value.trim(),
+                            lastName: document.getElementById('newStudentLastName').value.trim(),
+                            phone: document.getElementById('newStudentPhone').value.trim(),
+                            emergencyContact: document.getElementById('newStudentEmergency').value.trim(),
+                            // membershipType intentionally omitted for professor create form
+                            dueDate: document.getElementById('newStudentDueDate').value,
+                            classIds: Array.from(document.querySelectorAll('.newStudentClass:checked')).map(cb => cb.value)
+                        };
+
+                        if (!student.dni || !student.name || !student.lastName) return alert('DNI, nombre y apellido son requeridos');
+                        if (!Array.isArray(student.classIds) || student.classIds.length === 0) return alert('Debe asignar al menos una clase al crear un alumno');
+
+                        try {
+                            await adminStudents.createStudent(student);
+                            alert('Alumno creado');
+                            form.reset();
+                            await loadStudents();
+                            await loadClasses();
+                        } catch (err) {
+                            alert(err.message || 'Error creando alumno');
+                        }
+                    });
                 }
-            });
-        });
+            } catch (err) {
+                const container = document.getElementById('newStudentClassesContainer');
+                if (container) container.innerHTML = '<i>Error cargando clases</i>';
+            }
+        })();
 
         // Listado de alumnos (solo los de mis clases)
         async function loadStudents(search = '') {
             try {
-                const me = await pilatesAuth.me();
-                const students = await adminStudents.listStudents(search);
+                const me = await pilatesAuth.getMe();
+                let students = [];
+                try {
+                    students = await adminStudents.listStudents(search);
+                } catch (err) {
+                    // Fallback: call professor-specific endpoint directly using known me.id
+                    try {
+                        const token = localStorage.getItem('token');
+                        const q = search ? `?search=${encodeURIComponent(search)}` : '';
+                        const res = await fetch(`/api/professors/${me.id}/students${q}`, { headers: { Authorization: `Bearer ${token}` } });
+                        if (!res.ok) throw new Error('Error listando alumnos');
+                        students = await res.json();
+                    } catch (err2) {
+                        throw err2;
+                    }
+                }
                 const classes = await adminClasses.listClasses();
-                const myClasses = classes.filter(c => String(c.professorId) === String(me._id));
+                const myClasses = classes.filter(c => String(c.professorId) === String(me.id));
                 const myStudentIds = new Set(myClasses.flatMap(c => c.students || []));
                 const myStudents = students.filter(s => myStudentIds.has(String(s._id)));
                 renderStudents(myStudents);
@@ -754,36 +782,69 @@
                 document.getElementById('studentsList').innerHTML = '<i>No hay alumnos en tus clases</i>';
                 return;
             }
-            const html = [
-                '<table><thead><tr>',
-                '<th>Nombre</th><th>Apellido</th><th>DNI</th><th>Teléfono</th>',
-                '<th>Contacto Emergencia</th><th>Vencimiento</th><th>Tipo Cuota</th>',
-                '</tr></thead><tbody>'
-            ];
-            for (const s of students) {
+
+            // Render students as responsive cards
+            const cards = students.map(s => {
                 const dueDate = s.dueDate ? new Date(s.dueDate).toLocaleDateString() : 'No establecida';
-                html.push(`
-                    <tr>
-                        <td>${esc(s.name || '')}</td>
-                        <td>${esc(s.lastName || '')}</td>
-                        <td>${esc(s.dni || '')}</td>
-                        <td>${esc(s.phone || '')}</td>
-                        <td>${esc(s.emergencyContact || '')}</td>
-                        <td>${esc(dueDate)}</td>
-                        <td>${esc(s.membershipType || '')}</td>
-                    </tr>
-                `);
-            }
-            html.push('</tbody></table>');
-            document.getElementById('studentsList').innerHTML = html.join('');
+                return `
+                    <div class="item-card" style="display:flex;flex-direction:column;justify-content:space-between;min-height:120px">
+                        <div>
+                            <div style="font-weight:700;font-size:16px;margin-bottom:6px">${esc((s.name || '') + ' ' + (s.lastName || ''))}</div>
+                            <div style="color:#374151;margin-bottom:6px">DNI: <strong>${esc(s.dni || '')}</strong></div>
+                            <div style="color:#6b7280;margin-bottom:6px">Teléfono: ${esc(s.phone || '-')}</div>
+                            <div style="color:#6b7280;margin-bottom:6px">Contacto emergencia: ${esc(s.emergencyContact || '-')}</div>
+                        </div>
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px">
+                            <div style="font-size:13px;color:#374151">Vencimiento: <strong>${esc(dueDate)}</strong></div>
+                            <div>
+                                <button class="viewStudentDetail" data-id="${esc(s._id)}" style="background:#2563eb;color:#fff;border:none;padding:8px 10px;border-radius:8px;cursor:pointer">Ver</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            document.getElementById('studentsList').innerHTML = `<div class="cards-grid">${cards}</div>`;
+
+            // Attach handlers for the detail buttons
+            document.querySelectorAll('.viewStudentDetail').forEach(b =>
+                b.addEventListener('click', async e => {
+                    const id = e.target.getAttribute('data-id');
+                    // Reuse existing student detail modal flow if needed; fallback to fetch
+                    try {
+                        const token = localStorage.getItem('token');
+                        const res = await fetch(`/api/students/${id}`, { headers: { Authorization: `Bearer ${token}` } });
+                        if (!res.ok) return alert('Error obteniendo alumno');
+                        const s = await res.json();
+                        const modal = document.createElement('div');
+                        modal.style = 'position:fixed;inset:0;background:rgba(0,0,0,0.35);display:flex;align-items:center;justify-content:center';
+                        modal.innerHTML = `
+                            <div style="background:#fff;padding:16px;border-radius:8px;width:420px;max-height:90vh;overflow-y:auto">
+                                <h4>${esc((s.name || '') + ' ' + (s.lastName || ''))}</h4>
+                                <div style="margin:8px 0">DNI: ${esc(s.dni || '')}</div>
+                                <div>Tel: ${esc(s.phone || '-')}</div>
+                                <div>Contacto emergencia: ${esc(s.emergencyContact || '-')}</div>
+                                <div>Vencimiento: ${esc(s.dueDate ? new Date(s.dueDate).toLocaleDateString() : 'No establecida')}</div>
+                                <div style="display:flex;justify-content:flex-end;margin-top:12px">
+                                    <button id="closeStudentModal">Cerrar</button>
+                                </div>
+                            </div>
+                        `;
+                        document.body.appendChild(modal);
+                        document.getElementById('closeStudentModal').addEventListener('click', () => modal.remove());
+                    } catch (err) {
+                        alert('Error al obtener detalle del alumno');
+                    }
+                })
+            );
         }
 
         // Clases (solo las asignadas al prof)
         async function loadClasses() {
             try {
-                const me = await pilatesAuth.me();
+                const me = await pilatesAuth.getMe();
                 const classes = await adminClasses.listClasses();
-                const myClasses = classes.filter(c => String(c.professorId) === String(me._id));
+                const myClasses = classes.filter(c => String(c.professorId) === String(me.id));
                 renderClasses(myClasses);
             } catch (err) {
                 document.getElementById('classesList').textContent = 'Error cargando clases';
@@ -795,25 +856,36 @@
                 document.getElementById('classesList').innerHTML = '<i>No tienes clases asignadas</i>';
                 return;
             }
-            const html = ['<table><thead><tr><th>Días</th><th>Horario</th><th>Salón</th><th>Camillas libres</th><th>Acciones</th></tr></thead><tbody>'];
-            for (const c of classes) {
-                html.push(`
-                    <tr data-id="${esc(c._id)}">
-                        <td>${esc((c.days || []).join(', '))}</td>
-                        <td>${esc(c.start || '')} (${esc(c.duration || '')} min)</td>
-                        <td>${esc(c.roomName || '')}</td>
-                        <td>${esc(c.camillasFree || 0)}</td>
-                        <td>
-                            <button class="viewStudents" style="background:#48bb78">Ver estudiantes</button>
-                        </td>
-                    </tr>
-                `);
-            }
-            html.push('</tbody></table>');
-            document.getElementById('classesList').innerHTML = html.join('');
-            document.querySelectorAll('.viewStudents').forEach(b =>
+            // Render as a responsive card grid for a cleaner professor view
+            const cards = classes.map(c => {
+                const days = esc((c.days || []).join(', '));
+                const time = esc(c.start || '');
+                const duration = esc(c.duration || '');
+                const room = esc(c.roomName || '');
+                const free = esc(c.camillasFree || 0);
+                return `
+                    <div class="item-card" data-id="${esc(c._id)}" style="display:flex;flex-direction:column;justify-content:space-between;min-height:140px">
+                        <div>
+                            <div style="font-weight:700;margin-bottom:8px">${days}</div>
+                            <div style="color:#374151;margin-bottom:6px">Horario: <strong>${time}</strong> <span style="color:#6b7280">(${duration} min)</span></div>
+                            <div style="color:#374151;margin-bottom:6px">Salón: ${room}</div>
+                        </div>
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px">
+                            <div style="font-size:13px;color:#065f46">Camillas libres: <strong>${free}</strong></div>
+                            <div>
+                                <button class="viewStudents" style="background:#48bb78;color:#fff;border:none;padding:8px 10px;border-radius:8px;cursor:pointer">Ver estudiantes</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            document.getElementById('classesList').innerHTML = `<div class="cards-grid">${cards}</div>`;
+
+            // Attach handlers to the card buttons
+            document.querySelectorAll('.item-card .viewStudents').forEach(b =>
                 b.addEventListener('click', async e => {
-                    const id = e.target.closest('tr').dataset.id;
+                    const id = e.target.closest('.item-card').dataset.id;
                     openViewStudentsModal(id);
                 })
             );

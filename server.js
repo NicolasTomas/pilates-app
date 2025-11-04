@@ -177,6 +177,23 @@ function authMiddleware(req, res, next) {
     }
 }
 
+// Middleware más ligero que solo verifica el token y adjunta payload en req.user
+// Útil para endpoints donde cualquier usuario autenticado puede actuar (con cheques adicionales)
+function authAny(req, res, next) {
+    const auth = req.headers.authorization;
+    if (!auth) return res.status(401).json({ error: 'No autorizado' });
+    const parts = auth.split(' ');
+    if (parts.length !== 2) return res.status(401).json({ error: 'Token mal formado' });
+    const token = parts[1];
+    try {
+        const payload = jwt.verify(token, JWT_SECRET);
+        req.user = payload;
+        next();
+    } catch (err) {
+        return res.status(401).json({ error: 'Token inválido' });
+    }
+}
+
 // Helper to extract payload from Authorization header for routes that don't use authMiddleware
 function verifyToken(req) {
     const auth = req.headers.authorization;
@@ -686,7 +703,7 @@ app.post('/api/students/:id/recover-instance/:instanceId', async (req, res) => {
 });
 
 // CRUD Alumnos
-app.post('/api/students', authMiddleware, async (req, res) => {
+app.post('/api/students', authAny, async (req, res) => {
     const {
         dni, name, lastName, phone, emergencyContact,
         membershipType, dueDate, classIds = []
@@ -715,6 +732,18 @@ app.post('/api/students', authMiddleware, async (req, res) => {
                 return res.status(400).json({ error: 'Una o más clases no existen' });
             }
 
+            // Si el solicitante es un profesor, asegurar que las clases sean suyas y del mismo gimnasio
+            if (req.user && req.user.role === 'profesor') {
+                for (const clase of classes) {
+                    if (clase.professorId && String(clase.professorId) !== String(req.user.id)) {
+                        return res.status(403).json({ error: 'No tenés permisos para asignar alumnos a una clase que no es tuya' });
+                    }
+                    if (clase.gymId && req.user.gymId && clase.gymId !== req.user.gymId) {
+                        return res.status(403).json({ error: 'No tenés permisos para asignar clases de otro gimnasio' });
+                    }
+                }
+            }
+
             // Verificar capacidad en cada clase
             for (const clase of classes) {
                 const room = await db.collection('rooms').findOne({ _id: new ObjectId(clase.roomId) });
@@ -739,7 +768,8 @@ app.post('/api/students', authMiddleware, async (req, res) => {
             membershipType,
             dueDate: dueDate ? new Date(dueDate) : null,
             role: 'alumno',
-            gymId: req.user.gymId || null,
+            // Assign the student's gym to the creator's gym when available
+            gymId: (req.user && req.user.gymId) ? req.user.gymId : null,
             createdAt: new Date()
         };
 
@@ -1762,6 +1792,70 @@ app.get('/api/classes/:id/students', authMiddleware, async (req, res) => {
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: 'Error al listar estudiantes' });
+    }
+});
+
+// Listar alumnos pertenecientes a las clases de un profesor
+// - Administradores pueden listar por cualquier profesor id
+// - Profesores autenticados sólo pueden listar sus propios alumnos
+app.get('/api/professors/:id/students', async (req, res) => {
+    const auth = req.headers.authorization;
+    if (!auth) return res.status(401).json({ error: 'No autorizado' });
+    const parts = auth.split(' ');
+    if (parts.length !== 2) return res.status(401).json({ error: 'Token mal formado' });
+    const token = parts[1];
+    let payload;
+    try {
+        payload = jwt.verify(token, JWT_SECRET);
+    } catch (err) {
+        return res.status(401).json({ error: 'Token inválido' });
+    }
+
+    const profId = req.params.id;
+
+    // If caller is a profesor they can only request their own students
+    if (payload.role === 'profesor' && String(payload.id) !== String(profId)) {
+        return res.status(403).json({ error: 'No tenés permisos para ver los alumnos de otro profesor' });
+    }
+
+    try {
+        // Find classes taught by this professor (limit by gymId if present)
+        const q = {};
+        if (payload.gymId) q.gymId = payload.gymId;
+        // professorId in classes may be stored as string or ObjectId depending on how
+        // classes were created. Accept both by querying for either form when possible.
+        try {
+            const oid = new ObjectId(profId);
+            q.$or = [{ professorId: profId }, { professorId: oid }];
+        } catch (e) {
+            q.professorId = profId;
+        }
+        const classes = await db.collection('classes').find(q).toArray();
+
+        const studentIdSet = new Set();
+        for (const c of classes) {
+            if (Array.isArray(c.students)) {
+                for (const s of c.students) studentIdSet.add(String(s));
+            }
+        }
+
+        if (studentIdSet.size === 0) return res.json([]);
+
+        const ids = Array.from(studentIdSet).map(s => new ObjectId(s));
+
+        // Optional search query
+        const search = req.query.search;
+        const userQ = { _id: { $in: ids }, role: 'alumno' };
+        if (search) {
+            const re = new RegExp(search, 'i');
+            userQ.$or = [{ name: re }, { lastName: re }, { dni: re }];
+        }
+
+        const students = await db.collection('users').find(userQ).project({ password: 0 }).toArray();
+        res.json(students);
+    } catch (err) {
+        console.error('Error listing professor students:', err);
+        res.status(500).json({ error: 'Error al listar alumnos del profesor' });
     }
 });
 

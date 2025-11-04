@@ -7,9 +7,25 @@
     }
 
     async function listClasses() {
+        // If we detect via local storage that caller is a professor, skip the
+        // admin endpoint to avoid generating 403s in the network tab and
+        // directly call the public open endpoint.
+        const role = localStorage.getItem('role');
+        if (role === 'profesor') {
+            const resOpen = await fetch(`${API}/api/classes/open`, { headers: headers() });
+            if (!resOpen.ok) throw new Error('Error listando clases');
+            return resOpen.json();
+        }
+
+        // Otherwise try admin endpoint first, then fall back to open if forbidden.
         const res = await fetch(`${API}/api/classes`, { headers: headers() });
-        if (!res.ok) throw new Error('Error listando clases');
-        return res.json();
+        if (res.ok) return res.json();
+        if (res.status === 401 || res.status === 403) {
+            const res2 = await fetch(`${API}/api/classes/open`, { headers: headers() });
+            if (!res2.ok) throw new Error('Error listando clases');
+            return res2.json();
+        }
+        throw new Error('Error listando clases');
     }
 
     async function createClass(payload) {
