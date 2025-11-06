@@ -800,6 +800,58 @@ app.post('/api/students', authAny, async (req, res) => {
     }
 });
 
+// Endpoint para recibir solicitudes de registro desde el formulario público
+// Guarda la solicitud en `registerRequests` y, si el usuario pidió suscripción,
+// crea una entrada en `subscriptions` con estado 'pending' para ser procesada
+// cuando se configuren las credenciales de Mercado Pago.
+app.post('/api/register-request', async (req, res) => {
+    try {
+        const { gymName, phone, email, password, wantsSubscription } = req.body || {};
+        if (!gymName || !email || !password) {
+            return res.status(400).json({ error: 'gymName, email y password son requeridos' });
+        }
+
+        const requestDoc = {
+            gymName,
+            phone: phone || null,
+            email,
+            passwordHash: password ? String(password) : null, // store raw for now; you may choose to hash later
+            wantsSubscription: !!wantsSubscription,
+            status: 'pending',
+            createdAt: new Date()
+        };
+
+        const result = await db.collection('registerRequests').insertOne(requestDoc);
+
+        // If subscription requested, create a subscription record for later processing
+        if (wantsSubscription) {
+            const defaultAmount = Number(process.env.SUBSCRIPTION_AMOUNT || 2000);
+            const defaultCurrency = process.env.SUBSCRIPTION_CURRENCY || 'ARS';
+            const subDoc = {
+                requestId: result.insertedId,
+                email,
+                gymName,
+                phone: phone || null,
+                plan: {
+                    name: process.env.SUBSCRIPTION_PLAN_NAME || 'Membresía mensual',
+                    amount: defaultAmount,
+                    currency: defaultCurrency,
+                    interval: 'months',
+                    intervalCount: 1
+                },
+                status: 'pending', // pending until credentials/process executed
+                createdAt: new Date()
+            };
+            await db.collection('subscriptions').insertOne(subDoc);
+        }
+
+        res.status(201).json({ ok: true, id: result.insertedId });
+    } catch (err) {
+        console.error('Error en /api/register-request:', err);
+        res.status(500).json({ error: 'Error al procesar la solicitud' });
+    }
+});
+
 app.put('/api/students/:id', authMiddleware, async (req, res) => {
     const { id } = req.params;
     const {

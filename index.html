@@ -215,7 +215,7 @@
             min-height: 48px;
             /* consistent height across devices */
             width: 100%;
-            margin-bottom: var(--card-edge-gap);
+
         }
 
         .admin-btn-container button {
@@ -337,6 +337,9 @@
                 opacity: 1;
             }
         }
+        #toggleRegPass, #toggleRegConfirm{
+            box-shadow: none !important;
+        }
     </style>
 </head>
 
@@ -345,8 +348,13 @@
     <div class="card card-surface">
         <h2>Iniciar sesión</h2>
         <p>Ingresá tu DNI para acceder</p>
-        <input id="dni" placeholder="DNI" maxlength="12" />
+        <input id="dni" placeholder="DNI" maxlength="15" />
         <button id="btnLogin">Ingresar</button>
+        <p style="text-align:center;margin:10px 0 0 0;color:#475569;font-size:13px">
+            ¿No tienes una cuenta?
+            <a id="btnCreateAccount" href="#" role="button"
+                style="color:#2563eb;text-decoration:underline;margin-left:3px;font-weight:600;cursor:pointer">Regístrate</a>
+        </p>
         <!-- <div class="hint">
             Usuarios de prueba:<br>
             • Alumno por DNI: 10000001<br>
@@ -470,6 +478,173 @@
                 }
             });
         }
+    </script>
+    <script>
+        // Crear cuenta -> abrir modal de registro con validación de contraseñas
+        (function () {
+            const btnCreate = document.getElementById('btnCreateAccount');
+            if (!btnCreate) return;
+
+            // small inline toast helper (no global CSS changes)
+            function showToast(message, kind = 'info') {
+                const t = document.createElement('div');
+                t.textContent = message;
+                t.style.position = 'fixed';
+                t.style.top = '18px';
+                t.style.left = '50%';
+                t.style.transform = 'translateX(-50%)';
+                t.style.padding = '10px 14px';
+                t.style.borderRadius = '10px';
+                t.style.color = '#fff';
+                t.style.zIndex = 2001;
+                t.style.boxShadow = '0 8px 30px rgba(0,0,0,0.25)';
+                t.style.fontSize = '14px';
+                t.style.opacity = '0';
+                t.style.transition = 'opacity 200ms, transform 200ms';
+                if (kind === 'error') {
+                    t.style.background = '#dc2626';
+                } else {
+                    t.style.background = '#16a34a';
+                }
+                document.body.appendChild(t);
+                requestAnimationFrame(() => { t.style.opacity = '1'; t.style.transform = 'translateX(-50%) translateY(0)'; });
+                setTimeout(() => { t.style.opacity = '0'; t.style.transform = 'translateX(-50%) translateY(-6px)'; setTimeout(() => t.remove(), 220); }, 3000);
+            }
+
+            btnCreate.addEventListener('click', (e) => {
+                e.preventDefault();
+                const modal = document.createElement('div');
+                modal.style.position = 'fixed';
+                modal.style.inset = '0';
+                modal.style.background = 'rgba(0,0,0,0.5)';
+                modal.style.display = 'flex';
+                modal.style.alignItems = 'center';
+                modal.style.justifyContent = 'center';
+                modal.style.zIndex = 1000;
+
+                const dialog = document.createElement('div');
+                dialog.setAttribute('role', 'dialog');
+                dialog.setAttribute('aria-modal', 'true');
+                dialog.style.background = '#fff';
+                dialog.style.padding = '20px';
+                dialog.style.borderRadius = '12px';
+                dialog.style.width = '420px';
+                dialog.style.maxWidth = '92%';
+                dialog.style.boxShadow = '0 20px 60px rgba(0,0,0,0.3)';
+
+                dialog.innerHTML = `
+                    <h3 style="margin:0 0 10px 0;text-align:center;font-size:20px;color:#000">Crear cuenta</h3>
+                                        <form id="regForm" style="display:flex;flex-direction:column;gap:8px">
+                                            <input id="regGym" placeholder="Nombre del gimnasio" required />
+                                            <input id="regPhone" placeholder="Teléfono" type="tel" />
+                                            <input id="regEmail" placeholder="Gmail" type="email" required />
+                                            <div style="position:relative;background:transparent;">
+                                                <input id="regPass" placeholder="Contraseña" type="password" required style="padding-right:44px" />
+                                                <button id="toggleRegPass" type="button" aria-label="Mostrar contraseña" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:transparent;border:none;width:20px;height:20px;padding:0;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;line-height:0"> 
+                                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z" stroke="#374151" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="3" stroke="#374151" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                                </button>
+                                            </div>
+                                            <div style="position:relative;background:transparent;">
+                                                <input id="regConfirm" placeholder="Confirmar contraseña" type="password" required style="padding-right:44px" />
+                                                <button id="toggleRegConfirm" type="button" aria-label="Mostrar contraseña" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:transparent;border:none;width:20px;height:20px;padding:0;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;line-height:0"> 
+                                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z" stroke="#374151" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="3" stroke="#374151" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                                </button>
+                                            </div>
+                                            <label style="display:flex;align-items:center;gap:8px;margin-top:4px">
+                                                <input id="regSubscribe" type="checkbox" />
+                                                <span style="font-size:13px;color:#374151">Quiero suscripción mensual automática</span>
+                                            </label>
+                                            <div style="display:flex;gap:8px;margin-top:8px">
+                                                <button type="button" id="regCancel" style="flex:1;padding:10px;border-radius:8px;border:none;background:#e2e8f0;color:#0f172a">Cancelar</button>
+                                                <button type="submit" style="flex:1;padding:10px;border-radius:8px;border:none;background:#2563eb;color:#fff">Registrarme</button>
+                                            </div>
+                                        </form>`;
+
+                modal.appendChild(dialog);
+                document.body.appendChild(modal);
+
+                // Toggle password visibility buttons
+                const passInput = dialog.querySelector('#regPass');
+                const passToggle = dialog.querySelector('#toggleRegPass');
+                const confInput = dialog.querySelector('#regConfirm');
+                const confToggle = dialog.querySelector('#toggleRegConfirm');
+
+                const eyeSvg = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z" stroke="#374151" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="3" stroke="#374151" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+                const eyeOffSvg = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-7 0-11-7-11-7 .95-1.63 2.28-3.21 3.84-4.5M9.88 9.88A3 3 0 0 0 14.12 14.12M1 1l22 22" stroke="#374151" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+                function wireToggle(input, btn) {
+                    if (!input || !btn) return;
+                    btn.addEventListener('click', () => {
+                        if (input.type === 'password') {
+                            input.type = 'text';
+                            btn.setAttribute('aria-label', 'Ocultar contraseña');
+                            btn.innerHTML = eyeOffSvg;
+                        } else {
+                            input.type = 'password';
+                            btn.setAttribute('aria-label', 'Mostrar contraseña');
+                            btn.innerHTML = eyeSvg;
+                        }
+                    });
+                }
+
+                // initialize icons
+                if (passToggle) passToggle.innerHTML = eyeSvg;
+                if (confToggle) confToggle.innerHTML = eyeSvg;
+                wireToggle(passInput, passToggle);
+                wireToggle(confInput, confToggle);
+
+                // focus
+                const first = dialog.querySelector('#regGym');
+                if (first) first.focus();
+
+                // close helpers
+                function closeModal() { if (modal && modal.parentNode) modal.parentNode.removeChild(modal); }
+
+                dialog.querySelector('#regCancel').addEventListener('click', closeModal);
+
+                // escape to close
+                function onKey(e) { if (e.key === 'Escape') closeModal(); }
+                document.addEventListener('keydown', onKey);
+
+                dialog.querySelector('#regForm').addEventListener('submit', async (ev) => {
+                    ev.preventDefault();
+                    const gymName = dialog.querySelector('#regGym').value.trim();
+                    const phone = dialog.querySelector('#regPhone').value.trim();
+                    const email = dialog.querySelector('#regEmail').value.trim();
+                    const pass = dialog.querySelector('#regPass').value;
+                    const conf = dialog.querySelector('#regConfirm').value;
+                    const wantsSubscription = !!dialog.querySelector('#regSubscribe').checked;
+
+                    if (pass !== conf) {
+                        showToast('Las contraseñas no coinciden', 'error');
+                        return;
+                    }
+
+                    try {
+                        const res = await fetch('/api/register-request', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ gymName, phone, email, password: pass, wantsSubscription })
+                        });
+                        const body = await res.json();
+                        if (!res.ok) {
+                            showToast(body && body.error ? body.error : 'Error al enviar solicitud', 'error');
+                            return;
+                        }
+                        showToast('Registro enviado correctamente', 'success');
+                        setTimeout(() => { closeModal(); document.removeEventListener('keydown', onKey); }, 700);
+                    } catch (e) {
+                        console.error('Error enviando solicitud:', e);
+                        showToast('Error de red al enviar solicitud', 'error');
+                    }
+                });
+            });
+
+            // keyboard accessibility on the link
+            btnCreate.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); btnCreate.click(); }
+            });
+        })();
     </script>
 </body>
 
