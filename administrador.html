@@ -95,9 +95,17 @@
         }
 
         h4 {
-            color: #764ba2;
+            color: #000000;
             font-size: 20px;
             margin-bottom: 16px;
+                        
+
+        }
+.titulos {
+    color: #000000;
+            font-size: 20px;
+            margin-bottom: 16px;
+                        font-family: 'Orbitron', sans-serif;
         }
 
         section {
@@ -806,11 +814,11 @@
     </nav>
     <div class="card">
         <section id="usersSection">
-            <h4>Crear Usuario</h4>
+            <h4 class="titulos">Crear Usuario</h4>
             <!-- Formulario de creación de usuario mostrado directamente (sin botón) -->
         </section>
         <section id="professorsSection" style="display:none">
-            <h4>Profesores</h4>
+            <h4 class="titulos">Profesores</h4>
             <div style="display:flex;gap:8px;margin-bottom:8px;align-items:center">
                 <button id="btnNewProfessor" style="background:#2b6cb0;color:#fff;padding:8px 12px;border-radius:6px">
                     Nuevo profesor
@@ -819,7 +827,7 @@
             <div id="professorsList">Cargando...</div>
         </section>
         <section id="studentsSection" style="display:none">
-            <h4>Alumnos</h4>
+            <h4 class="titulos">Alumnos</h4>
             <div style="display:flex;gap:8px;margin-bottom:8px;align-items:center">
                 <input id="searchStudents" placeholder="Buscar por nombre, apellido o DNI"
                     style="flex:1;padding:8px;border:1px solid #ddd;border-radius:4px" />
@@ -830,7 +838,7 @@
             <div id="studentsList">Cargando...</div>
         </section>
         <section id="roomsSection" style="display:none">
-            <h4>Salones</h4>
+            <h4 class="titulos">Salones</h4>
             <div style="display:flex;gap:8px;margin-bottom:8px;align-items:center">
                 <input id="searchRooms" placeholder="Buscar por nombre"
                     style="flex:1;padding:8px;border:1px solid #ddd;border-radius:4px" />
@@ -840,7 +848,7 @@
             <div id="roomsList">Cargando...</div>
         </section>
         <section id="classesSection" style="display:none">
-            <h4>Clases</h4>
+            <h4 class="titulos">Clases</h4>
             <div style="display:flex;gap:8px;margin-bottom:8px;align-items:center">
                 <input id="searchClasses" placeholder="Buscar clases"
                     style="flex:1;padding:8px;border:1px solid #ddd;border-radius:4px" />
@@ -850,7 +858,7 @@
             <div id="classesList">Cargando...</div>
         </section>
         <section id="gymConfigSection" style="display:none">
-            <h4>Configuración del Gimnasio</h4>
+            <h4 class="titulos">Configuración del Gimnasio</h4>
             <div id="gymConfigForm" style="margin-top:12px">Cargando...</div>
         </section>
     </div>
