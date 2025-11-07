@@ -14,8 +14,142 @@
         }
 
         :root {
-            --sidebar-width: 220px;
+            /* Responsive sidebar width: scales with viewport but stays within sensible bounds */
+            --sidebar-width: clamp(180px, 18vw, 260px);
             --sidebar-gap: 20px;
+        }
+
+        /* Fullscreen 'Ingreso por DNI' view styles */
+        /* Always hide the top/header in ingreso-mode */
+        body.ingreso-mode .top {
+            display: none !important;
+        }
+
+        /* Hide the lateral navbar only on desktop when in ingreso-mode; on mobile it should remain available */
+        @media (min-width: 768px) {
+            body.ingreso-mode .navbar {
+                display: none !important;
+            }
+
+            /* If the sidebar is opened while in ingreso-mode, ensure it becomes visible */
+            body.ingreso-mode.nav-open .navbar {
+                display: block !important;
+            }
+        }
+
+        /* Keep the sidebar toggle visible in ingreso-mode so the user can re-open navigation */
+        body.ingreso-mode #sideToggle {
+            display: inline-flex !important;
+            left: 12px !important;
+            top: 12px !important;
+            z-index: 1200 !important;
+            background: #fff !important;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12) !important;
+        }
+
+        /* When in ingreso-mode make the card fill the viewport and center content */
+        body.ingreso-mode .card {
+            margin: 0;
+            border-radius: 0;
+            padding: 24px;
+            max-width: none;
+            min-height: 100vh;
+            box-shadow: none;
+        }
+
+        .dni-check-container {
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+            height: 100%;
+        }
+
+        .dni-input-wrap {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 12px;
+        }
+
+        .dni-input-wrap input[type="text"],
+        .dni-input-wrap input[type="number"] {
+            width: min(420px, 60%);
+            padding: 14px 16px;
+            border-radius: 12px;
+            border: 2px solid #e6edf3;
+            font-size: 20px;
+            box-shadow: 0 6px 20px rgba(2, 6, 23, 0.06);
+        }
+
+        .dni-input-wrap button {
+            padding: 12px 16px;
+            border-radius: 12px;
+            background: linear-gradient(90deg, #22c55e, #16a34a);
+            color: #fff;
+            font-weight: 700;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 8px 30px rgba(16, 185, 129, 0.18);
+        }
+
+        .dni-result-card {
+            flex: 1 1 auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 18px;
+            padding: 32px;
+            color: #083344;
+            transition: background .25s ease, color .25s ease, transform .18s ease;
+            box-shadow: 0 30px 80px rgba(2, 6, 23, 0.12);
+            background: linear-gradient(180deg, #dcf5e9, #93d1a8);
+        }
+
+        .dni-result-card.expired {
+            background: linear-gradient(180deg, #fbdadc, #f1a4a4);
+            color: #4c0519;
+        }
+
+        .dni-result-card .meta {
+            font-size: 18px;
+            color: inherit;
+            opacity: 0.95;
+        }
+
+        .dni-result-card .name {
+            font-size: 48px;
+            font-weight: 800;
+            margin-bottom: 12px;
+        }
+
+        /* Individual stacked fields inside the result card */
+        .dni-result-card .field {
+            display: block;
+            font-size: 20px;
+            opacity: 0.95;
+            margin-top: 6px;
+        }
+
+        .dni-result-card .small {
+            font-size: 18px;
+            opacity: 0.9;
+        }
+
+        /* Ocultar el botón de búsqueda DNI en escritorio; dejar visible en mobile
+           (en desktop se puede usar Enter en el input) */
+        @media (min-width: 768px) {
+            #dniSearchBtn {
+                display: none !important;
+            }
+        }
+
+        /* Specific heading style for the DNI view: centered and larger */
+        #ingresoAlumnosSection .titulos {
+            text-align: center;
+            font-size: 34px;
+            letter-spacing: 0.6px;
+            margin-bottom: 12px;
         }
 
         body {
@@ -98,14 +232,15 @@
             color: #000000;
             font-size: 20px;
             margin-bottom: 16px;
-                        
+
 
         }
-.titulos {
-    color: #000000;
+
+        .titulos {
+            color: #000000;
             font-size: 20px;
             margin-bottom: 16px;
-                        font-family: 'Orbitron', sans-serif;
+            font-family: 'Orbitron', sans-serif;
         }
 
         section {
@@ -227,6 +362,8 @@
             /* Mantener en una sola línea; el contenedor hará scroll si hace falta */
             white-space: nowrap;
         }
+
+        /* The 'Ingreso de alumnos' link uses the default .navbar a styles like the other items. */
 
         .navbar a.active {
             /* background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%); */
@@ -468,7 +605,7 @@
             left: 0;
             top: 0;
             bottom: 0;
-            width: 220px;
+            width: var(--sidebar-width);
             padding-top: 72px;
             /* deja espacio al header */
             overflow-y: auto;
@@ -568,6 +705,49 @@
             transform: translateY(-5px) rotate(-45deg);
         }
 
+        /* Sidebar close X: hidden by default, animates into view when in ingreso-mode and sidebar is opened */
+        .navbar #sidebarCloseBtn {
+            position: absolute;
+            right: 12px;
+            top: 12px;
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            border: none;
+            background: rgba(255, 255, 255, 0.95);
+            /* Ensure the X glyph is visible (global button rule sets color: #fff) */
+            color: #111827;
+            font-weight: 700;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 18px;
+            line-height: 1;
+            opacity: 0;
+            transform: translateY(-6px);
+            transition: opacity .22s ease, transform .28s cubic-bezier(.2, .9, .2, 1);
+            z-index: 1100;
+            pointer-events: none;
+        }
+
+        /* Show the close button only when on the ingreso-mode and the sidebar is open (desktop only) */
+        @media (min-width: 768px) {
+            body.ingreso-mode.nav-open .navbar #sidebarCloseBtn {
+                opacity: 1;
+                transform: translateY(0);
+                pointer-events: auto;
+            }
+        }
+
+        /* Ensure the close button is not visible on small screens (mobile) */
+        @media (max-width: 767px) {
+            .navbar #sidebarCloseBtn {
+                display: none !important;
+            }
+        }
+
         /* Desktop: keep sidebar visible and hide toggle button */
         @media (min-width: 768px) {
             #sideToggle {
@@ -580,7 +760,7 @@
                 left: 0;
                 top: 0;
                 bottom: 0;
-                width: 220px;
+                width: var(--sidebar-width);
                 padding-top: 72px;
             }
 
@@ -612,12 +792,26 @@
         }
 
         /* When opening on smaller screens, slide the content slightly for a nicer effect */
-        @media (max-width: 767px) {
+        @media (min-width: 768px) {
 
-            body.nav-open .top,
-            body.nav-open .card {
-                transform: translateX(220px);
-                transition: transform .22s ease;
+            /* On desktop, keep the lateral navbar visually hidden in ingreso-mode but
+               allow it to animate in when the user opens it (body.nav-open). We use
+               transforms instead of display:none so the appearance can be animated. */
+            body.ingreso-mode .navbar {
+                /* keep layout out of flow but allow animation */
+                display: block !important;
+                transform: translateX(calc(-1 * var(--sidebar-width)));
+                opacity: 0;
+                pointer-events: none;
+                transition: transform .32s cubic-bezier(.2, .9, .2, 1), opacity .22s ease;
+            }
+
+            /* If the sidebar is opened while in ingreso-mode, animate it into view */
+            body.ingreso-mode.nav-open .navbar {
+                transform: translateX(0) !important;
+                opacity: 1 !important;
+                pointer-events: auto !important;
+                box-shadow: 0 8px 40px rgba(0, 0, 0, 0.12) !important;
             }
         }
 
@@ -806,7 +1000,10 @@
             <li><a href="#" class="nav-link" data-section="roomsSection">Salones</a></li>
             <li><a href="#" class="nav-link" data-section="classesSection">Clases</a></li>
             <li><a href="#" class="nav-link" data-section="gymConfigSection">Configuración</a></li>
+            <li><a href="#" class="nav-link" data-section="ingresoAlumnosSection">Ingreso de alumnos</a></li>
         </ul>
+        <!-- Close button shown only when in ingreso-mode and sidebar is open -->
+        <button id="sidebarCloseBtn" aria-label="Cerrar barra" title="Cerrar" type="button">✕</button>
         <!-- Logout moved here so it's always at the bottom of the sidebar -->
         <div class="nav-footer">
             <button id="logout" type="button" title="Cerrar sesión">cerrar sesión</button>
@@ -836,6 +1033,30 @@
                 </button>
             </div>
             <div id="studentsList">Cargando...</div>
+        </section>
+        <section id="ingresoAlumnosSection" style="display:none">
+            <div class="dni-check-container">
+                <div style="display:flex;justify-content:center;align-items:center;width:100%">
+                    <h4 class="titulos">Ingreso por DNI</h4>
+                </div>
+
+                <div class="dni-input-wrap">
+                    <input id="dniInput" type="text" inputmode="numeric" placeholder="Ingresá DNI" aria-label="DNI" />
+                    <button id="dniSearchBtn" type="button">Buscar</button>
+                </div>
+
+                <div id="dniResultCard" class="dni-result-card" style="display:none;">
+                    <div id="dniResultInner" style="text-align:center;max-width:900px;width:100%">
+                        <!-- Rellenado por JS: nombre y apellido, dni, tipo de cuota, vencimiento -->
+                        <div class="name">—</div>
+                        <div class="field dni-field small" id="dniField">DNI: —</div>
+                        <div class="field membership-field small" id="membershipField">Tipo cuota: —</div>
+                        <div class="field due-field small" id="dueField">Vencimiento: —</div>
+                        <div style="height:18px"></div>
+                        <div id="dniStatus" class="meta" style="font-weight:800;font-size:20px">—</div>
+                    </div>
+                </div>
+            </div>
         </section>
         <section id="roomsSection" style="display:none">
             <h4 class="titulos">Salones</h4>
@@ -870,26 +1091,46 @@
     <script src="/public/js/admin_gym.js"></script>
     <script>
         // Navbar navegación entre secciones
-        document.querySelectorAll('.nav-link').forEach(link => {
-            link.addEventListener('click', e => {
-                e.preventDefault();
-                document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
-                link.classList.add('active');
-                const sectionId = link.getAttribute('data-section');
-                document.querySelectorAll('.card section').forEach(sec => {
-                    sec.style.display = sec.id === sectionId ? '' : 'none';
-                });
-                // Al seleccionar un item, cerrar el panel lateral si está abierto
-                if (document.body.classList.contains('nav-open')) {
-                    document.body.classList.remove('nav-open');
-                    const btn = document.getElementById('sideToggle');
-                    if (btn) {
-                        btn.setAttribute('aria-expanded', 'false');
-                        btn.classList.remove('open');
+        (function () {
+            const links = Array.from(document.querySelectorAll('.nav-link'));
+            const sideToggleBtn = document.getElementById('sideToggle');
+            const topBar = document.querySelector('.top');
+
+            function enterIngresoMode() {
+                document.body.classList.add('ingreso-mode');
+                try { if (sideToggleBtn && window.innerWidth >= 768) sideToggleBtn.style.setProperty('display', 'inline-flex', 'important'); } catch (e) { }
+            }
+
+            function exitIngresoMode() {
+                document.body.classList.remove('ingreso-mode');
+                try { if (sideToggleBtn) sideToggleBtn.style.removeProperty('display'); } catch (e) { }
+                try { if (topBar) topBar.style.removeProperty('display'); } catch (e) { }
+            }
+
+            links.forEach(link => {
+                link.addEventListener('click', e => {
+                    e.preventDefault();
+                    links.forEach(l => l.classList.remove('active'));
+                    link.classList.add('active');
+                    const sectionId = link.getAttribute('data-section');
+                    document.querySelectorAll('.card section').forEach(sec => {
+                        sec.style.display = sec.id === sectionId ? '' : 'none';
+                    });
+
+                    if (sectionId === 'ingresoAlumnosSection') enterIngresoMode(); else exitIngresoMode();
+
+                    // If the sidebar is open, close it when switching sections to keep layout consistent
+                    if (document.body.classList.contains('nav-open')) {
+                        document.body.classList.remove('nav-open');
+                        if (sideToggleBtn) {
+                            sideToggleBtn.setAttribute('aria-expanded', 'false');
+                            sideToggleBtn.classList.remove('open');
+                            try { if (window.innerWidth >= 768 && document.body.classList.contains('ingreso-mode')) sideToggleBtn.style.removeProperty('display'); } catch (e) { }
+                        }
                     }
-                }
+                });
             });
-        });
+        })();
         // Mostrar sección inicial
         document.querySelectorAll('.card section').forEach(sec => {
             sec.style.display = sec.id === 'usersSection' ? '' : 'none';
@@ -911,6 +1152,13 @@
                 document.body.classList.add('nav-open');
                 btn.setAttribute('aria-expanded', 'true');
                 btn.classList.add('open');
+                // If we're in ingreso-mode, hide the toggle once the sidebar is opened (use inline !important)
+                try {
+                    // only hide the toggle on desktop when opening the sidebar
+                    if (document.body.classList.contains('ingreso-mode') && window.innerWidth >= 768) {
+                        btn.style.setProperty('display', 'none', 'important');
+                    }
+                } catch (e) { }
                 _setMainAriaHidden(true);
                 // focus first focusable element inside nav (first link)
                 const first = document.querySelector('.navbar a');
@@ -935,6 +1183,13 @@
                 document.body.classList.remove('nav-open');
                 btn.setAttribute('aria-expanded', 'false');
                 btn.classList.remove('open');
+                // If we're in ingreso-mode, show the toggle again when the sidebar closes (remove inline important)
+                try {
+                    // only remove the inline display override on desktop (if previously applied)
+                    if (document.body.classList.contains('ingreso-mode') && window.innerWidth >= 768) {
+                        btn.style.removeProperty('display');
+                    }
+                } catch (e) { }
                 _setMainAriaHidden(false);
                 // remove focus trap
                 if (_trapListener) { document.removeEventListener('keydown', _trapListener); _trapListener = null; }
@@ -945,6 +1200,13 @@
                 if (document.body.classList.contains('nav-open')) closeNav(); else openNav();
             });
             overlay.addEventListener('click', closeNav);
+            // Sidebar close button inside the navbar: call closeNav when clicked
+            try {
+                const sidebarCloseBtn = document.getElementById('sidebarCloseBtn');
+                if (sidebarCloseBtn) {
+                    sidebarCloseBtn.addEventListener('click', (e) => { e.stopPropagation(); closeNav(); });
+                }
+            } catch (e) { }
             // cerrar con ESC
             document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeNav(); });
             // On resize, ensure breakpoint consistency: when width >= 768 remove mobile nav-open state
@@ -962,6 +1224,62 @@
                     }
                 } catch (e) { }
             });
+        })();
+
+        // Ingreso por DNI behaviour
+        (function () {
+            const input = document.getElementById('dniInput');
+            const btn = document.getElementById('dniSearchBtn');
+            const card = document.getElementById('dniResultCard');
+            const inner = document.getElementById('dniResultInner');
+
+            function renderNotFound(dni) {
+                card.classList.remove('expired');
+                card.style.display = '';
+                inner.querySelector('.name').textContent = 'No encontrado';
+                inner.querySelector('#dniField').textContent = `DNI: ${dni || '—'}`;
+                inner.querySelector('#membershipField').textContent = `Tipo cuota: —`;
+                inner.querySelector('#dueField').textContent = `Vencimiento: —`;
+                inner.querySelector('#dniStatus').textContent = 'Alumno no registrado';
+            }
+
+            async function searchDNI() {
+                const v = (input && input.value || '').trim();
+                if (!v) return;
+                try {
+                    const list = await adminStudents.listStudents(v);
+                    if (!Array.isArray(list) || list.length === 0) {
+                        renderNotFound(v);
+                        return;
+                    }
+                    const s = list[0];
+                    // Determine active vs expired
+                    let isActive = false;
+                    if (s.dueDate) {
+                        try { isActive = new Date(s.dueDate) >= new Date(new Date().toDateString()); } catch (e) { isActive = false; }
+                    }
+                    card.style.display = '';
+                    if (isActive) card.classList.remove('expired'); else card.classList.add('expired');
+                    inner.querySelector('.name').textContent = `${s.name || ''} ${s.lastName || ''}`.trim() || s.dni || '—';
+                    inner.querySelector('#dniField').textContent = `DNI: ${s.dni || '—'}`;
+                    inner.querySelector('#membershipField').textContent = `Tipo cuota: ${s.membershipType || '—'}`;
+                    // Format due date for display
+                    let dueText = '—';
+                    if (s.dueDate) {
+                        try { dueText = new Date(s.dueDate).toLocaleDateString(); } catch (e) { dueText = String(s.dueDate); }
+                    }
+                    inner.querySelector('#dueField').textContent = `Vencimiento: ${dueText}`;
+                    inner.querySelector('#dniStatus').textContent = isActive ? 'Cuota activa' : 'Cuota vencida';
+                } catch (err) {
+                    renderNotFound(v);
+                }
+            }
+
+            if (btn) btn.addEventListener('click', searchDNI);
+            if (input) input.addEventListener('keydown', (e) => { if (e.key === 'Enter') searchDNI(); });
+
+            // Keep the main toggle visible even when ingreso-mode hides top/navbar
+            // (sideToggle is fixed; nothing to do here)
         })();
     </script>
     <script>
