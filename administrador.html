@@ -314,6 +314,8 @@
             background: rgb(255, 255, 255);
             backdrop-filter: blur(10px);
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            border-top-right-radius: 10px;
+            border-bottom-right-radius: 10px;
 
             /* Permitir scroll horizontal en la barra, pero ocultar la scrollbar mediante reglas específicas */
             overflow: visible;
@@ -554,6 +556,13 @@
                 gap: 12px !important;
             }
 
+            /* Exception: keep two columns for the Crear Usuario form on mobile */
+            #usersSection #newUserForm div[style*="grid-template-columns"] {
+                display: grid !important;
+                grid-template-columns: 1fr 1fr !important;
+                gap: 12px !important;
+            }
+
             .modal>div {
                 padding: 24px 16px;
                 border-radius: 16px;
@@ -641,10 +650,7 @@
             justify-content: center;
         }
 
-        #sideToggle:focus {
-            outline: 2px solid rgba(102, 126, 234, 0.25);
-            outline-offset: 2px;
-        }
+
 
         #sideToggle .hamburger {
             display: inline-block;
@@ -691,9 +697,8 @@
         .navbar .nav-footer button {
             width: calc(100% - 32px);
             margin: 0 16px;
-            padding: 10px 12px;
             border-radius: 8px;
-            background: linear-gradient(135deg, #fc8181 0%, #e53e3e 100%);
+            background: linear-gradient(135deg, #ff6b6b 0%, #d51a1a 100%);
             color: #fff;
             border: none;
             font-weight: 600;
@@ -789,6 +794,8 @@
                 border-left: 4px solid transparent;
                 white-space: normal;
             }
+
+
         }
 
         /* When opening on smaller screens, slide the content slightly for a nicer effect */
@@ -857,6 +864,15 @@
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
             text-align: left;
             font-family: inherit;
+        }
+
+        .day-toggle {
+            padding: 5px 9px !important;
+
+        }
+
+        #classDays {
+            gap: 5px !important;
         }
 
         .confirm-modal h4 {
@@ -1017,9 +1033,8 @@
         <section id="professorsSection" style="display:none">
             <h4 class="titulos">Profesores</h4>
             <div style="display:flex;gap:8px;margin-bottom:8px;align-items:center">
-                <button id="btnNewProfessor" style="background:#2b6cb0;color:#fff;padding:8px 12px;border-radius:6px">
-                    Nuevo profesor
-                </button>
+                <input id="searchProfessors" placeholder="Buscar por nombre, apellido o DNI"
+                    style="flex:1;padding:8px;border:1px solid #ddd;border-radius:4px" />
             </div>
             <div id="professorsList">Cargando...</div>
         </section>
@@ -1028,9 +1043,6 @@
             <div style="display:flex;gap:8px;margin-bottom:8px;align-items:center">
                 <input id="searchStudents" placeholder="Buscar por nombre, apellido o DNI"
                     style="flex:1;padding:8px;border:1px solid #ddd;border-radius:4px" />
-                <button id="btnNewStudent" style="background:#2b6cb0;color:#fff;padding:8px 12px;border-radius:6px">
-                    Nuevo alumno
-                </button>
             </div>
             <div id="studentsList">Cargando...</div>
         </section>
@@ -1284,6 +1296,13 @@
     </script>
     <script>
         // Inline form para crear usuario (mostrado directamente)
+        // Helper used by inline form construction (safe minimal escape-less version)
+        function getMembershipOptionsHTML(selected) {
+            const cfg = window.currentGymConfig || {};
+            const types = Array.isArray(cfg.membershipTypes) && cfg.membershipTypes.length ? cfg.membershipTypes : ['mensual', 'trimestral', 'anual'];
+            return types.map(t => '<option value="' + t + '" ' + (selected === t ? 'selected' : '') + '>' + (t.charAt(0).toUpperCase() + t.slice(1)) + '</option>').join('');
+        }
+
         (async function () {
             const formContainer = document.createElement('div');
             formContainer.id = 'newUserForm';
@@ -1321,9 +1340,7 @@
                         <div>
                             <div style="font-size:13px;margin-bottom:6px">Tipo de cuota:</div>
                             <select id="newUserMembership" style="width:100%;padding:10px;border-radius:8px;border:1px solid #ddd">
-                                <option value="mensual">Mensual</option>
-                                <option value="trimestral">Trimestral</option>
-                                <option value="anual">Anual</option>
+                                ${getMembershipOptionsHTML()}
                             </select>
                         </div>
                         <div>
@@ -1336,7 +1353,6 @@
                         <div id="newUserClassesContainer" style="max-height:150px;overflow-y:auto;border:1px solid #ddd;border-radius:8px;padding:6px;background:#fff"></div>
                     </div>
                     <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
-                        <button type="button" id="cancelNewUser">Cancelar</button>
                         <button type="submit" id="saveNewUser" style="background:#38a169;color:#fff">Guardar</button>
                     </div>
                 </form>
@@ -1358,11 +1374,17 @@
             }
 
             function toggleAlumnoFields() {
-                const isAlumno = document.getElementById('newUserRole').value === 'alumno';
-                document.getElementById('newUserEmergency').closest('div').style.display = isAlumno ? '' : 'none';
+                const role = document.getElementById('newUserRole').value;
+                // Show emergency contact for both alumnos and profesores
+                const showEmergency = role === 'alumno' || role === 'profesor';
+                document.getElementById('newUserEmergency').closest('div').style.display = showEmergency ? '' : 'none';
+                const isAlumno = role === 'alumno';
+                const isProfesor = role === 'profesor';
+                // membership and due date only for alumnos
                 document.getElementById('newUserMembership').closest('div').style.display = isAlumno ? '' : 'none';
                 document.getElementById('newUserDueDate').closest('div').style.display = isAlumno ? '' : 'none';
-                document.getElementById('classesDivInline').style.display = isAlumno ? '' : 'none';
+                // classes can be assigned to both alumnos (required) and profesores (optional)
+                document.getElementById('classesDivInline').style.display = (isAlumno || isProfesor) ? '' : 'none';
             }
 
             // Delegate events
@@ -1370,14 +1392,7 @@
                 if (e.target && e.target.id === 'newUserRole') toggleAlumnoFields();
             });
 
-            document.getElementById('usersSection').addEventListener('click', (e) => {
-                if (e.target && e.target.id === 'cancelNewUser') {
-                    // Reset form but keep it visible
-                    const form = document.getElementById('createUserForm');
-                    if (form) form.reset();
-                    toggleAlumnoFields();
-                }
-            });
+            // removed cancel button: users now only save via the Guardar button
 
             document.getElementById('usersSection').addEventListener('submit', async (e) => {
                 if (e.target && e.target.id === 'createUserForm') {
@@ -1407,11 +1422,23 @@
                             await loadClasses();
                         } catch (err) { alert(err.message || 'Error creando alumno'); }
                     } else if (role === 'profesor') {
+                        // include emergency contact for professors as well
+                        user.emergencyContact = document.getElementById('newUserEmergency').value.trim();
+                        // optional: allow assigning classes to the new professor (not mandatory)
+                        const selectedClassIds = Array.from(document.querySelectorAll('.newUserClass:checked')).map(cb => cb.value);
                         try {
-                            await adminProfessors.createProfessor(user);
+                            const created = await adminProfessors.createProfessor(user);
+                            const newProfId = created.id || created._id || null;
+                            // assign professor to selected classes (ignore per-class errors)
+                            if (newProfId && Array.isArray(selectedClassIds) && selectedClassIds.length) {
+                                for (const cid of selectedClassIds) {
+                                    try { await adminClasses.assignProfessor(cid, newProfId); } catch (er) { /* ignore per-class errors */ }
+                                }
+                            }
                             alert('Profesor creado');
                             document.getElementById('createUserForm').reset();
                             await loadProfessors();
+                            await loadClasses();
                         } catch (err) { alert(err.message || 'Error creando profesor'); }
                     }
                 }
@@ -1568,6 +1595,31 @@
         // helper to escape inserted text
         function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
 
+        // Return membership types <option> HTML using the current gym config (falls back to default types)
+        function getMembershipOptionsHTML(selected) {
+            const cfg = window.currentGymConfig || {};
+            const types = Array.isArray(cfg.membershipTypes) && cfg.membershipTypes.length ? cfg.membershipTypes : ['mensual', 'trimestral', 'anual'];
+            return types.map(t => `<option value="${esc(t)}" ${selected === t ? 'selected' : ''}>${esc(t.charAt(0).toUpperCase() + t.slice(1))}</option>`).join('');
+        }
+
+        // Update any existing membership <select> elements on the page so they reflect currentGymConfig
+        function updateMembershipSelects() {
+            try {
+                const selIds = ['newUserMembership', 'newStudentMembership', 'editStudentMembership'];
+                for (const id of selIds) {
+                    const el = document.getElementById(id);
+                    if (!el) continue;
+                    const current = el.value;
+                    el.innerHTML = getMembershipOptionsHTML(current);
+                }
+                // Also update any selects created dynamically inside modals that match the class 'membership-select'
+                document.querySelectorAll('select.membership-select').forEach(s => {
+                    const cur = s.value;
+                    s.innerHTML = getMembershipOptionsHTML(cur);
+                });
+            } catch (e) { /* ignore */ }
+        }
+
         function renderRooms(rooms) {
             const container = document.getElementById('roomsList');
             if (!rooms.length) { container.innerHTML = '<i>No hay salones</i>'; return }
@@ -1706,25 +1758,54 @@
             modal.innerHTML = `
                     <div style="background:#fff;padding:16px;border-radius:8px;width:420px">
                         <h4>Crear clase</h4>
-                        <div>Días (Ctrl+click para múltiples):</div>
-                        <select id="classDays" multiple style="width:100%;height:80px;margin:8px 0">
-                            <option>lunes</option><option>martes</option><option>miercoles</option><option>jueves</option><option>viernes</option><option>sabado</option>
-                        </select>
-                        <input id="classStart" placeholder="Horario (HH:MM)" style="width:100%;padding:8px;margin:8px 0;border:1px solid #ddd;border-radius:4px" />
+                        <div style="margin:6px 0 8px;font-size:14px;color:#374151">Días</div>
+                        <div id="classDays" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+                            <button type="button" class="day-toggle" data-day="lunes" style="padding:8px 12px;border-radius:8px;border:1px solid #e5e7eb;background:#fff;color:#111">lun</button>
+                            <button type="button" class="day-toggle" data-day="martes" style="padding:8px 12px;border-radius:8px;border:1px solid #e5e7eb;background:#fff;color:#111">mar</button>
+                            <button type="button" class="day-toggle" data-day="miercoles" style="padding:8px 12px;border-radius:8px;border:1px solid #e5e7eb;background:#fff;color:#111">mié</button>
+                            <button type="button" class="day-toggle" data-day="jueves" style="padding:8px 12px;border-radius:8px;border:1px solid #e5e7eb;background:#fff;color:#111">jue</button>
+                            <button type="button" class="day-toggle" data-day="viernes" style="padding:8px 12px;border-radius:8px;border:1px solid #e5e7eb;background:#fff;color:#111">vie</button>
+                            <button type="button" class="day-toggle" data-day="sabado" style="padding:8px 12px;border-radius:8px;border:1px solid #e5e7eb;background:#fff;color:#111">sáb</button>
+                            <button type="button" class="day-toggle" data-day="domingo" style="padding:8px 12px;border-radius:8px;border:1px solid #e5e7eb;background:#fff;color:#111">dom</button>
+                        </div>
+                        <input id="classStart" type="time" step="300" style="width:100%;padding:8px;margin:8px 0;border:1px solid #ddd;border-radius:4px" />
                         <input id="classDuration" type="number" placeholder="Duración (min)" style="width:100%;padding:8px;margin:8px 0;border:1px solid #ddd;border-radius:4px" />
                         <select id="classRoom" style="width:100%;padding:8px;margin:8px 0;border:1px solid #ddd;border-radius:4px">
                             ${rooms.map(r => `<option value="${r._id}">${r.name}</option>`).join('')}
                         </select>
                         <select id="classProf" style="width:100%;padding:8px;margin:8px 0;border:1px solid #ddd;border-radius:4px">
-                            <option value="">(sin asignar)</option>
+                            <option value="">Profesor</option>
                             ${profs.map(p => `<option value="${p._id}">${p.name}</option>`).join('')}
                         </select>
                         <div style="display:flex;gap:8px;justify-content:flex-end"><button id="cancelClass">Cancelar</button><button id="saveClass" style="background:#2b6cb0;color:#fff">Crear</button></div>
                     </div>`;
             document.body.appendChild(modal);
             document.getElementById('cancelClass').addEventListener('click', () => modal.remove());
+
+            // day toggle behaviour
+            (function bindDayToggles(containerId) {
+                const container = modal.querySelector('#' + containerId);
+                if (!container) return;
+                container.querySelectorAll('.day-toggle').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const active = btn.classList.toggle('active');
+                        if (active) {
+                            btn.style.background = '#2563eb'; btn.style.color = '#fff'; btn.style.borderColor = '#2563eb';
+                        } else {
+                            btn.style.background = '#fff'; btn.style.color = '#111'; btn.style.borderColor = '#e5e7eb';
+                        }
+                    });
+                });
+            })('classDays');
+
+            function getSelectedDays(containerId) {
+                const c = modal.querySelector('#' + containerId);
+                if (!c) return [];
+                return Array.from(c.querySelectorAll('.day-toggle.active')).map(b => b.getAttribute('data-day'));
+            }
+
             document.getElementById('saveClass').addEventListener('click', async () => {
-                const days = Array.from(document.getElementById('classDays').selectedOptions).map(o => o.text);
+                const days = getSelectedDays('classDays');
                 const start = document.getElementById('classStart').value.trim();
                 const duration = document.getElementById('classDuration').value;
                 const roomId = document.getElementById('classRoom').value;
@@ -1745,25 +1826,55 @@
             modal.innerHTML = `
                     <div style="background:#fff;padding:16px;border-radius:8px;width:420px">
                         <h4>Editar clase</h4>
-                        <div>Días (Ctrl+click para múltiples):</div>
-                        <select id="classDaysEdit" multiple style="width:100%;height:80px;margin:8px 0">
-                            <option ${c.days.includes('lunes') ? 'selected' : ''}>lunes</option><option ${c.days.includes('martes') ? 'selected' : ''}>martes</option><option ${c.days.includes('miercoles') ? 'selected' : ''}>miercoles</option><option ${c.days.includes('jueves') ? 'selected' : ''}>jueves</option><option ${c.days.includes('viernes') ? 'selected' : ''}>viernes</option><option ${c.days.includes('sabado') ? 'selected' : ''}>sabado</option>
-                        </select>
-                        <input id="classStartEdit" value="${c.start}" style="width:100%;padding:8px;margin:8px 0;border:1px solid #ddd;border-radius:4px" />
+                        <div style="margin:6px 0 8px;font-size:14px;color:#374151">Días</div>
+                        <div id="classDaysEdit" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+                            <button type="button" class="day-toggle" data-day="lunes" style="padding:8px 12px;border-radius:8px;border:1px solid #e5e7eb;background:#fff;color:#111">lun</button>
+                            <button type="button" class="day-toggle" data-day="martes" style="padding:8px 12px;border-radius:8px;border:1px solid #e5e7eb;background:#fff;color:#111">mar</button>
+                            <button type="button" class="day-toggle" data-day="miercoles" style="padding:8px 12px;border-radius:8px;border:1px solid #e5e7eb;background:#fff;color:#111">mié</button>
+                            <button type="button" class="day-toggle" data-day="jueves" style="padding:8px 12px;border-radius:8px;border:1px solid #e5e7eb;background:#fff;color:#111">jue</button>
+                            <button type="button" class="day-toggle" data-day="viernes" style="padding:8px 12px;border-radius:8px;border:1px solid #e5e7eb;background:#fff;color:#111">vie</button>
+                            <button type="button" class="day-toggle" data-day="sabado" style="padding:8px 12px;border-radius:8px;border:1px solid #e5e7eb;background:#fff;color:#111">sáb</button>
+                            <button type="button" class="day-toggle" data-day="domingo" style="padding:8px 12px;border-radius:8px;border:1px solid #e5e7eb;background:#fff;color:#111">dom</button>
+                        </div>
+                        <input id="classStartEdit" type="time" step="300" value="${c.start}" style="width:100%;padding:8px;margin:8px 0;border:1px solid #ddd;border-radius:4px" />
                         <input id="classDurationEdit" type="number" value="${c.duration}" style="width:100%;padding:8px;margin:8px 0;border:1px solid #ddd;border-radius:4px" />
                         <select id="classRoomEdit" style="width:100%;padding:8px;margin:8px 0;border:1px solid #ddd;border-radius:4px">
                             ${rooms.map(r => `<option value="${r._id}" ${c.roomId == r._id ? 'selected' : ''}>${r.name}</option>`).join('')}
                         </select>
                         <select id="classProfEdit" style="width:100%;padding:8px;margin:8px 0;border:1px solid #ddd;border-radius:4px">
-                            <option value="">(sin asignar)</option>
+                            <option value="">Profesor</option>
                             ${profs.map(p => `<option value="${p._id}" ${c.professorId == p._id ? 'selected' : ''}>${p.name}</option>`).join('')}
                         </select>
                         <div style="display:flex;gap:8px;justify-content:flex-end"><button id="cancelClassEdit">Cancelar</button><button id="saveClassEdit" style="background:#2b6cb0;color:#fff">Guardar</button></div>
                     </div>`;
             document.body.appendChild(modal);
             document.getElementById('cancelClassEdit').addEventListener('click', () => modal.remove());
+
+            // bind toggles and preselect based on existing days
+            (function bindAndPreselect(containerId, selectedDays) {
+                const container = modal.querySelector('#' + containerId);
+                if (!container) return;
+                container.querySelectorAll('.day-toggle').forEach(btn => {
+                    const day = btn.getAttribute('data-day');
+                    if (selectedDays && selectedDays.includes(day)) {
+                        btn.classList.add('active'); btn.style.background = '#2563eb'; btn.style.color = '#fff'; btn.style.borderColor = '#2563eb';
+                    }
+                    btn.addEventListener('click', () => {
+                        const active = btn.classList.toggle('active');
+                        if (active) { btn.style.background = '#2563eb'; btn.style.color = '#fff'; btn.style.borderColor = '#2563eb'; }
+                        else { btn.style.background = '#fff'; btn.style.color = '#111'; btn.style.borderColor = '#e5e7eb'; }
+                    });
+                });
+            })('classDaysEdit', c.days || []);
+
+            function getSelectedDaysEdit(containerId) {
+                const ctn = modal.querySelector('#' + containerId);
+                if (!ctn) return [];
+                return Array.from(ctn.querySelectorAll('.day-toggle.active')).map(b => b.getAttribute('data-day'));
+            }
+
             document.getElementById('saveClassEdit').addEventListener('click', async () => {
-                const days = Array.from(document.getElementById('classDaysEdit').selectedOptions).map(o => o.text);
+                const days = getSelectedDaysEdit('classDaysEdit');
                 const start = document.getElementById('classStartEdit').value.trim();
                 const duration = document.getElementById('classDurationEdit').value;
                 const roomId = document.getElementById('classRoomEdit').value;
@@ -1970,9 +2081,7 @@
                         <div>
                             <div>Tipo de cuota:</div>
                             <select id="newStudentMembership" style="width:100%;padding:8px;margin:4px 0;border:1px solid #ddd;border-radius:4px">
-                                <option value="mensual">Mensual</option>
-                                <option value="trimestral">Trimestral</option>
-                                <option value="anual">Anual</option>
+                                ${getMembershipOptionsHTML()}
                             </select>
                         </div>
                         <div>
@@ -2077,9 +2186,7 @@
                         <div>
                             <div>Tipo de cuota:</div>
                             <select id="editStudentMembership" style="width:100%;padding:8px;margin:4px 0;border:1px solid #ddd;border-radius:4px">
-                                <option value="mensual" ${student.membershipType === 'mensual' ? 'selected' : ''}>Mensual</option>
-                                <option value="trimestral" ${student.membershipType === 'trimestral' ? 'selected' : ''}>Trimestral</option>
-                                <option value="anual" ${student.membershipType === 'anual' ? 'selected' : ''}>Anual</option>
+                                ${getMembershipOptionsHTML(student.membershipType)}
                             </select>
                         </div>
                         <div>
@@ -2142,14 +2249,25 @@
         }
 
         // Event listeners para estudiantes
-        document.getElementById('btnNewStudent').addEventListener('click', () => openNewStudentModal());
+        const _btnNewStudent = document.getElementById('btnNewStudent');
+        if (_btnNewStudent) _btnNewStudent.addEventListener('click', () => openNewStudentModal());
         document.getElementById('searchStudents').addEventListener('input', (e) => loadStudents(e.target.value));
 
+        // Event listeners para profesores
+        const _btnNewProfessor = document.getElementById('btnNewProfessor');
+        if (_btnNewProfessor) _btnNewProfessor.addEventListener('click', () => openNewProfessorModal());
+        const sp = document.getElementById('searchProfessors');
+        if (sp) sp.addEventListener('input', (e) => loadProfessors(e.target.value));
+
         // Gestión de Profesores
-        async function loadProfessors() {
+        async function loadProfessors(search = '') {
             try {
                 const professors = await adminProfessors.listProfessors();
-                await renderProfessors(professors);
+                const q = (search || '').toLowerCase();
+                const filtered = q ? professors.filter(p => {
+                    return (p.name || '').toLowerCase().includes(q) || (p.lastName || '').toLowerCase().includes(q) || (String(p.dni || '')).toLowerCase().includes(q);
+                }) : professors;
+                await renderProfessors(filtered);
             } catch (err) {
                 document.getElementById('professorsList').textContent = 'Error cargando profesores';
             }
@@ -2321,7 +2439,11 @@
         async function loadGymConfig() {
             try {
                 const config = await adminGym.getConfig();
+                // expose globally so other builders can use membershipTypes when rendering forms/modals
+                window.currentGymConfig = config || {};
                 renderGymConfig(config);
+                // refresh any membership selects already rendered on the page (inline form created earlier)
+                updateMembershipSelects();
             } catch (err) {
                 document.getElementById('gymConfigForm').textContent = 'Error cargando configuración';
             }
@@ -2353,36 +2475,111 @@
                             min="1" style="width:100%;padding:8px;margin:4px 0;border:1px solid #ddd;border-radius:4px" />
                     </div>
                 </div>
-                <div style="display:flex;justify-content:flex-end;margin-top:16px">
-                    <button type="submit" style="background:#2b6cb0;color:#fff;padding:8px 12px;border-radius:6px">
-                        Guardar cambios
-                    </button>
+
+                <!-- Membership types management -->
+                <div style="margin-top:16px">
+                    <div style="font-weight:700;margin-bottom:8px">Tipos de cuota</div>
+                    <div id="membershipTypesList" style="display:flex;flex-direction:column;gap:8px;max-height:220px;overflow:auto;border:1px solid #eee;padding:8px;border-radius:8px;background:#fff">
+                        ${(Array.isArray(config.membershipTypes) ? config.membershipTypes : []).map((t, i) => `
+                            <div style="display:flex;align-items:center;gap:8px;" data-index="${i}">
+                                <span style="flex:1">${esc(t)}</span>
+                                <button type="button" class="delMembership" data-index="${i}" style="background:#e53e3e;color:#fff;padding:6px 8px;border-radius:8px;border:none">Eliminar</button>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <div style="display:flex;gap:8px;margin-top:10px">
+                        <input id="newMembershipInput" placeholder="Nuevo tipo de cuota" style="flex:1;padding:8px;border:1px solid #ddd;border-radius:6px" />
+                        <button id="addMembershipBtn" type="button" style="background:#48bb78;color:#fff;padding:8px 12px;border-radius:6px">Agregar</button>
+                    </div>
+                </div>
+
+                <div style="display:flex;justify-content:flex-end;margin-top:12px">
+                    <div id="gymSaveStatus" style="display:none" aria-hidden="true"></div>
                 </div>
             `;
 
-            form.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const newConfig = {
-                    minCancellationHours: parseInt(document.getElementById('minCancellationHours').value),
-                    creditExpirationDays: parseInt(document.getElementById('creditExpirationDays').value),
-                    autoCancelDueOverdueDays: parseInt(document.getElementById('autoCancelDueOverdueDays').value),
-                    maxCredits: parseInt(document.getElementById('maxCredits').value)
-                };
+            // membership types local copy and helper
+            let membershipTypes = Array.isArray(config.membershipTypes) ? [].concat(config.membershipTypes) : [];
 
+            // Debounced auto-save helper
+            let saveTimer = null;
+            async function performSave() {
                 try {
-                    await adminGym.updateConfig(newConfig);
-                    alert('Configuración actualizada');
+                    const payload = {
+                        minCancellationHours: parseInt(document.getElementById('minCancellationHours').value) || 0,
+                        creditExpirationDays: parseInt(document.getElementById('creditExpirationDays').value) || 0,
+                        autoCancelDueOverdueDays: parseInt(document.getElementById('autoCancelDueOverdueDays').value) || 0,
+                        maxCredits: parseInt(document.getElementById('maxCredits').value) || 0,
+                        membershipTypes: membershipTypes
+                    };
+                    await adminGym.updateConfig(payload);
+                    // reflect saved config globally and update selects elsewhere
+                    window.currentGymConfig = payload;
+                    updateMembershipSelects();
                 } catch (err) {
-                    alert(err.message || 'Error actualizando configuración');
+                    console.error('Error saving gym config', err);
+                }
+            }
+
+            function scheduleSave() {
+                try {
+                    if (saveTimer) clearTimeout(saveTimer);
+                    saveTimer = setTimeout(performSave, 700);
+                } catch (e) { }
+            }
+
+            function refreshMembershipList() {
+                const list = form.querySelector('#membershipTypesList');
+                list.innerHTML = membershipTypes.map((t, i) => `
+                    <div style="display:flex;align-items:center;gap:8px;" data-index="${i}">
+                        <span style="flex:1">${esc(t)}</span>
+                        <button type="button" class="delMembership" data-index="${i}" style="background:#e53e3e;color:#fff;padding:6px 8px;border-radius:8px;border:none">Eliminar</button>
+                    </div>
+                `).join('');
+                // attach delete handlers
+                Array.from(list.querySelectorAll('.delMembership')).forEach(b => b.addEventListener('click', (ev) => {
+                    const idx = Number(ev.currentTarget.getAttribute('data-index'));
+                    if (isNaN(idx)) return;
+                    if (!confirm('Eliminar tipo de cuota?')) return;
+                    membershipTypes.splice(idx, 1);
+                    refreshMembershipList();
+                    scheduleSave();
+                }));
+            }
+
+            // add membership handler
+            form.addEventListener('click', (ev) => {
+                if (!ev.target) return;
+                if (ev.target.id === 'addMembershipBtn') {
+                    const input = form.querySelector('#newMembershipInput');
+                    const v = (input && input.value || '').trim();
+                    if (!v) return alert('Ingresá el nombre del tipo de cuota');
+                    if (membershipTypes.includes(v)) return alert('Ese tipo ya existe');
+                    membershipTypes.push(v);
+                    input.value = '';
+                    refreshMembershipList();
+                    scheduleSave();
                 }
             });
+
+            refreshMembershipList();
+
+            // Attach change/input listeners to numeric inputs to auto-save
+            ['minCancellationHours', 'creditExpirationDays', 'autoCancelDueOverdueDays', 'maxCredits'].forEach(id => {
+                const el = form.querySelector('#' + id);
+                if (!el) return;
+                el.addEventListener('input', () => scheduleSave());
+                el.addEventListener('change', () => scheduleSave());
+            });
+
+            // keep status element hidden; no visible messages
+            try { form.querySelector('#gymSaveStatus').style.display = 'none'; } catch (e) { }
 
             document.getElementById('gymConfigForm').innerHTML = '';
             document.getElementById('gymConfigForm').appendChild(form);
         }
 
-        // Event listeners para profesores
-        document.getElementById('btnNewProfessor').addEventListener('click', () => openNewProfessorModal());
+        // Event listeners para profesores (handled earlier)
 
         async function openEditProfessorModal(id) {
             const modal = document.createElement('div');

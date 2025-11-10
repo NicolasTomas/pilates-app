@@ -40,6 +40,42 @@
             margin: 12px var(--content-h) 12px var(--content-h);
             box-shadow: 0 8px 20px rgba(2, 6, 23, 0.04);
             border: 1px solid rgba(2, 6, 23, 0.04);
+            position: relative;
+            /* allow absolute placement of logout button in top-right */
+        }
+
+        /* Desktop: set containers to 80% width and center them */
+        @media (min-width: 901px) {
+            :root {
+                --container-max-w: 980px;
+            }
+
+            /* allow children to size relative to viewport; we'll set each to 80% below */
+            .container {
+                max-width: 100%;
+            }
+
+            .top,
+            .tabs,
+            #cuotaStatus,
+            .cuota,
+            .tickets-panel,
+            .cards-row,
+            .card,
+            /* Ensure class containers and panels also obey the 80% width */
+            #tabContent,
+            #misClasesPanel,
+            #recuperarPanel,
+            .class-grid {
+                width: 80%;
+                margin-left: auto;
+                margin-right: auto;
+            }
+
+            /* cuota status spacing */
+            #cuotaStatus {
+                margin: 12px auto;
+            }
         }
 
         .top h1 {
@@ -76,6 +112,87 @@
             justify-content: center;
             gap: 6px;
             text-align: right;
+        }
+
+        /* Logout icon button placed in header (top-right) */
+
+        .logout-btn {
+            /* white circular background so the black X is always visible */
+            background: #ffffff;
+            border: 1px solid rgba(2, 6, 23, 0.06);
+            color: #000;
+            width: 44px;
+            height: 44px;
+            border-radius: 999px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 8px 20px rgba(2, 6, 23, 0.06);
+            transition: all 0.15s ease, transform 0.12s ease;
+            position: absolute;
+            /* place in top-left corner of .top */
+            top: 12px;
+            left: 12px;
+            right: auto;
+            z-index: 99999;
+            /* ensure it's above avatars or other elements */
+        }
+
+        .logout-btn svg {
+            width: 20px;
+            height: 20px;
+            transform: none;
+            /* no mirroring; icon will point left explicitly */
+        }
+
+        .logout-x {
+            color: #000000;
+            font-size: 18px;
+            font-weight: 800;
+            line-height: 1;
+            user-select: none;
+            display: inline-block;
+            transform: translateY(-1px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .logout-btn:hover {
+            transform: translateY(-3px);
+            background: #ffffff;
+            box-shadow: 0 12px 30px rgba(2, 6, 23, 0.08);
+            color: #000;
+        }
+
+        /* From 701px and up: place logout button below the dueBox inside header
+           by returning it to the normal flow and aligning it to the right.
+           Also show textual label and hide the compact X. */
+        @media (min-width: 701px) {
+            .logout-btn {
+                position: static;
+                margin-top: 8px;
+                align-self: flex-end;
+                /* keep it right-aligned inside .top-right */
+                width: auto;
+                height: auto;
+                padding: 8px 12px;
+                border-radius: 8px;
+            }
+
+            .logout-x {
+                display: none;
+            }
+
+            .logout-text {
+                display: inline-block !important;
+                font-weight: 700;
+                color: #000000;
+                font-size: 14px;
+                line-height: 1;
+                user-select: none;
+            }
         }
 
         .me-name {
@@ -154,6 +271,18 @@
             border: 1px solid rgba(2, 6, 23, 0.03);
             display: flex;
             box-sizing: border-box;
+            justify-content: center;
+            /* center the tab buttons horizontally */
+            gap: 12px;
+        }
+
+        /* Desktop override: ensure .tabs uses the same 80% centered container as other panels */
+        @media (min-width: 901px) {
+            .tabs {
+                width: 80%;
+                margin-left: auto;
+                margin-right: auto;
+            }
         }
 
         .tab {
@@ -172,6 +301,9 @@
             justify-content: center;
             flex: 0 0 auto;
             width: 49%;
+            /* let content size; center via parent */
+            min-width: 160px;
+            padding: 10px 20px;
             text-align: center;
         }
 
@@ -385,7 +517,7 @@
 
         .modal-content h3 {
             margin-top: 0;
-            color: #667eea;
+            color: #000000;
             font-size: 22px;
             margin-bottom: 12px;
         }
@@ -612,8 +744,11 @@
         /* Card based layout for class lists */
         .class-grid {
             display: grid;
-            grid-template-columns: 1fr;
-            gap: 12px;
+            /* Desktop: allow multiple cards per row with a sensible minimum width */
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 16px;
+            /* center the grid within its container so columns appear centered */
+            justify-content: center;
             /* Remove horizontal padding so cards align with .card / .tickets-panel edges.
                .card already provides the horizontal inset via var(--content-h). */
             padding: 12px 0 18px 0;
@@ -775,37 +910,120 @@
                 right: 10px;
             }
         }
+        /* Tuned blobs: darker color, more movement but visually subtle
+           - lower visual prominence via higher blur + lower opacity
+           - stronger movement (larger translation + rotation) to show motion
+           - mix-blend-mode: multiply to keep them dark while not overpowering UI
+           - respects prefers-reduced-motion */
+        html {
+            background-color: #d9d9d9; /* base background */
+        }
+
+        body {
+            position: relative;
+            background-color: transparent;
+        }
+
+        .container {
+            position: relative;
+            z-index: 3;
+        }
+
+        body::before,
+        body::after {
+            content: '';
+            position: fixed;
+            pointer-events: none;
+            z-index: 0;
+            filter: blur(34px); /* softer edges to be less intrusive */
+            opacity: 0.22;     /* subtle visibility */
+            will-change: transform;
+            mix-blend-mode: multiply;
+        }
+
+        body::before {
+            width: 72vw;
+            height: 72vw;
+            left: -18vw;
+            top: -12vw;
+            background: radial-gradient(circle at 30% 30%, rgba(4,30,66,0.95), rgba(4,30,66,0.85) 30%, rgba(4,30,66,0.6) 52%, transparent 72%);
+            transform: translate3d(0, 0, 0) rotate(0deg) scale(1);
+            animation: blobFloatA 8s ease-in-out infinite;
+        }
+
+        body::after {
+            width: 66vw;
+            height: 66vw;
+            right: -18vw;
+            bottom: -18vw;
+            background: radial-gradient(circle at 70% 70%, rgba(45,10,60,0.95), rgba(45,10,60,0.85) 30%, rgba(45,10,60,0.6) 52%, transparent 72%);
+            transform: translate3d(0, 0, 0) rotate(0deg) scale(1);
+            animation: blobFloatB 9s ease-in-out infinite;
+        }
+
+        @keyframes blobFloatA {
+            0% { transform: translate3d(0,0,0) rotate(0deg) scale(1); }
+            20% { transform: translate3d(10vw,-12vw,0) rotate(10deg) scale(1.08); }
+            50% { transform: translate3d(0,10vw,0) rotate(-8deg) scale(1.12); }
+            80% { transform: translate3d(-8vw,-6vw,0) rotate(6deg) scale(1.06); }
+            100% { transform: translate3d(0,0,0) rotate(0deg) scale(1); }
+        }
+
+        @keyframes blobFloatB {
+            0% { transform: translate3d(0,0,0) rotate(0deg) scale(1); }
+            20% { transform: translate3d(-11vw,10vw,0) rotate(-9deg) scale(1.08); }
+            50% { transform: translate3d(8vw,-8vw,0) rotate(8deg) scale(1.14); }
+            80% { transform: translate3d(-6vw,12vw,0) rotate(-6deg) scale(1.07); }
+            100% { transform: translate3d(0,0,0) rotate(0deg) scale(1); }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            body::before,
+            body::after {
+                animation: none !important;
+                filter: blur(36px);
+                opacity: 0.12;
+                mix-blend-mode: normal;
+            }
+        }
+
     </style>
 </head>
 
 <body>
-    <div class="top">
-        <div class="top-header">
-            <div class="top-left">
-                <!-- Header ahora mostrará nombre y apellido del alumno -->
-                <h1 id="meHeader">Cargando...</h1>
-            </div>
-            <div class="top-right">
-                <div id="dueBox" class="due-box">Cuota: --</div>
+    
+    <div class="container">
+        <div class="top">
+            <div class="top-header">
+                <div class="top-left">
+                    <!-- Header ahora mostrará nombre y apellido del alumno -->
+                    <h1 id="meHeader">Cargando...</h1>
+                </div>
+                <div class="top-right">
+                    <div id="dueBox" class="due-box">Cuota: --</div>
+                    <!-- Logout icon/button placed top-right for easy access -->
+                    <button id="logoutTop" class="logout-btn" aria-label="Cerrar sesión" title="Cerrar sesión">
+                        <!-- Compact X for small screens -->
+                        <span class="logout-x" aria-hidden="true">✕</span>
+                        <!-- Text label for larger screens (hidden by default) -->
+                        <span class="logout-text" aria-hidden="true" style="display:none">Cerrar sesión</span>
+                    </button>
+                </div>
             </div>
         </div>
-    </div>
 
-    <div id="cuotaStatus" class="cuota">Cargando cuota...</div>
-    <div class="tabs">
-        <button class="tab active" id="tabClases">Mis Clases</button>
-        <button class="tab" id="tabRecuperar">Recuperar Clase</button>
-    </div>
-    <div class="card" id="tabContent">
-        <!-- Content will be loaded here -->
+        <div id="cuotaStatus" class="cuota">Cargando cuota...</div>
+        <div class="tabs">
+            <button class="tab active" id="tabClases">Mis Clases</button>
+            <button class="tab" id="tabRecuperar">Recuperar Clase</button>
+        </div>
+        <div class="card" id="tabContent">
+            <!-- Content will be loaded here -->
+        </div>
     </div>
     <div id="alertContainer"></div>
     <div id="modalContainer"></div>
-    <div style="max-width:1200px;margin:24px var(--content-h);">
-        <button id="logoutFooter"
-            style="width:100%;padding:12px 16px;border-radius:12px;border:2px solid rgba(0,0,0,0.05);background:#fff;color:#667eea;font-weight:700;">Cerrar
-            sesión</button>
-    </div>
+    <!-- footer logout removed: logout moved to header for easier access -->
     <script src="/public/js/auth.js"></script>
     <script src="/public/js/admin_classes.js"></script>
     <script src="/public/js/admin_gym.js"></script>
@@ -892,6 +1110,41 @@
                 window.modalConfirmCallback();
             }
             closeModal();
+        }
+
+        /* Logout confirmation modal (aesthetic, centered, with icon) */
+        function showLogoutConfirm() {
+            const modalHTML = `
+                <div class="modal">
+                    <div class="modal-content" style="max-width:420px;text-align:center;">
+                        <div style="width:88px;height:88px;margin:0 auto 12px;border-radius:999px;background:linear-gradient(135deg,#eef2ff,#f8fbff);display:flex;align-items:center;justify-content:center;color:#667eea">
+                                <svg viewBox="0 0 44 44" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="width:44px;height:44px;" role="img" focusable="false">
+                                <line x1="10" y1="10" x2="34" y2="34" stroke="#000" stroke-width="3" stroke-linecap="round" />
+                                <line x1="10" y1="34" x2="34" y2="10" stroke="#000" stroke-width="3" stroke-linecap="round" />
+                            </svg>
+                        </div>
+                        <h3>Cerrar sesión</h3>
+                        <p style="color:#475569;margin-top:6px;">Vas a cerrar sesión en tu cuenta. ¿Querés continuar?</p>
+                        <div class="modal-actions" style="justify-content:center;margin-top:20px;">
+                            <button onclick="closeModal()" style="background:#e2e8f0;color:#475569;box-shadow:none;">Cancelar</button>
+                            <button onclick="confirmLogout()" style="    background: linear-gradient(90deg, #595c6b, #000000);">Cerrar sesión</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.getElementById('modalContainer').innerHTML = modalHTML;
+            window._modalOpen = true;
+        }
+
+        function confirmLogout() {
+            try {
+                // Close modal first for a smooth UX
+                closeModal();
+            } finally {
+                // Delegate to auth helper which will clear token and redirect
+                if (window.pilatesAuth && typeof pilatesAuth.logout === 'function') pilatesAuth.logout();
+                else window.location.href = '/index.html';
+            }
         }
 
         async function loadConfig() {
@@ -1598,9 +1851,9 @@
 
         document.getElementById('tabClases').onclick = () => switchTab('clases');
         document.getElementById('tabRecuperar').onclick = () => switchTab('recuperar');
-        // Logout button moved to footer
-        const logoutBtn = document.getElementById('logoutFooter');
-        if (logoutBtn) logoutBtn.onclick = () => pilatesAuth.logout();
+        // Logout button placed in header (top-right) - open confirmation modal
+        const logoutTopBtn = document.getElementById('logoutTop');
+        if (logoutTopBtn) logoutTopBtn.onclick = showLogoutConfirm;
 
         // Inicialización
         (async () => {

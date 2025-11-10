@@ -1541,6 +1541,22 @@ app.put('/api/gym/config', authMiddleware, async (req, res) => {
     }
 
     try {
+        // Build the fields object to persist (include membershipTypes if provided)
+        const fields = {
+            minCancellationHours,
+            creditExpirationDays,
+            autoCancelDueOverdueDays,
+            maxCredits
+        };
+
+        // Optional membershipTypes: must be an array of non-empty strings when provided
+        if (req.body.membershipTypes !== undefined) {
+            if (!Array.isArray(req.body.membershipTypes) || !req.body.membershipTypes.every(t => typeof t === 'string' && t.trim().length > 0)) {
+                return res.status(400).json({ error: 'membershipTypes debe ser un array de strings no vacíos' });
+            }
+            fields.membershipTypes = req.body.membershipTypes.map(t => t.trim());
+        }
+
         // Update the gym config for the admin's gym (or specified gym if superusuario)
         let gymId = req.user.gymId;
         if (req.user.role === 'superusuario' && req.query.gymId) gymId = req.query.gymId;
