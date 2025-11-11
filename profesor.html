@@ -21,7 +21,7 @@
 
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
-            background-color: #f4f6f8;
+            background-color: #b9b9b9;
             padding-top: calc(var(--top-height) + 18px);
             min-height: 100vh;
         }
@@ -76,18 +76,23 @@
         }
 
         .card {
-            background: #fff;
+            /* background: red; */
             padding: 40px 32px;
             border-radius: 24px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+            /* box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08); */
             max-width: 1200px;
-            margin: 32px auto;
+            margin:  auto;
         }
 
         h1,
         h3,
         h4 {
             font-weight: 700
+        }
+
+        h4 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.5rem;
         }
 
         /* Navbar / sidebar styles and hamburger animation (same as administrador) */
@@ -309,6 +314,11 @@
         }
 
         /* small helpers */
+        .required {
+            color: #e53e3e;
+            font-weight: 700;
+        }
+
         .nav-footer {
             position: absolute;
             bottom: 16px;
@@ -332,15 +342,97 @@
         /* cards grid */
         .cards-grid {
             display: grid;
-            gap: 14px;
-            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr))
+            gap: 18px;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            align-items: start;
         }
 
         .item-card {
-            background: #fff;
-            padding: 12px;
+            background: linear-gradient(180deg, #ffffff, #fbfdff);
+            padding: 16px;
+            border-radius: 14px;
+            box-shadow: 0 10px 30px rgba(2, 6, 23, 0.06);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            transition: transform 0.14s ease, box-shadow 0.14s ease;
+            border: 1px solid rgba(2, 6, 23, 0.03);
+        }
+
+        .item-card:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 18px 48px rgba(2, 6, 23, 0.09);
+        }
+
+        .student-row {
+            display: flex;
+            gap: 12px;
+            align-items: flex-start
+        }
+
+        .student-avatar {
+            width: 56px;
+            height: 56px;
             border-radius: 12px;
-            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06)
+            background: #eef2ff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            color: #2563eb;
+            flex: 0 0 56px
+        }
+
+        .student-info {
+            flex: 1;
+        }
+
+        .student-name {
+            font-weight: 800;
+            font-size: 16px;
+            color: #0f172a;
+            margin-bottom: 6px
+        }
+
+        .student-meta {
+            color: #4b5563;
+            font-size: 13px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px
+        }
+
+        .student-badges {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            margin-top: 8px
+        }
+
+        .badge {
+            padding: 6px 8px;
+            border-radius: 999px;
+            font-weight: 700;
+            font-size: 12px
+        }
+
+        .membership-badge {
+            background: linear-gradient(90deg, #f0f9ff, #e6f6ff);
+            color: #0369a1;
+            border: 1px solid rgba(3, 105, 161, 0.06)
+        }
+
+        .due-badge {
+            background: linear-gradient(90deg, #fff7ed, #fff2e6);
+            color: #92400e;
+            border: 1px solid rgba(146, 64, 14, 0.06)
+        }
+
+        .student-actions {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+            margin-top: 12px
         }
 
         /* modal helpers */
@@ -407,6 +499,12 @@
             transition: all 0.3s ease;
             padding: 8px;
         }
+
+        /* Background decoration removed per user request.
+           Keep container positioned but avoid forcing stacking context via z-index. */
+        .container {
+            position: relative;
+        }
     </style>
 </head>
 
@@ -418,92 +516,104 @@
         style="position:fixed;left:8px;top:18px;z-index:1103;border-radius:10px;border:1px solid rgba(0,0,0,0.06);background:#fff;box-shadow:0 6px 20px rgba(0,0,0,0.08);">
         <span class="hamburger" aria-hidden="true"><span></span><span></span><span></span></span>
     </button>
-    <div class="top">
-        <h1>Panel de Profesor</h1>
-        <div>
-            <span id="meInfo">Cargando...</span>
+    <div class="container">
+        <div class="top">
+            <h1>Panel de Profesor</h1>
+            <div>
+                <span id="meInfo">Cargando...</span>
+            </div>
         </div>
-    </div>
-    <nav class="navbar">
-        <ul>
-            <li><a href="#" class="nav-link active" data-section="newStudentSection">Crear Alumno</a></li>
-            <li><a href="#" class="nav-link" data-section="classesSection">Mis Clases</a></li>
-            <li><a href="#" class="nav-link" data-section="studentsSection">Mis Alumnos</a></li>
-        </ul>
-        <!-- Logout moved here so it's always at the bottom of the sidebar -->
-        <div class="nav-footer">
-            <button id="logout" type="button" title="Cerrar sesión">cerrar sesión</button>
-        </div>
-    </nav>
-    <div class="card">
-        <section id="newStudentSection">
-            <h4>Crear Alumno</h4>
-            <!-- Inline form (same fields as admin's create user) -->
-            <div id="newStudentFormContainer"
-                style="margin-top:12px;padding:12px;border-radius:12px;background:#fff;border:1px solid #eee">
-                <form id="createStudentForm">
-                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:8px 0">
-                        <div>
-                            <div style="font-size:13px;margin-bottom:6px">DNI: <span class="required">*</span></div>
-                            <input id="newStudentDni"
-                                style="width:100%;padding:10px;border-radius:8px;border:1px solid #ddd" />
-                        </div>
-                        <div>
-                            <div style="font-size:13px;margin-bottom:6px">Nombre: <span class="required">*</span></div>
-                            <input id="newStudentName"
-                                style="width:100%;padding:10px;border-radius:8px;border:1px solid #ddd" />
-                        </div>
-                        <div>
-                            <div style="font-size:13px;margin-bottom:6px">Apellido: <span class="required">*</span>
+        <nav class="navbar">
+            <ul>
+                <li><a href="#" class="nav-link active" data-section="newStudentSection">Crear Alumno</a></li>
+                <li><a href="#" class="nav-link" data-section="classesSection">Mis Clases</a></li>
+                <li><a href="#" class="nav-link" data-section="studentsSection">Mis Alumnos</a></li>
+            </ul>
+            <!-- Logout moved here so it's always at the bottom of the sidebar -->
+            <div class="nav-footer">
+                <button id="logout" type="button" title="Cerrar sesión">cerrar sesión</button>
+            </div>
+        </nav>
+        <div class="card">
+            <section id="newStudentSection">
+                <h4>Crear Alumno</h4>
+                <!-- Inline form (same fields as admin's create user) -->
+                <div id="newStudentFormContainer"
+                    style="margin-top:12px;padding:12px;border-radius:12px;background:#fff;border:1px solid #eee">
+                    <form id="createStudentForm">
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:8px 0">
+                            <div>
+                                <div style="font-size:13px;margin-bottom:6px">DNI: <span class="required">*</span></div>
+                                <input id="newStudentDni"
+                                    style="width:100%;padding:10px;border-radius:8px;border:1px solid #ddd" />
                             </div>
-                            <input id="newStudentLastName"
-                                style="width:100%;padding:10px;border-radius:8px;border:1px solid #ddd" />
+                            <div>
+                                <div style="font-size:13px;margin-bottom:6px">Nombre: <span class="required">*</span>
+                                </div>
+                                <input id="newStudentName"
+                                    style="width:100%;padding:10px;border-radius:8px;border:1px solid #ddd" />
+                            </div>
+                            <div>
+                                <div style="font-size:13px;margin-bottom:6px">Apellido: <span class="required">*</span>
+                                </div>
+                                <input id="newStudentLastName"
+                                    style="width:100%;padding:10px;border-radius:8px;border:1px solid #ddd" />
+                            </div>
+                            <div>
+                                <div style="font-size:13px;margin-bottom:6px">Teléfono:</div>
+                                <input id="newStudentPhone"
+                                    style="width:100%;padding:10px;border-radius:8px;border:1px solid #ddd" />
+                            </div>
+                            <div>
+                                <div style="font-size:13px;margin-bottom:6px">Contacto de emergencia:</div>
+                                <input id="newStudentEmergency"
+                                    style="width:100%;padding:10px;border-radius:8px;border:1px solid #ddd" />
+                            </div>
+                            <div>
+                                <div style="font-size:13px;margin-bottom:6px">Tipo de cuota:</div>
+                                <select id="newStudentMembership" class="membership-select"
+                                    style="width:100%;padding:10px;border-radius:8px;border:1px solid #ddd">
+                                    <!-- options populated dynamically -->
+                                </select>
+                            </div>
+                            <div>
+                                <div style="font-size:13px;margin-bottom:6px">Vencimiento:</div>
+                                <input type="date" id="newStudentDueDate"
+                                    style="width:100%;padding:10px;border-radius:8px;border:1px solid #ddd" />
+                            </div>
                         </div>
-                        <div>
-                            <div style="font-size:13px;margin-bottom:6px">Teléfono:</div>
-                            <input id="newStudentPhone"
-                                style="width:100%;padding:10px;border-radius:8px;border:1px solid #ddd" />
-                        </div>
-                        <div>
-                            <div style="font-size:13px;margin-bottom:6px">Contacto de emergencia:</div>
-                            <input id="newStudentEmergency"
-                                style="width:100%;padding:10px;border-radius:8px;border:1px solid #ddd" />
-                        </div>
-                        <div>
-                            <div style="font-size:13px;margin-bottom:6px">Vencimiento:</div>
-                            <input type="date" id="newStudentDueDate"
-                                style="width:100%;padding:10px;border-radius:8px;border:1px solid #ddd" />
-                        </div>
-                    </div>
 
-                    <div id="classesDivInline" style="margin-top:12px">
-                        <div style="font-size:13px;margin-bottom:6px">Clases asignadas: <span class="required">*</span>
+                        <div id="classesDivInline" style="margin-top:12px">
+                            <div style="font-size:13px;margin-bottom:6px">Clases asignadas: <span
+                                    class="required">*</span>
+                            </div>
+                            <div id="newStudentClassesContainer"
+                                style="max-height:150px;overflow-y:auto;border:1px solid #ddd;border-radius:8px;padding:6px;background:#fff">
+                                Cargando...</div>
                         </div>
-                        <div id="newStudentClassesContainer"
-                            style="max-height:150px;overflow-y:auto;border:1px solid #ddd;border-radius:8px;padding:6px;background:#fff">
-                            Cargando...</div>
-                    </div>
 
-                    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
-                        <button type="button" id="cancelCreateStudent">Cancelar</button>
-                        <button type="submit" id="saveCreateStudent"
-                            style="background:#38a169;color:#fff;padding:8px 12px;border-radius:8px">Guardar</button>
-                    </div>
-                </form>
-            </div>
-        </section>
-        <section id="studentsSection" style="display:none">
-            <h4>Mis Alumnos</h4>
-            <div style="display:flex;gap:8px;margin-bottom:8px;align-items:center">
-                <input id="searchStudents" placeholder="Buscar por nombre, apellido o DNI"
-                    style="flex:1;padding:8px;border:1px solid #ddd;border-radius:4px" />
-            </div>
-            <div id="studentsList">Cargando...</div>
-        </section>
-        <section id="classesSection" style="display:none">
-            <h4>Mis Clases</h4>
-            <div id="classesList">Cargando...</div>
-        </section>
+                        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
+                            <button type="submit" id="saveCreateStudent" aria-label="Guardar alumno"
+                                style="background:linear-gradient(90deg,#16a34a,#059669);color:#fff;padding:10px 16px;border-radius:10px;border:none;font-weight:700;box-shadow:0 8px 24px rgba(5,150,105,0.18);cursor:pointer">
+                                Guardar
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </section>
+            <section id="studentsSection" style="display:none">
+                <h4>Mis Alumnos</h4>
+                <div style="display:flex;gap:8px;margin-bottom:8px;align-items:center">
+                    <input id="searchStudents" placeholder="Buscar por nombre, apellido o DNI"
+                        style="flex:1;padding:8px;border:1px solid #ddd;border-radius:4px" />
+                </div>
+                <div id="studentsList">Cargando...</div>
+            </section>
+            <section id="classesSection" style="display:none">
+                <h4>Mis Clases</h4>
+                <div id="classesList">Cargando...</div>
+            </section>
+        </div>
     </div>
     <script src="/public/js/auth.js"></script>
     <script src="/public/js/admin_classes.js"></script>
@@ -684,6 +794,15 @@
         // helper to escape inserted text
         function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
 
+        // Return membership types <option> HTML using the current gym config (falls back to default types)
+        function getMembershipOptionsHTML(selected) {
+            try {
+                const cfg = window.currentGymConfig || {};
+                const types = Array.isArray(cfg.membershipTypes) && cfg.membershipTypes.length ? cfg.membershipTypes : ['mensual', 'trimestral', 'anual'];
+                return types.map(t => `<option value="${t}" ${selected === t ? 'selected' : ''}>${t.charAt(0).toUpperCase() + t.slice(1)}</option>`).join('');
+            } catch (e) { return '' }
+        }
+
         // Populate inline create-student form (professor creates alumnos for their classes)
         (async function initInlineCreateStudent() {
             try {
@@ -705,12 +824,17 @@
                     `).join('');
                 }
 
-                // Cancel button resets the form
-                const cancel = document.getElementById('cancelCreateStudent');
-                if (cancel) cancel.addEventListener('click', () => {
-                    const form = document.getElementById('createStudentForm');
-                    if (form) form.reset();
-                });
+                // Load public gym config and populate membership select so it reflects admin settings
+                try {
+                    const cfgRes = await fetch('/api/gym/config/public').then(r => r.ok ? r.json() : null).catch(() => null);
+                    if (cfgRes) window.currentGymConfig = cfgRes;
+                } catch (ee) { /* ignore */ }
+                try {
+                    const ms = document.getElementById('newStudentMembership');
+                    if (ms) ms.innerHTML = getMembershipOptionsHTML();
+                } catch (e) { }
+
+                // Note: Cancel button removed; form reset can still be done programmatically if needed
 
                 // Handle submit
                 const form = document.getElementById('createStudentForm');
@@ -723,7 +847,7 @@
                             lastName: document.getElementById('newStudentLastName').value.trim(),
                             phone: document.getElementById('newStudentPhone').value.trim(),
                             emergencyContact: document.getElementById('newStudentEmergency').value.trim(),
-                            // membershipType intentionally omitted for professor create form
+                            membershipType: (document.getElementById('newStudentMembership') ? document.getElementById('newStudentMembership').value : null),
                             dueDate: document.getElementById('newStudentDueDate').value,
                             classIds: Array.from(document.querySelectorAll('.newStudentClass:checked')).map(cb => cb.value)
                         };
@@ -783,21 +907,22 @@
                 return;
             }
 
-            // Render students as responsive cards
+            // Render students as improved responsive cards
             const cards = students.map(s => {
                 const dueDate = s.dueDate ? new Date(s.dueDate).toLocaleDateString() : 'No establecida';
                 return `
-                    <div class="item-card" style="display:flex;flex-direction:column;justify-content:space-between;min-height:120px">
-                        <div>
-                            <div style="font-weight:700;font-size:16px;margin-bottom:6px">${esc((s.name || '') + ' ' + (s.lastName || ''))}</div>
-                            <div style="color:#374151;margin-bottom:6px">DNI: <strong>${esc(s.dni || '')}</strong></div>
-                            <div style="color:#6b7280;margin-bottom:6px">Teléfono: ${esc(s.phone || '-')}</div>
-                            <div style="color:#6b7280;margin-bottom:6px">Contacto emergencia: ${esc(s.emergencyContact || '-')}</div>
-                        </div>
-                        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px">
-                            <div style="font-size:13px;color:#374151">Vencimiento: <strong>${esc(dueDate)}</strong></div>
-                            <div>
-                                <button class="viewStudentDetail" data-id="${esc(s._id)}" style="background:#2563eb;color:#fff;border:none;padding:8px 10px;border-radius:8px;cursor:pointer">Ver</button>
+                    <div class="item-card">
+                        <div class="student-row">
+                            <div class="student-info">
+                                <div class="student-name">${esc((s.name || '') + ' ' + (s.lastName || ''))}</div>
+                                <div class="student-meta">
+                                    <div>DNI: <strong>${esc(s.dni || '')}</strong></div>
+                                    <div>Tel: ${esc(s.phone || '-')} · Emergencia: ${esc(s.emergencyContact || '-')}</div>
+                                </div>
+                                <div class="student-badges">
+                                    <div class="badge membership-badge">${esc(s.membershipType || '—')}</div>
+                                    <div class="badge due-badge">Venc: ${esc(dueDate)}</div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -806,37 +931,7 @@
 
             document.getElementById('studentsList').innerHTML = `<div class="cards-grid">${cards}</div>`;
 
-            // Attach handlers for the detail buttons
-            document.querySelectorAll('.viewStudentDetail').forEach(b =>
-                b.addEventListener('click', async e => {
-                    const id = e.target.getAttribute('data-id');
-                    // Reuse existing student detail modal flow if needed; fallback to fetch
-                    try {
-                        const token = localStorage.getItem('token');
-                        const res = await fetch(`/api/students/${id}`, { headers: { Authorization: `Bearer ${token}` } });
-                        if (!res.ok) return alert('Error obteniendo alumno');
-                        const s = await res.json();
-                        const modal = document.createElement('div');
-                        modal.style = 'position:fixed;inset:0;background:rgba(0,0,0,0.35);display:flex;align-items:center;justify-content:center';
-                        modal.innerHTML = `
-                            <div style="background:#fff;padding:16px;border-radius:8px;width:420px;max-height:90vh;overflow-y:auto">
-                                <h4>${esc((s.name || '') + ' ' + (s.lastName || ''))}</h4>
-                                <div style="margin:8px 0">DNI: ${esc(s.dni || '')}</div>
-                                <div>Tel: ${esc(s.phone || '-')}</div>
-                                <div>Contacto emergencia: ${esc(s.emergencyContact || '-')}</div>
-                                <div>Vencimiento: ${esc(s.dueDate ? new Date(s.dueDate).toLocaleDateString() : 'No establecida')}</div>
-                                <div style="display:flex;justify-content:flex-end;margin-top:12px">
-                                    <button id="closeStudentModal">Cerrar</button>
-                                </div>
-                            </div>
-                        `;
-                        document.body.appendChild(modal);
-                        document.getElementById('closeStudentModal').addEventListener('click', () => modal.remove());
-                    } catch (err) {
-                        alert('Error al obtener detalle del alumno');
-                    }
-                })
-            );
+            // No per-card detail buttons on the student cards (clean card view)
         }
 
         // Clases (solo las asignadas al prof)
@@ -873,7 +968,7 @@
                         <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px">
                             <div style="font-size:13px;color:#065f46">Camillas libres: <strong>${free}</strong></div>
                             <div>
-                                <button class="viewStudents" style="background:#48bb78;color:#fff;border:none;padding:8px 10px;border-radius:8px;cursor:pointer">Ver estudiantes</button>
+                                <button class="viewStudents" style="background:#48bb78;color:#fff;border:none;padding:8px 10px;border-radius:8px;cursor:pointer">Ver alumnos</button>
                             </div>
                         </div>
                     </div>
@@ -882,54 +977,90 @@
 
             document.getElementById('classesList').innerHTML = `<div class="cards-grid">${cards}</div>`;
 
-            // Attach handlers to the card buttons
-            document.querySelectorAll('.item-card .viewStudents').forEach(b =>
-                b.addEventListener('click', async e => {
-                    const id = e.target.closest('.item-card').dataset.id;
-                    openViewStudentsModal(id);
-                })
-            );
+            // Attach delegated click handler so buttons continue to work after re-renders
+            (function attachViewStudentsDelegate() {
+                const container = document.getElementById('classesList');
+                if (!container) return;
+                container.addEventListener('click', function (e) {
+                    const btn = e.target.closest('.viewStudents');
+                    if (!btn) return;
+                    const card = btn.closest('.item-card');
+                    if (!card) return;
+                    const id = card.dataset.id;
+                    try { openViewStudentsModal(id); } catch (err) { console.error('openViewStudentsModal failed', err); }
+                });
+            })();
         }
 
         async function openViewStudentsModal(classId) {
-            const students = await adminClasses.getClassStudents(classId);
-            const classes = await adminClasses.listClasses();
-            const classInfo = classes.find(c => String(c._id) === String(classId)) || { days: [], start: '' };
+            // Try the direct admin endpoint first (works for admins). If it fails (403),
+            // fall back to a professor-friendly approach: get the class list (open) to
+            // find student ids for the class, then fetch professor's students and filter.
+            let students = [];
+            let classInfo = { days: [], start: '' };
+            try {
+                students = await adminClasses.getClassStudents(classId);
+                const classes = await adminClasses.listClasses();
+                classInfo = classes.find(c => String(c._id) === String(classId)) || classInfo;
+            } catch (err) {
+                // If we hit permission issues, attempt fallback for 'profesor' role
+                try {
+                    const classes = await adminClasses.listClasses();
+                    const cls = classes.find(c => String(c._id) === String(classId));
+                    classInfo = cls || classInfo;
+                    const studentIds = (cls && Array.isArray(cls.students)) ? cls.students.map(s => String(s)) : [];
+                    // Fetch professor's students (this endpoint is allowed for profesores)
+                    const profStudents = await adminStudents.listStudents();
+                    students = profStudents.filter(s => studentIds.includes(String(s._id)));
+                } catch (err2) {
+                    console.error('Failed to load students for class', err2);
+                    return alert('No se pudieron obtener los estudiantes (ver consola)');
+                }
+            }
+
             const modal = document.createElement('div');
-            modal.style = 'position:fixed;inset:0;background:rgba(0,0,0,0.35);display:flex;align-items:center;justify-content:center';
+            modal.style = 'position:fixed;inset:0;background:rgba(0,0,0,0.35);display:flex;align-items:center;justify-content:center;padding:12px;z-index:4000';
             modal.innerHTML = `
-                <div style="background:#fff;padding:16px;border-radius:8px;width:480px;max-height:90vh;overflow-y:auto">
-                    <h4>Estudiantes - ${esc(classInfo.start)} (${esc((classInfo.days || []).join(', '))})</h4>
-                    <div style="margin:16px 0">
-                        <div>Estudiantes inscritos (${esc(String(students.length))}/${classInfo.roomName ? ` max ${esc(String((classInfo.camillasFree || 0) + students.length))}` : ''}):</div>
-                        ${students.length ? `
-                            <table>
-                                <thead>
-                                    <tr>
-                                        <th>Nombre/DNI</th>
-                                        <th>Teléfono</th>
-                                        <th>Emergencia</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    ${students.map(s => `
-                                        <tr>
-                                            <td>${esc((s.name || '') + ' ' + (s.lastName || ''))}</td>
-                                            <td>${esc(s.phone || '-')}</td>
-                                            <td>${esc(s.emergencyContact || '-')}</td>
-                                        </tr>
-                                    `).join('')}
-                                </tbody>
-                            </table>
-                        ` : '<div style="margin-top:8px"><i>No hay estudiantes inscritos</i></div>'}
+                <div style="background:#fff;padding:18px;border-radius:10px;width:min(920px,95%);max-height:90vh;overflow-y:auto">
+                    <h4 style="margin:0 0 8px 0">Alumnos - ${esc(classInfo.start)} (${esc((classInfo.days || []).join(', '))})</h4>
+                    <div style="margin:8px 0 16px 0;color:#374151;font-size:14px">
+                        <div>Alumnos inscritos: <strong>${esc(String(students.length))}</strong> ${classInfo.roomName ? `<span style="color:#6b7280">/ max ${esc(String((classInfo.camillasFree || 0) + students.length))}</span>` : ''}</div>
                     </div>
+                    ${students.length ? `
+                        <div class="cards-grid" style="margin-top:8px">
+                            ${students.map(s => {
+                const dueDate = s.dueDate ? new Date(s.dueDate).toLocaleDateString() : 'No establecida';
+                return `
+                                    <div class="item-card" style="min-height:120px">
+                                        <div class="student-row">
+                                            <div class="student-info">
+                                                <div class="student-name">${esc((s.name || '') + ' ' + (s.lastName || ''))}</div>
+                                                <div class="student-meta">
+                                                    <div>DNI: <strong>${esc(s.dni || '')}</strong></div>
+                                                    <div>Tel: ${esc(s.phone || '-')} · Emergencia: ${esc(s.emergencyContact || '-')}</div>
+                                                </div>
+                                                <div class="student-badges">
+                                                    <div class="badge membership-badge">${esc(s.membershipType || '—')}</div>
+                                                    <div class="badge due-badge">Venc: ${esc(dueDate)}</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                `;
+            }).join('')}
+                        </div>
+                    ` : '<div style="margin-top:8px"><i>No hay alumnos inscritos</i></div>'}
                     <div style="display:flex;justify-content:flex-end;margin-top:16px">
-                        <button id="closeStudents">Cerrar</button>
+                        <button id="closeStudents" style="padding:8px 12px;border-radius:8px;border:1px solid #e5e7eb;background:#fff;">Cerrar</button>
                     </div>
                 </div>
             `;
             document.body.appendChild(modal);
+
+            // Close handler
             document.getElementById('closeStudents').addEventListener('click', () => modal.remove());
+
+            // No per-card detail buttons in the class modal (cards-only view)
         }
 
         // Buscador
@@ -946,6 +1077,39 @@
             await loadStudents();
             await loadClasses();
         });
+
+        // Poll public gym config periodically so membership selects update if admin changes config
+        (function startGymConfigPolling() {
+            let lastTypes = null;
+            async function check() {
+                try {
+                    const res = await fetch('/api/gym/config/public');
+                    if (!res.ok) return;
+                    const cfg = await res.json();
+                    const types = Array.isArray(cfg.membershipTypes) ? JSON.stringify(cfg.membershipTypes) : null;
+                    if (types && types !== lastTypes) {
+                        lastTypes = types;
+                        window.currentGymConfig = cfg;
+                        // update local selects
+                        try {
+                            const ms = document.getElementById('newStudentMembership');
+                            if (ms) {
+                                const cur = ms.value;
+                                ms.innerHTML = getMembershipOptionsHTML(cur);
+                            }
+                            document.querySelectorAll('select.membership-select').forEach(s => {
+                                const cur = s.value;
+                                s.innerHTML = getMembershipOptionsHTML(cur);
+                            });
+                        } catch (e) { }
+                    }
+                } catch (e) { /* ignore network errors */ }
+            }
+            // initial check + interval
+            check();
+            const id = setInterval(check, 8000);
+            window.addEventListener('beforeunload', () => clearInterval(id));
+        })();
     </script>
 </body>
 

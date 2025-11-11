@@ -910,88 +910,17 @@
                 right: 10px;
             }
         }
-        /* Tuned blobs: darker color, more movement but visually subtle
-           - lower visual prominence via higher blur + lower opacity
-           - stronger movement (larger translation + rotation) to show motion
-           - mix-blend-mode: multiply to keep them dark while not overpowering UI
-           - respects prefers-reduced-motion */
-        html {
-            background-color: #d9d9d9; /* base background */
-        }
 
-        body {
-            position: relative;
-            background-color: transparent;
-        }
-
+        /* Background decoration removed per user request.
+           Keep container positioned but avoid forcing stacking context via z-index. */
         .container {
             position: relative;
-            z-index: 3;
         }
-
-        body::before,
-        body::after {
-            content: '';
-            position: fixed;
-            pointer-events: none;
-            z-index: 0;
-            filter: blur(34px); /* softer edges to be less intrusive */
-            opacity: 0.22;     /* subtle visibility */
-            will-change: transform;
-            mix-blend-mode: multiply;
-        }
-
-        body::before {
-            width: 72vw;
-            height: 72vw;
-            left: -18vw;
-            top: -12vw;
-            background: radial-gradient(circle at 30% 30%, rgba(4,30,66,0.95), rgba(4,30,66,0.85) 30%, rgba(4,30,66,0.6) 52%, transparent 72%);
-            transform: translate3d(0, 0, 0) rotate(0deg) scale(1);
-            animation: blobFloatA 8s ease-in-out infinite;
-        }
-
-        body::after {
-            width: 66vw;
-            height: 66vw;
-            right: -18vw;
-            bottom: -18vw;
-            background: radial-gradient(circle at 70% 70%, rgba(45,10,60,0.95), rgba(45,10,60,0.85) 30%, rgba(45,10,60,0.6) 52%, transparent 72%);
-            transform: translate3d(0, 0, 0) rotate(0deg) scale(1);
-            animation: blobFloatB 9s ease-in-out infinite;
-        }
-
-        @keyframes blobFloatA {
-            0% { transform: translate3d(0,0,0) rotate(0deg) scale(1); }
-            20% { transform: translate3d(10vw,-12vw,0) rotate(10deg) scale(1.08); }
-            50% { transform: translate3d(0,10vw,0) rotate(-8deg) scale(1.12); }
-            80% { transform: translate3d(-8vw,-6vw,0) rotate(6deg) scale(1.06); }
-            100% { transform: translate3d(0,0,0) rotate(0deg) scale(1); }
-        }
-
-        @keyframes blobFloatB {
-            0% { transform: translate3d(0,0,0) rotate(0deg) scale(1); }
-            20% { transform: translate3d(-11vw,10vw,0) rotate(-9deg) scale(1.08); }
-            50% { transform: translate3d(8vw,-8vw,0) rotate(8deg) scale(1.14); }
-            80% { transform: translate3d(-6vw,12vw,0) rotate(-6deg) scale(1.07); }
-            100% { transform: translate3d(0,0,0) rotate(0deg) scale(1); }
-        }
-
-        @media (prefers-reduced-motion: reduce) {
-            body::before,
-            body::after {
-                animation: none !important;
-                filter: blur(36px);
-                opacity: 0.12;
-                mix-blend-mode: normal;
-            }
-        }
-
     </style>
 </head>
 
 <body>
-    
+
     <div class="container">
         <div class="top">
             <div class="top-header">
@@ -1876,6 +1805,44 @@
                 document.getElementById('cuotaStatus').textContent = 'Error al cargar';
                 document.getElementById('tabContent').innerHTML = `<div class="alert error">Error: ${e.message}. <br>Revisa la consola del navegador (F12) para más detalles.</div>`;
             }
+        })();
+
+        // Utility to render membership options (used when admin updates config)
+        function getMembershipOptionsHTML(selected) {
+            const cfg = window.currentGymConfig || {};
+            const types = Array.isArray(cfg.membershipTypes) && cfg.membershipTypes.length ? cfg.membershipTypes : ['mensual', 'trimestral', 'anual'];
+            return types.map(t => `<option value="${t}" ${selected === t ? 'selected' : ''}>${t.charAt(0).toUpperCase() + t.slice(1)}</option>`).join('');
+        }
+
+        // Poll public gym config periodically so membership selects update if admin changes config
+        (function startGymConfigPolling() {
+            let lastTypes = null;
+            async function check() {
+                try {
+                    const res = await fetch('/api/gym/config/public');
+                    if (!res.ok) return;
+                    const cfg = await res.json();
+                    const types = Array.isArray(cfg.membershipTypes) ? JSON.stringify(cfg.membershipTypes) : null;
+                    if (types && types !== lastTypes) {
+                        lastTypes = types;
+                        window.currentGymConfig = cfg;
+                        try {
+                            const ms = document.getElementById('newStudentMembership');
+                            if (ms) {
+                                const cur = ms.value;
+                                ms.innerHTML = getMembershipOptionsHTML(cur);
+                            }
+                            document.querySelectorAll('select.membership-select').forEach(s => {
+                                const cur = s.value;
+                                s.innerHTML = getMembershipOptionsHTML(cur);
+                            });
+                        } catch (e) { }
+                    }
+                } catch (e) { /* ignore network errors */ }
+            }
+            check();
+            const id = setInterval(check, 8000);
+            window.addEventListener('beforeunload', () => clearInterval(id));
         })();
     </script>
 </body>
