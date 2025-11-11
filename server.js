@@ -158,7 +158,7 @@ app.get('/api/me', async (req, res) => {
 });
 
 // Middleware para verificar token y rol admin/superusuario
-function authMiddleware(req, res, next) {
+async function authMiddleware(req, res, next) {
     const auth = req.headers.authorization;
     if (!auth) return res.status(401).json({ error: 'No autorizado' });
     const parts = auth.split(' ');
@@ -169,8 +169,18 @@ function authMiddleware(req, res, next) {
         if (!['administrador', 'superusuario'].includes(payload.role)) {
             return res.status(403).json({ error: 'No tienes permisos' });
         }
-        // Attach user payload (including gymId if present)
+        // Attach user payload (including gymId if present). If gymId is missing
+        // (older tokens), load it from the database synchronously (await) so
+        // that downstream handlers see a complete req.user and avoid spurious 403s.
         req.user = payload;
+        try {
+            if (!req.user.gymId && req.user.id) {
+                const u = await db.collection('users').findOne({ _id: new ObjectId(req.user.id) });
+                if (u && u.gymId) req.user.gymId = u.gymId;
+            }
+        } catch (e) {
+            console.warn('Failed to enrich user payload with gymId', e && e.message ? e.message : e);
+        }
         next();
     } catch (err) {
         return res.status(401).json({ error: 'Token inválido' });
@@ -1203,6 +1213,23 @@ app.put('/api/classes/:id', authMiddleware, async (req, res) => {
 
         // Validar que la clase exista
         const existingClass = await db.collection('classes').findOne({ _id });
+
+        // Defensive enrichment: if authMiddleware didn't attach gymId for any reason
+        // (older tokens or race), try to load it here from the users collection so
+        // permission checks below are reliable.
+        if (req.user && !req.user.gymId && req.user.id) {
+            try {
+                const userDoc = await db.collection('users').findOne({ _id: new ObjectId(req.user.id) });
+                if (userDoc && userDoc.gymId) {
+                    req.user.gymId = userDoc.gymId;
+                    console.log('[ENRICH] PUT /api/classes/:id - attached gymId from users collection to req.user:', req.user.gymId);
+                } else {
+                    console.log('[ENRICH] PUT /api/classes/:id - no gymId found on user doc for', req.user.id);
+                }
+            } catch (e) {
+                console.warn('[ENRICH] PUT /api/classes/:id - failed to enrich req.user with gymId', e && e.message ? e.message : e);
+            }
+        }
         if (!existingClass)
             return res.status(404).json({ error: 'Clase no encontrada' });
 
@@ -1211,10 +1238,51 @@ app.put('/api/classes/:id', authMiddleware, async (req, res) => {
         if (!room)
             return res.status(404).json({ error: 'Salón no encontrado' });
 
-        // Ensure the room belongs to the same gym as the class (unless superusuario)
+        // Ensure the requester has permission to modify this class (must belong to same gym unless superusuario)
+        // Add debug logs to surface why a 403 may be returned.
         const roomDoc = await db.collection('rooms').findOne({ _id: new ObjectId(roomId) });
-        if (req.user.role !== 'superusuario' && roomDoc && roomDoc.gymId !== existingClass.gymId) {
-            return res.status(403).json({ error: 'No tenés permisos para usar ese salón' });
+        try {
+            console.log('[DEBUG] PUT /api/classes/:id - user payload:', req.user);
+            console.log('[DEBUG] PUT /api/classes/:id - existingClass.gymId:', existingClass.gymId, ' roomDoc.gymId:', roomDoc ? roomDoc.gymId : null, ' req.user.gymId:', req.user.gymId);
+        } catch (e) { /* ignore logging errors */ }
+
+        if (req.user.role !== 'superusuario') {
+            // If both sides have a gymId, compare them as strings to be robust
+            if (existingClass.gymId && req.user.gymId && String(existingClass.gymId) !== String(req.user.gymId)) {
+                console.warn('[PERM] deny modify class - existingClass.gymId mismatch', { existingClassGymId: existingClass.gymId, userGymId: req.user.gymId });
+                return res.status(403).json({
+                    error: 'No tenés permisos para modificar esta clase',
+                    debug: {
+                        existingClassGymId: existingClass.gymId ? String(existingClass.gymId) : null,
+                        roomGymId: roomDoc && roomDoc.gymId ? String(roomDoc.gymId) : null,
+                        userGymId: req.user.gymId ? String(req.user.gymId) : null,
+                        userId: req.user.id || null
+                    }
+                });
+            }
+            // If the user doesn't have a gymId attached, warn but allow for now
+            if (!req.user.gymId) {
+                console.warn('[PERM] user has no gymId on profile - allowing operation but consider fixing user.gymId for stricter multi-tenant checks', { userId: req.user.id });
+            }
+        }
+
+        // Ensure the room belongs to the same gym as the admin (unless superusuario)
+        if (req.user.role !== 'superusuario' && roomDoc) {
+            if (roomDoc.gymId && req.user.gymId && String(roomDoc.gymId) !== String(req.user.gymId)) {
+                console.warn('[PERM] deny use room - roomDoc.gymId mismatch', { roomGymId: roomDoc.gymId, userGymId: req.user.gymId });
+                return res.status(403).json({
+                    error: 'No tenés permisos para usar ese salón',
+                    debug: {
+                        existingClassGymId: existingClass.gymId ? String(existingClass.gymId) : null,
+                        roomGymId: roomDoc.gymId ? String(roomDoc.gymId) : null,
+                        userGymId: req.user.gymId ? String(req.user.gymId) : null,
+                        userId: req.user.id || null
+                    }
+                });
+            }
+            if (!req.user.gymId) {
+                console.warn('[PERM] user has no gymId on profile while using room', { userId: req.user.id, roomId: roomDoc._id });
+            }
         }
 
         // Si hay estudiantes inscritos, validar que la capacidad del nuevo salón sea suficiente

@@ -215,7 +215,8 @@
             max-width: 1200px;
             margin: 32px auto;
         }
-        #newUserForm{
+
+        #newUserForm {
             background-color: white;
         }
 
@@ -994,6 +995,54 @@
         }
 
         /* no media query: cards are used at all viewport sizes */
+
+        /* Toast / inline alerts (small, non-blocking) */
+        .toast-container {
+            position: fixed;
+            top: 16px;
+            right: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 5000;
+            pointer-events: none;
+        }
+
+        .toast {
+            pointer-events: auto;
+            min-width: 220px;
+            max-width: 420px;
+            padding: 10px 14px;
+            border-radius: 10px;
+            color: #fff;
+            font-weight: 700;
+            box-shadow: 0 8px 28px rgba(2, 6, 23, 0.12);
+            animation: toastIn .18s ease;
+        }
+
+        .toast.success {
+            background: linear-gradient(90deg, #16a34a, #059669);
+        }
+
+        .toast.error {
+            background: linear-gradient(90deg, #ef4444, #dc2626);
+        }
+
+        .toast.info {
+            background: linear-gradient(90deg, #2563eb, #1d4ed8);
+        }
+
+        @keyframes toastIn {
+            from {
+                transform: translateY(-6px);
+                opacity: 0
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1
+            }
+        }
     </style>
 </head>
 
@@ -1407,7 +1456,7 @@
                         lastName: document.getElementById('newUserLastName').value.trim(),
                         phone: document.getElementById('newUserPhone').value.trim(),
                     };
-                    if (!user.dni || !user.name || !user.lastName) return alert('DNI, nombre y apellido son requeridos');
+                    if (!user.dni || !user.name || !user.lastName) return showToast('DNI, nombre y apellido son requeridos', 'error');
                     if (role === 'alumno') {
                         user.emergencyContact = document.getElementById('newUserEmergency').value.trim();
                         user.membershipType = document.getElementById('newUserMembership').value;
@@ -1415,15 +1464,15 @@
                         user.classIds = Array.from(document.querySelectorAll('.newUserClass:checked')).map(cb => cb.value);
                         // Validar que al menos una clase esté seleccionada
                         if (!Array.isArray(user.classIds) || user.classIds.length === 0) {
-                            return alert('Debe asignar al menos una clase al crear un alumno');
+                            return showToast('Debe asignar al menos una clase al crear un alumno', 'error');
                         }
                         try {
                             await adminStudents.createStudent(user);
-                            alert('Alumno creado');
+                            showToast('Alumno creado', 'success');
                             document.getElementById('createUserForm').reset();
                             await loadStudents();
                             await loadClasses();
-                        } catch (err) { alert(err.message || 'Error creando alumno'); }
+                        } catch (err) { showToast(err.message || 'Error creando alumno', 'error'); }
                     } else if (role === 'profesor') {
                         // include emergency contact for professors as well
                         user.emergencyContact = document.getElementById('newUserEmergency').value.trim();
@@ -1438,11 +1487,11 @@
                                     try { await adminClasses.assignProfessor(cid, newProfId); } catch (er) { /* ignore per-class errors */ }
                                 }
                             }
-                            alert('Profesor creado');
+                            showToast('Profesor creado', 'success');
                             document.getElementById('createUserForm').reset();
                             await loadProfessors();
                             await loadClasses();
-                        } catch (err) { alert(err.message || 'Error creando profesor'); }
+                        } catch (err) { showToast(err.message || 'Error creando profesor', 'error'); }
                     }
                 }
             });
@@ -1605,6 +1654,28 @@
             return types.map(t => `<option value="${esc(t)}" ${selected === t ? 'selected' : ''}>${esc(t.charAt(0).toUpperCase() + t.slice(1))}</option>`).join('');
         }
 
+        // Lightweight toast helper for inline, aesthetic alerts
+        function showToast(message, type = 'info', timeout = 3500) {
+            try {
+                let container = document.getElementById('toastContainer');
+                if (!container) {
+                    container = document.createElement('div');
+                    container.id = 'toastContainer';
+                    container.className = 'toast-container';
+                    document.body.appendChild(container);
+                }
+                const t = document.createElement('div');
+                t.className = 'toast ' + (type || 'info');
+                t.textContent = message;
+                container.appendChild(t);
+                // auto remove
+                setTimeout(() => {
+                    try { t.style.transition = 'opacity .18s ease, transform .18s ease'; t.style.opacity = '0'; t.style.transform = 'translateY(-6px)'; } catch (e) { }
+                    setTimeout(() => t.remove(), 220);
+                }, timeout);
+            } catch (e) { try { alert(message); } catch (_) { /* noop */ } }
+        }
+
         // Update any existing membership <select> elements on the page so they reflect currentGymConfig
         function updateMembershipSelects() {
             try {
@@ -1652,9 +1723,27 @@
 
             container.querySelectorAll('.delRoom').forEach(b => b.addEventListener('click', async e => {
                 const id = e.target.closest('.item-card').dataset.id;
-                if (!confirm('Eliminar salón?')) return;
-                await adminRooms.deleteRoom(id);
-                await loadRooms(document.getElementById('searchRooms').value);
+                try {
+                    window.showModal('Eliminar salón', '¿Desea eliminar el salón?', async function () {
+                        try {
+                            await adminRooms.deleteRoom(id);
+                            showToast('Salón eliminado', 'success');
+                            await loadRooms(document.getElementById('searchRooms').value);
+                        } catch (err) {
+                            showToast(err && err.message ? err.message : 'Error eliminando salón', 'error');
+                        }
+                    });
+                } catch (err) {
+                    // fallback to native confirm
+                    if (!confirm('Eliminar salón?')) return;
+                    try {
+                        await adminRooms.deleteRoom(id);
+                        showToast('Salón eliminado', 'success');
+                        await loadRooms(document.getElementById('searchRooms').value);
+                    } catch (e) {
+                        showToast(e && e.message ? e.message : 'Error eliminando salón', 'error');
+                    }
+                }
             }));
         }
 
@@ -1676,8 +1765,15 @@
             document.getElementById('saveNew').addEventListener('click', async () => {
                 const name = document.getElementById('newRoomName').value.trim();
                 const capacity = document.getElementById('newRoomCapacity').value;
-                if (!name || !capacity) return alert('Completá nombre y capacidad');
-                try { await adminRooms.createRoom(name, Number(capacity)); modal.remove(); await loadRooms(); } catch (err) { alert(err.message || 'Error creando salón') }
+                if (!name || !capacity) return showToast('Completá nombre y capacidad', 'error');
+                try {
+                    await adminRooms.createRoom(name, Number(capacity));
+                    modal.remove();
+                    showToast('Salón creado', 'success');
+                    await loadRooms();
+                } catch (err) {
+                    showToast(err && err.message ? err.message : 'Error creando salón', 'error');
+                }
             });
         }
 
@@ -1696,8 +1792,15 @@
             document.getElementById('saveEdit').addEventListener('click', async () => {
                 const newName = document.getElementById('editRoomName').value.trim();
                 const newCap = document.getElementById('editRoomCapacity').value;
-                if (!newName || !newCap) return alert('Completá nombre y capacidad');
-                try { await adminRooms.updateRoom(id, newName, Number(newCap)); modal.remove(); await loadRooms(); } catch (err) { alert(err.message || 'Error actualizando salón') }
+                if (!newName || !newCap) return showToast('Completá nombre y capacidad', 'error');
+                try {
+                    await adminRooms.updateRoom(id, newName, Number(newCap));
+                    modal.remove();
+                    showToast('Salón actualizado', 'success');
+                    await loadRooms();
+                } catch (err) {
+                    showToast(err && err.message ? err.message : 'Error actualizando salón', 'error');
+                }
             });
         }
     </script>
@@ -1960,30 +2063,38 @@
 
             document.getElementById('addStudent').addEventListener('click', async () => {
                 const studentId = document.getElementById('newStudent').value;
-                if (!studentId) return alert('Selecciona un estudiante');
+                if (!studentId) return showToast('Selecciona un estudiante', 'error');
 
                 try {
                     await adminClasses.addStudent(classId, studentId);
                     modal.remove();
+                    showToast('Estudiante inscrito', 'success');
                     openManageStudentsModal(classId); // Reabrir modal actualizado
                     await loadClasses(); // Actualizar lista de clases
                 } catch (err) {
-                    alert(err.message || 'Error al inscribir estudiante');
+                    showToast(err.message || 'Error al inscribir estudiante', 'error');
                 }
             });
 
             document.querySelectorAll('.removeStudent').forEach(btn => {
                 btn.addEventListener('click', async () => {
                     const studentId = btn.dataset.id;
-                    if (!confirm('¿Dar de baja al estudiante?')) return;
-
                     try {
-                        await adminClasses.removeStudent(classId, studentId);
-                        modal.remove();
-                        openManageStudentsModal(classId); // Reabrir modal actualizado
-                        await loadClasses(); // Actualizar lista de clases
+                        window.showModal('Dar de baja', '¿Desea dar de baja al estudiante? Esta acción puede afectar su inscripción en clases.', async function () {
+                            try {
+                                await adminClasses.removeStudent(classId, studentId);
+                                modal.remove();
+                                showToast('Estudiante dado de baja', 'success');
+                                openManageStudentsModal(classId); // Reabrir modal actualizado
+                                await loadClasses(); // Actualizar lista de clases
+                            } catch (err) {
+                                showToast(err && err.message ? err.message : 'Error al dar de baja estudiante', 'error');
+                            }
+                        });
                     } catch (err) {
-                        alert(err.message || 'Error al dar de baja estudiante');
+                        // fallback to native confirm
+                        if (!confirm('¿Dar de baja al estudiante?')) return;
+                        try { await adminClasses.removeStudent(classId, studentId); modal.remove(); showToast('Estudiante dado de baja', 'success'); openManageStudentsModal(classId); await loadClasses(); } catch (e) { showToast(e && e.message ? e.message : 'Error al dar de baja estudiante', 'error'); }
                     }
                 });
             });
@@ -2040,13 +2151,29 @@
 
             container.querySelectorAll('.delStudent').forEach(b => b.addEventListener('click', async e => {
                 const id = e.target.closest('.item-card').dataset.id;
-                if (!confirm('¿Eliminar alumno? Se dará de baja de todas sus clases.')) return;
                 try {
-                    await adminStudents.deleteStudent(id);
-                    await loadStudents(document.getElementById('searchStudents').value);
-                    await loadClasses(); // Actualizar lista de clases
+                    // Use the site's styled confirmation modal. On confirm, perform deletion and show toast.
+                    window.showModal('Eliminar alumno', '¿Desea eliminar al alumno? Se dará de baja de todas sus clases.', async function () {
+                        try {
+                            await adminStudents.deleteStudent(id);
+                            showToast('Alumno eliminado', 'success');
+                            await loadStudents(document.getElementById('searchStudents').value);
+                            await loadClasses(); // Actualizar lista de clases
+                        } catch (err) {
+                            showToast(err && err.message ? err.message : 'Error eliminando alumno', 'error');
+                        }
+                    });
                 } catch (err) {
-                    alert(err.message || 'Error eliminando alumno');
+                    // fallback to native confirm if modal helper fails
+                    if (!confirm('¿Eliminar alumno? Se dará de baja de todas sus clases.')) return;
+                    try {
+                        await adminStudents.deleteStudent(id);
+                        showToast('Alumno eliminado', 'success');
+                        await loadStudents(document.getElementById('searchStudents').value);
+                        await loadClasses();
+                    } catch (e) {
+                        showToast(e && e.message ? e.message : 'Error eliminando alumno', 'error');
+                    }
                 }
             }));
         }
@@ -2130,21 +2257,22 @@
                 };
 
                 if (!student.dni || !student.name || !student.lastName) {
-                    return alert('DNI, nombre y apellido son requeridos');
+                    return showToast('DNI, nombre y apellido son requeridos', 'error');
                 }
 
                 // Validar que tenga al menos una clase asignada
                 if (!Array.isArray(student.classIds) || student.classIds.length === 0) {
-                    return alert('Debe asignar al menos una clase al crear un alumno');
+                    return showToast('Debe asignar al menos una clase al crear un alumno', 'error');
                 }
 
                 try {
                     await adminStudents.createStudent(student);
                     modal.remove();
+                    showToast('Alumno creado', 'success');
                     await loadStudents();
                     await loadClasses(); // Actualizar lista de clases
                 } catch (err) {
-                    alert(err.message || 'Error creando alumno');
+                    showToast(err.message || 'Error creando alumno', 'error');
                 }
             });
         }
@@ -2152,7 +2280,7 @@
         async function openEditStudentModal(id) {
             const students = await adminStudents.listStudents();
             const student = students.find(s => s._id === id);
-            if (!student) return alert('Alumno no encontrado');
+            if (!student) return showToast('Alumno no encontrado', 'error');
 
             const classes = await adminClasses.listClasses();
             const studentClasses = classes.filter(c =>
@@ -2237,16 +2365,17 @@
                 };
 
                 if (!updatedStudent.dni || !updatedStudent.name || !updatedStudent.lastName) {
-                    return alert('DNI, nombre y apellido son requeridos');
+                    return showToast('DNI, nombre y apellido son requeridos', 'error');
                 }
 
                 try {
                     await adminStudents.updateStudent(id, updatedStudent);
                     modal.remove();
+                    showToast('Cambios guardados', 'success');
                     await loadStudents();
                     await loadClasses(); // Actualizar lista de clases
                 } catch (err) {
-                    alert(err.message || 'Error actualizando alumno');
+                    showToast(err.message || 'Error actualizando alumno', 'error');
                 }
             });
         }
@@ -2333,12 +2462,23 @@
                     }
                     if (action === 'delete') {
                         e.preventDefault();
-                        if (!confirm('¿Eliminar profesor?')) return;
+                        // Use the site's styled confirmation modal. On confirm, perform deletion and show toast.
                         try {
-                            await adminProfessors.deleteProfessor(id);
-                            await loadProfessors();
-                            await loadClasses();
-                        } catch (err) { alert(err.message || 'Error eliminando profesor'); }
+                            window.showModal('Eliminar profesor', '¿Desea eliminar al profesor? Esta acción no se puede deshacer.', async function () {
+                                try {
+                                    await adminProfessors.deleteProfessor(id);
+                                    showToast('Profesor eliminado', 'success');
+                                    await loadProfessors();
+                                    await loadClasses();
+                                } catch (err) {
+                                    showToast(err && err.message ? err.message : 'Error eliminando profesor', 'error');
+                                }
+                            });
+                        } catch (err) {
+                            // Fallback: ask with native confirm if modal helper fails
+                            if (!confirm('¿Eliminar profesor?')) return;
+                            try { await adminProfessors.deleteProfessor(id); showToast('Profesor eliminado', 'success'); await loadProfessors(); await loadClasses(); } catch (e) { showToast(e && e.message ? e.message : 'Error eliminando profesor', 'error'); }
+                        }
                         return;
                     }
                 });
@@ -2646,7 +2786,7 @@
                         lastName: document.getElementById('editProfessorLastName').value.trim(),
                         phone: document.getElementById('editProfessorPhone').value.trim()
                     };
-                    if (!updated.dni || !updated.name || !updated.lastName) return alert('DNI, nombre y apellido son requeridos');
+                    if (!updated.dni || !updated.name || !updated.lastName) return showToast('DNI, nombre y apellido son requeridos', 'error');
 
                     const selectedClassIds = Array.from(document.querySelectorAll('.editProfessorClass:checked')).map(cb => cb.value);
 
@@ -2668,8 +2808,9 @@
                         modal.remove();
                         await loadProfessors();
                         await loadClasses();
+                        showToast('Cambios guardados', 'success');
                     } catch (err) {
-                        alert(err.message || 'Error actualizando profesor');
+                        showToast(err.message || 'Error actualizando profesor', 'error');
                     }
                 });
             } catch (err) {
