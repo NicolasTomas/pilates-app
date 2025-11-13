@@ -1417,8 +1417,8 @@
                 const container = document.getElementById('newUserClassesContainer');
                 container.innerHTML = classes.map(c => `
                     <label style="display:block;padding:8px;border-bottom:1px solid #eee">
-                        <input type="checkbox" value="${c._id}" class="newUserClass" />
-                        ${c.days.join(', ')} ${c.start} - ${c.roomName}
+                        <input type="checkbox" value="${esc(c._id)}" class="newUserClass" />
+                        ${esc((c.days || []).join(', '))} ${esc(c.start || '')}${c.roomName ? ' - ' + esc(c.roomName) : ''}
                     </label>
                 `).join('');
             } catch (err) {
@@ -1810,7 +1810,50 @@
         async function loadClasses(filter = '') {
             try {
                 const classes = await adminClasses.listClasses();
-                renderClasses(classes.filter(c => (c.roomName || '').toLowerCase().includes(filter.toLowerCase()) || (c.professorName || '').toLowerCase().includes(filter.toLowerCase())));
+                // helper to obtain creation timestamp: prefer createdAt, fall back to ObjectId timestamp
+                function createdTs(c) {
+                    try {
+                        if (!c) return 0;
+                        if (c.createdAt) return new Date(c.createdAt).getTime();
+                        if (c._id && String(c._id).length >= 8) return parseInt(String(c._id).slice(0, 8), 16) * 1000;
+                    } catch (e) { }
+                    return 0;
+                }
+                // Sort classes in-place: most recent first
+                classes.sort((a, b) => (createdTs(b) || 0) - (createdTs(a) || 0));
+                const q = (filter || '').toString().trim().toLowerCase();
+                // helper to normalize accents for day matching
+                function norm(s) {
+                    if (!s) return '';
+                    try {
+                        return s.toString().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+                    } catch (e) {
+                        return s.toString().toLowerCase();
+                    }
+                }
+
+                const filtered = classes.filter(c => {
+                    if (!q) return true;
+                    const roomName = (c.roomName || '').toLowerCase();
+                    const profName = (c.professorName || '').toLowerCase();
+                    const start = (c.start || '').toString().toLowerCase();
+                    const daysText = Array.isArray(c.days) ? c.days.join(' ').toLowerCase() : (c.days || '').toString().toLowerCase();
+
+                    // Normalize for accent-insensitive comparison
+                    const normDays = norm(daysText);
+                    const normQ = norm(q);
+
+                    // match room, professor, start (time) or days
+                    if (roomName.includes(q) || profName.includes(q)) return true;
+                    if (start.includes(q) || start.startsWith(q)) return true;
+                    if (normDays.includes(normQ)) return true;
+                    // allow searching by partial day names (e.g., 'lun' -> 'lunes')
+                    const dayMatches = Array.isArray(c.days) && c.days.some(d => norm(d).includes(normQ));
+                    if (dayMatches) return true;
+                    return false;
+                });
+
+                renderClasses(filtered);
             } catch (err) { document.getElementById('classesList').textContent = 'Error cargando clases' }
         }
 
@@ -1821,8 +1864,8 @@
             const cards = classes.map(c => `
                 <div class="item-card" data-id="${esc(c._id)}">
                     <div>
-                        <h4>${esc((c.days || []).join(', '))}</h4>
-                        <div class="meta">Horario: ${esc(c.start)} (${esc(c.duration)} min) • Salón: ${esc(c.roomName || '')} • Profesor: ${esc(c.professorName || '')}</div>
+                        <h4>${esc((c.days || []).join(', '))}${c.start ? ' - ' + esc(c.start + ' hrs') : ''}</h4>
+                        <div class="meta">Salón: ${esc(c.roomName || '')} • Profesor: ${esc(c.professorName || '')}</div>
                         <div class="meta">Camillas libres: ${esc(c.camillasFree)}</div>
                     </div>
                     <div class="actions">
@@ -1841,9 +1884,27 @@
 
             container.querySelectorAll('.delClass').forEach(b => b.addEventListener('click', async e => {
                 const id = e.target.closest('.item-card').dataset.id;
-                if (!confirm('Eliminar clase?')) return;
-                await adminClasses.deleteClass(id);
-                await loadClasses(document.getElementById('searchClasses').value);
+                try {
+                    window.showModal('Eliminar clase', '¿Desea eliminar la clase?', async function () {
+                        try {
+                            await adminClasses.deleteClass(id);
+                            showToast('Clase eliminada', 'success');
+                            await loadClasses(document.getElementById('searchClasses').value);
+                        } catch (err) {
+                            showToast(err && err.message ? err.message : 'Error eliminando clase', 'error');
+                        }
+                    });
+                } catch (err) {
+                    // fallback
+                    if (!confirm('Eliminar clase?')) return;
+                    try {
+                        await adminClasses.deleteClass(id);
+                        showToast('Clase eliminada', 'success');
+                        await loadClasses(document.getElementById('searchClasses').value);
+                    } catch (e) {
+                        showToast(e && e.message ? e.message : 'Error eliminando clase', 'error');
+                    }
+                }
             }));
 
             container.querySelectorAll('.manageStudents').forEach(b => b.addEventListener('click', e => {
@@ -1874,9 +1935,9 @@
                             <button type="button" class="day-toggle" data-day="sabado" style="padding:8px 12px;border-radius:8px;border:1px solid #e5e7eb;background:#fff;color:#111">sáb</button>
                             <button type="button" class="day-toggle" data-day="domingo" style="padding:8px 12px;border-radius:8px;border:1px solid #e5e7eb;background:#fff;color:#111">dom</button>
                         </div>
-                        <input id="classStart" type="time" step="300" style="width:100%;padding:8px;margin:8px 0;border:1px solid #ddd;border-radius:4px" />
-                        <input id="classDuration" type="number" placeholder="Duración (min)" style="width:100%;padding:8px;margin:8px 0;border:1px solid #ddd;border-radius:4px" />
+                        <input id="classStart" type="time" step="300" placeholder="Horario" style="width:100%;padding:8px;margin:8px 0;border:1px solid #ddd;border-radius:4px" />
                         <select id="classRoom" style="width:100%;padding:8px;margin:8px 0;border:1px solid #ddd;border-radius:4px">
+                            <option value="">Salón</option>
                             ${rooms.map(r => `<option value="${r._id}">${r.name}</option>`).join('')}
                         </select>
                         <select id="classProf" style="width:100%;padding:8px;margin:8px 0;border:1px solid #ddd;border-radius:4px">
@@ -1886,15 +1947,20 @@
                         <div style="display:flex;gap:8px;justify-content:flex-end"><button id="cancelClass">Cancelar</button><button id="saveClass" style="background:#2b6cb0;color:#fff">Crear</button></div>
                     </div>`;
             document.body.appendChild(modal);
-            document.getElementById('cancelClass').addEventListener('click', () => modal.remove());
+            const cancelBtn = modal.querySelector('#cancelClass');
+            if (cancelBtn) cancelBtn.addEventListener('click', () => modal.remove());
 
             // day toggle behaviour
             (function bindDayToggles(containerId) {
                 const container = modal.querySelector('#' + containerId);
-                if (!container) return;
-                container.querySelectorAll('.day-toggle').forEach(btn => {
+                if (!container) { console.warn('[DEBUG] classDays container not found in modal for', containerId); return; }
+                const toggles = Array.from(container.querySelectorAll('.day-toggle'));
+                console.log('[DEBUG] classDays toggles count:', toggles.length);
+                toggles.forEach(btn => {
+                    const day = btn.getAttribute('data-day');
                     btn.addEventListener('click', () => {
                         const active = btn.classList.toggle('active');
+                        console.log('[DEBUG] day-toggle clicked:', day, 'nowActive=', active);
                         if (active) {
                             btn.style.background = '#2563eb'; btn.style.color = '#fff'; btn.style.borderColor = '#2563eb';
                         } else {
@@ -1904,27 +1970,72 @@
                 });
             })('classDays');
 
+            // Log initial modal elements for debugging
+            try {
+                console.log('[DEBUG] modal elements:', {
+                    classDaysEl: modal.querySelector('#classDays') ? true : false,
+                    classStartEl: modal.querySelector('#classStart') ? true : false,
+                    classRoomEl: modal.querySelector('#classRoom') ? modal.querySelector('#classRoom').options.length : 0,
+                    classProfEl: modal.querySelector('#classProf') ? modal.querySelector('#classProf').options.length : 0
+                });
+            } catch (e) { console.warn('[DEBUG] error logging modal elements', e); }
+
             function getSelectedDays(containerId) {
                 const c = modal.querySelector('#' + containerId);
                 if (!c) return [];
                 return Array.from(c.querySelectorAll('.day-toggle.active')).map(b => b.getAttribute('data-day'));
             }
 
-            document.getElementById('saveClass').addEventListener('click', async () => {
+            const saveBtn = modal.querySelector('#saveClass');
+            if (saveBtn) saveBtn.addEventListener('click', async () => {
                 const days = getSelectedDays('classDays');
-                const start = document.getElementById('classStart').value.trim();
-                const duration = document.getElementById('classDuration').value;
-                const roomId = document.getElementById('classRoom').value;
-                const professorId = document.getElementById('classProf').value || null;
-                if (!days.length || !start || !duration || !roomId) return alert('Completá todos los campos');
-                try { await adminClasses.createClass({ days, start, duration: Number(duration), roomId, professorId }); modal.remove(); await loadClasses(); } catch (err) { alert(err.message || 'Error creando clase') }
+                const startEl = modal.querySelector('#classStart');
+                const start = startEl ? startEl.value.trim() : '';
+                const durationEl = modal.querySelector('#classDuration');
+                const roomEl = modal.querySelector('#classRoom');
+                const profEl = modal.querySelector('#classProf');
+                const roomId = roomEl ? roomEl.value : '';
+                const professorId = profEl ? (profEl.value || null) : null;
+
+                // Diagnostic logging to help identify why fields appear empty
+                console.log('[DEBUG] Crear clase payload values:', { days, start, roomId, professorId });
+
+                const missing = [];
+                if (!days || !days.length) missing.push('días');
+                if (!start) missing.push('horario');
+                if (missing.length) {
+                    const msg = 'Faltan datos requeridos: ' + missing.join(', ');
+                    showToast(msg, 'error');
+                    // also log to console for easier debugging
+                    console.warn('[VALIDATION] createClass missing fields:', missing);
+                    return;
+                }
+
+                try {
+                    // duration is optional now — omit it when not provided
+                    const payload = { days, start, professorId };
+                    if (roomId) payload.roomId = roomId;
+                    if (durationEl) {
+                        const durationVal = durationEl.value;
+                        if (durationVal) payload.duration = Number(durationVal);
+                    }
+                    await adminClasses.createClass(payload);
+                    modal.remove();
+                    showToast('Clase creada', 'success');
+                    await loadClasses();
+                } catch (err) {
+                    showToast(err && err.message ? err.message : 'Error creando clase', 'error');
+                }
             });
         }
 
         async function openEditClassModal(id) {
             const classes = await adminClasses.listClasses();
             const c = classes.find(x => x._id === id || x._id == id);
-            if (!c) return alert('Clase no encontrada');
+            if (!c) {
+                showToast('Clase no encontrada', 'error');
+                return;
+            }
             const rooms = await adminRooms.listRooms();
             const profs = await fetch('/api/users?role=profesor', { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }).then(r => r.json());
             const modal = document.createElement('div');
@@ -1942,9 +2053,9 @@
                             <button type="button" class="day-toggle" data-day="sabado" style="padding:8px 12px;border-radius:8px;border:1px solid #e5e7eb;background:#fff;color:#111">sáb</button>
                             <button type="button" class="day-toggle" data-day="domingo" style="padding:8px 12px;border-radius:8px;border:1px solid #e5e7eb;background:#fff;color:#111">dom</button>
                         </div>
-                        <input id="classStartEdit" type="time" step="300" value="${c.start}" style="width:100%;padding:8px;margin:8px 0;border:1px solid #ddd;border-radius:4px" />
-                        <input id="classDurationEdit" type="number" value="${c.duration}" style="width:100%;padding:8px;margin:8px 0;border:1px solid #ddd;border-radius:4px" />
+                        <input id="classStartEdit" type="time" step="300" value="${c.start}" placeholder="Horario" style="width:100%;padding:8px;margin:8px 0;border:1px solid #ddd;border-radius:4px" />
                         <select id="classRoomEdit" style="width:100%;padding:8px;margin:8px 0;border:1px solid #ddd;border-radius:4px">
+                            <option value="">Salón</option>
                             ${rooms.map(r => `<option value="${r._id}" ${c.roomId == r._id ? 'selected' : ''}>${r.name}</option>`).join('')}
                         </select>
                         <select id="classProfEdit" style="width:100%;padding:8px;margin:8px 0;border:1px solid #ddd;border-radius:4px">
@@ -1954,7 +2065,8 @@
                         <div style="display:flex;gap:8px;justify-content:flex-end"><button id="cancelClassEdit">Cancelar</button><button id="saveClassEdit" style="background:#2b6cb0;color:#fff">Guardar</button></div>
                     </div>`;
             document.body.appendChild(modal);
-            document.getElementById('cancelClassEdit').addEventListener('click', () => modal.remove());
+            const cancelEditBtn = modal.querySelector('#cancelClassEdit');
+            if (cancelEditBtn) cancelEditBtn.addEventListener('click', () => modal.remove());
 
             // bind toggles and preselect based on existing days
             (function bindAndPreselect(containerId, selectedDays) {
@@ -1979,14 +2091,29 @@
                 return Array.from(ctn.querySelectorAll('.day-toggle.active')).map(b => b.getAttribute('data-day'));
             }
 
-            document.getElementById('saveClassEdit').addEventListener('click', async () => {
+            const saveEditBtn = modal.querySelector('#saveClassEdit');
+            if (saveEditBtn) saveEditBtn.addEventListener('click', async () => {
                 const days = getSelectedDaysEdit('classDaysEdit');
-                const start = document.getElementById('classStartEdit').value.trim();
-                const duration = document.getElementById('classDurationEdit').value;
-                const roomId = document.getElementById('classRoomEdit').value;
-                const professorId = document.getElementById('classProfEdit').value || null;
-                if (!days.length || !start || !duration || !roomId) return alert('Completá todos los campos');
-                try { await adminClasses.updateClass(id, { days, start, duration: Number(duration), roomId, professorId }); modal.remove(); await loadClasses(); } catch (err) { alert(err.message || 'Error actualizando clase') }
+                const startEl = modal.querySelector('#classStartEdit');
+                const start = startEl ? startEl.value.trim() : '';
+                const roomEl = modal.querySelector('#classRoomEdit');
+                const profEl = modal.querySelector('#classProfEdit');
+                const roomId = roomEl ? roomEl.value : '';
+                const professorId = profEl ? (profEl.value || null) : null;
+                if (!days.length || !start) return showToast('Completá los campos obligatorios: días y horario', 'error');
+                try {
+                    const payload = { days, start, professorId };
+                    if (roomId) payload.roomId = roomId;
+                    // duration is optional — only include if an input exists and has a value
+                    const durEl = modal.querySelector('#classDurationEdit');
+                    if (durEl && durEl.value) payload.duration = Number(durEl.value);
+                    await adminClasses.updateClass(id, payload);
+                    modal.remove();
+                    showToast('Clase actualizada', 'success');
+                    await loadClasses();
+                } catch (err) {
+                    showToast(err && err.message ? err.message : 'Error actualizando clase', 'error');
+                }
             });
         }
 
@@ -2008,7 +2135,7 @@
             modal.style = 'position:fixed;inset:0;background:rgba(0,0,0,0.35);display:flex;align-items:center;justify-content:center';
             modal.innerHTML = `
                 <div style="background:#fff;padding:16px;border-radius:8px;width:480px;max-height:90vh;overflow-y:auto">
-                    <h4>Gestionar Estudiantes - ${classInfo.start} (${classInfo.days.join(', ')})</h4>
+                    <h4>Gestionar Estudiantes - ${esc((classInfo.days || []).join(', '))}${classInfo.start ? ' - ' + esc(classInfo.start) + ' hrs' : ''}</h4>
                     
                     <div style="margin:16px 0">
                         <div>Agregar estudiante:</div>
@@ -2027,26 +2154,19 @@
                     <div style="margin:16px 0">
                         <div>Estudiantes inscritos (${students.length}/${classInfo.roomName ? ` max ${classInfo.camillasFree + students.length}` : ''}):</div>
                         ${students.length ? `
-                            <table style="width:100%;margin-top:8px;border-collapse:collapse">
-                                <thead>
-                                    <tr>
-                                        <th style="text-align:left">Nombre/DNI</th>
-                                        <th></th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    ${students.map(s => `
-                                        <tr>
-                                            <td style="padding:8px;border-top:1px solid #eee">${s.name || s.dni}</td>
-                                            <td style="padding:8px;border-top:1px solid #eee;text-align:right">
-                                                <button class="removeStudent" data-id="${s._id}" style="background:#e53e3e;color:#fff">
-                                                    Dar de baja
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    `).join('')}
-                                </tbody>
-                            </table>
+                            <div class="cards-grid" style="margin-top:8px">
+                                ${students.map(s => `
+                                    <div class="item-card" data-id="${esc(s._id)}">
+                                        <div>
+                                            <h4>${esc(s.name || '')} ${esc(s.lastName || '')}</h4>
+                                            <div class="meta">DNI: ${esc(s.dni || '')}</div>
+                                        </div>
+                                        <div class="actions">
+                                            <button class="removeStudent" data-id="${esc(s._id)}" style="background:#e53e3e;color:#fff">Dar de baja</button>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
                         ` : '<div style="margin-top:8px"><i>No hay estudiantes inscritos</i></div>'}
                     </div>
 
@@ -2122,7 +2242,14 @@
 
             const cards = students.map(s => {
                 // find classes where this student is assigned
-                const assigned = classes.filter(c => Array.isArray(c.students) && c.students.some(ss => ss === s._id || (ss && ss._id === s._id))).map(c => `${(c.days || []).join(', ')} ${c.start} - ${c.roomName || ''}`);
+                const assigned = classes
+                    .filter(c => Array.isArray(c.students) && c.students.some(ss => ss === s._id || (ss && ss._id === s._id)))
+                    .map(c => {
+                        const days = (c.days || []).join(', ');
+                        const timePart = c.start ? `${c.start} hrs` : '';
+                        const roomPart = c.roomName ? ` - ${c.roomName}` : '';
+                        return `${days}${timePart ? ' - ' + timePart : ''}${roomPart}`;
+                    });
                 const assignedText = assigned.length ? assigned.join(' | ') : 'Sin asignar';
                 const dueDate = s.dueDate ? new Date(s.dueDate).toLocaleDateString() : 'No establecida';
                 return `
@@ -2225,9 +2352,9 @@
                         <div style="max-height:150px;overflow-y:auto;border:1px solid #ddd;border-radius:4px;margin-top:4px">
                             ${classes.map(c => `
                                 <label style="display:block;padding:8px;border-bottom:1px solid #eee">
-                                    <input type="checkbox" value="${c._id}" class="newStudentClass" />
-                                    ${c.days.join(', ')} ${c.start} - ${c.roomName}
-                                    (${c.camillasFree} lugares libres)
+                                    <input type="checkbox" value="${esc(c._id)}" class="newStudentClass" />
+                                    ${esc((c.days || []).join(', '))} ${esc(c.start || '')}${c.roomName ? ' - ' + esc(c.roomName) : ''}
+                                    (${esc(c.camillasFree)} lugares libres)
                                 </label>
                             `).join('')}
                         </div>
@@ -2332,10 +2459,10 @@
                         <div style="max-height:150px;overflow-y:auto;border:1px solid #ddd;border-radius:4px;margin-top:4px">
                             ${classes.map(c => `
                                 <label style="display:block;padding:8px;border-bottom:1px solid #eee">
-                                    <input type="checkbox" value="${c._id}" class="editStudentClass" 
+                                    <input type="checkbox" value="${esc(c._id)}" class="editStudentClass" 
                                         ${studentClasses.some(sc => sc._id === c._id) ? 'checked' : ''} />
-                                    ${c.days.join(', ')} ${c.start} - ${c.roomName}
-                                    (${c.camillasFree} lugares libres)
+                                    ${esc((c.days || []).join(', '))} ${esc(c.start || '')}${c.roomName ? ' - ' + esc(c.roomName) : ''}
+                                    (${esc(c.camillasFree)} lugares libres)
                                 </label>
                             `).join('')}
                         </div>

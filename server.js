@@ -13,6 +13,11 @@ app.use(express.json());
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017';
 // Optional fallback URI (useful for local development if Atlas SRV fails due to TLS/OpenSSL issues)
 const FALLBACK_MONGO_URI = process.env.FALLBACK_MONGO_URI || process.env.LOCAL_MONGO_URI || 'mongodb://localhost:27017';
+// Connection tuning from env
+const MONGO_CONNECT_MAX_RETRIES = Number(process.env.MONGO_CONNECT_MAX_RETRIES || 5);
+const MONGO_CONNECT_RETRY_MS = Number(process.env.MONGO_CONNECT_RETRY_MS || 5000);
+const MONGO_TLS_ALLOW_INVALID = process.env.MONGO_TLS_ALLOW_INVALID === '1' || process.env.MONGO_TLS_ALLOW_INVALID === 'true';
+const MONGO_TLS_CA_FILE = process.env.MONGO_TLS_CA_FILE || null;
 const DB_NAME = process.env.DB_NAME || 'pilatesdb';
 const JWT_SECRET = process.env.JWT_SECRET || 'dev_secret_change';
 
@@ -27,48 +32,90 @@ const DEFAULT_GYM_CONFIG = {
 let db;
 
 async function connectDB() {
-    const client = new MongoClient(MONGO_URI, { useUnifiedTopology: true });
-    try {
-        await client.connect();
-        db = client.db(DB_NAME);
-        console.log('Connected to MongoDB', MONGO_URI, DB_NAME);
-    } catch (err) {
-        // Print a concise warning by default (the raw OpenSSL stack is noisy on Windows);
-        // if you need diagnostics, set DEBUG_MONGO=1 in the environment to see the full error.
-        const primaryErrMsg = err && err.message ? err.message : String(err);
-        if (process.env.DEBUG_MONGO) {
-            console.error('Primary Mongo connection failed:', primaryErrMsg, err);
-        } else {
-            console.warn('Primary Mongo connection failed (TLS/SSL). Will attempt fallback if configured.');
-            console.warn('To see the full error set DEBUG_MONGO=1 and restart the server.');
-        }
+    // Build mongo options with optional TLS flags from env
+    const mongoOptions = { useUnifiedTopology: true };
+    if (MONGO_TLS_ALLOW_INVALID) mongoOptions.tlsAllowInvalidCertificates = true;
+    if (MONGO_TLS_CA_FILE) mongoOptions.tlsCAFile = MONGO_TLS_CA_FILE;
 
-        // If the primary URI is an Atlas SRV and we have a fallback, try it and give the developer guidance
-        if (FALLBACK_MONGO_URI && FALLBACK_MONGO_URI !== MONGO_URI) {
-            console.log(`Attempting fallback Mongo connection to ${FALLBACK_MONGO_URI}...`);
-            try {
-                const fallbackClient = new MongoClient(FALLBACK_MONGO_URI, { useUnifiedTopology: true });
-                await fallbackClient.connect();
-                db = fallbackClient.db(DB_NAME);
-                console.log('Connected to MongoDB using fallback URI', FALLBACK_MONGO_URI, DB_NAME);
-                return;
-            } catch (err2) {
-                console.error('Fallback Mongo connection also failed:', err2 && err2.message ? err2.message : err2);
-                // fall through to final error handling below
+    let lastErr = null;
+    for (let attempt = 1; attempt <= MONGO_CONNECT_MAX_RETRIES; attempt++) {
+        try {
+            const client = new MongoClient(MONGO_URI, mongoOptions);
+            await client.connect();
+            db = client.db(DB_NAME);
+            console.log('Connected to MongoDB', MONGO_URI, DB_NAME);
+            return;
+        } catch (err) {
+            lastErr = err;
+            const msg = err && err.message ? err.message : String(err);
+            if (process.env.DEBUG_MONGO) console.error(`Mongo connect attempt ${attempt} failed:`, msg, err);
+            else console.warn(`Mongo connect attempt ${attempt} failed: ${msg}`);
+
+            if (attempt < MONGO_CONNECT_MAX_RETRIES) {
+                console.log(`Retrying in ${MONGO_CONNECT_RETRY_MS}ms... (${attempt}/${MONGO_CONNECT_MAX_RETRIES})`);
+                await new Promise(r => setTimeout(r, MONGO_CONNECT_RETRY_MS));
+                continue;
             }
+            // fall through to fallback attempt
         }
-
-        // Provide actionable hints for the developer when TLS/SSL errors occur with Atlas
-        if (err && err.message && /SSL|tls|TLS|certificate|alert/i.test(err.message)) {
-            console.error('\nDetected an SSL/TLS error when connecting to MongoDB Atlas. Common causes and fixes:');
-            console.error('- Your Node/OpenSSL build may be incompatible with Atlas SRV TLS. Try upgrading Node or OpenSSL.');
-            console.error("- For local development, set FALLBACK_MONGO_URI or LOCAL_MONGO_URI to 'mongodb://localhost:27017' and run a local mongod instance.");
-            console.error('- Ensure your environment allows outbound TLS connections to Atlas (firewall, proxy, corporate network).');
-            console.error('- If you intentionally want to use Atlas, try connecting from a machine with updated crypto libraries.');
-        }
-
-        throw err;
     }
+
+    // If primary failed after retries, try fallback
+    if (FALLBACK_MONGO_URI && FALLBACK_MONGO_URI !== MONGO_URI) {
+        try {
+            console.log(`Attempting fallback Mongo connection to ${FALLBACK_MONGO_URI}...`);
+            const fallbackOptions = Object.assign({}, mongoOptions);
+            const fallbackClient = new MongoClient(FALLBACK_MONGO_URI, fallbackOptions);
+            await fallbackClient.connect();
+            db = fallbackClient.db(DB_NAME);
+            console.log('Connected to MongoDB using fallback URI', FALLBACK_MONGO_URI, DB_NAME);
+            return;
+        } catch (err2) {
+            lastErr = err2;
+            if (process.env.DEBUG_MONGO) console.error('Fallback Mongo connection failed:', err2);
+            else console.warn('Fallback Mongo connection failed.');
+        }
+    }
+
+    // If we reached here, all connection attempts failed
+    const err = lastErr || new Error('Unknown Mongo connection error');
+    // Print a concise warning by default (the raw OpenSSL stack is noisy on Windows);
+    // if you need diagnostics, set DEBUG_MONGO=1 in the environment to see the full error.
+    const primaryErrMsg = err && err.message ? err.message : String(err);
+    if (process.env.DEBUG_MONGO) {
+        console.error('Primary Mongo connection failed:', primaryErrMsg, err);
+    } else {
+        console.warn('Primary Mongo connection failed (TLS/SSL). Will attempt fallback if configured.');
+        console.warn('To see the full error set DEBUG_MONGO=1 and restart the server.');
+    }
+
+    // If the primary URI is an Atlas SRV and we have a fallback, try it and give the developer guidance
+    if (FALLBACK_MONGO_URI && FALLBACK_MONGO_URI !== MONGO_URI) {
+        console.log(`Attempting fallback Mongo connection to ${FALLBACK_MONGO_URI}...`);
+        try {
+            const fallbackClient = new MongoClient(FALLBACK_MONGO_URI, { useUnifiedTopology: true });
+            await fallbackClient.connect();
+            db = fallbackClient.db(DB_NAME);
+            console.log('Connected to MongoDB using fallback URI', FALLBACK_MONGO_URI, DB_NAME);
+            return;
+        } catch (err2) {
+            console.error('Fallback Mongo connection also failed:', err2 && err2.message ? err2.message : err2);
+            // fall through to final error handling below
+        }
+    }
+
+    // Provide actionable hints for the developer when TLS/SSL errors occur with Atlas
+    if (err && err.message && /SSL|tls|TLS|certificate|alert/i.test(err.message)) {
+        console.error('\nDetected an SSL/TLS error when connecting to MongoDB Atlas. Common causes and fixes:');
+        console.error('- Your Node/OpenSSL build may be incompatible with Atlas SRV TLS. Try upgrading Node or OpenSSL.');
+        console.error("- For local development, set FALLBACK_MONGO_URI or LOCAL_MONGO_URI to 'mongodb://localhost:27017' and run a local mongod instance.");
+        console.error('- Ensure your environment allows outbound TLS connections to Atlas (firewall, proxy, corporate network).');
+        console.error('- If you intentionally want to use Atlas, try connecting from a machine with updated crypto libraries.');
+        if (!MONGO_TLS_ALLOW_INVALID) console.error("Tip: for local debugging you can set MONGO_TLS_ALLOW_INVALID=true in your .env to bypass strict cert checks (not for production).");
+    }
+
+    // Throw the last error so caller can decide. Higher-level code may choose to start a degraded server instead of exiting.
+    throw err;
 
     // Asegurar que existe la configuración del gimnasio
     const gym = await db.collection('gyms').findOne({});
@@ -748,8 +795,13 @@ app.post('/api/students', authAny, async (req, res) => {
                     if (clase.professorId && String(clase.professorId) !== String(req.user.id)) {
                         return res.status(403).json({ error: 'No tenés permisos para asignar alumnos a una clase que no es tuya' });
                     }
-                    if (clase.gymId && req.user.gymId && clase.gymId !== req.user.gymId) {
-                        return res.status(403).json({ error: 'No tenés permisos para asignar clases de otro gimnasio' });
+                    if (clase.gymId) {
+                        if (req.user.gymId && String(clase.gymId) !== String(req.user.gymId)) {
+                            return res.status(403).json({ error: 'No tenés permisos para asignar clases de otro gimnasio' });
+                        }
+                        if (!req.user.gymId) {
+                            console.warn('[PERM] user has no gymId on profile while assigning student to class', { userId: req.user && req.user.id, classId: clase._id });
+                        }
                     }
                 }
             }
@@ -1072,7 +1124,10 @@ app.put('/api/rooms/:id', authMiddleware, async (req, res) => {
         // Ensure room belongs to gym (unless superusuario)
         const room = await db.collection('rooms').findOne({ _id });
         if (!room) return res.status(404).json({ error: 'Salón no encontrado' });
-        if (req.user.role !== 'superusuario' && room.gymId !== req.user.gymId) return res.status(403).json({ error: 'No tenés permisos para modificar este salón' });
+        if (req.user.role !== 'superusuario') {
+            if (room.gymId && req.user.gymId && String(room.gymId) !== String(req.user.gymId)) return res.status(403).json({ error: 'No tenés permisos para modificar este salón' });
+            if (!req.user.gymId) console.warn('[PERM] user has no gymId on profile while modifying room', { userId: req.user && req.user.id, roomId: _id });
+        }
         await db.collection('rooms').updateOne({ _id }, { $set: { name, capacity: Number(capacity) } });
         res.json({ ok: true });
     } catch (err) {
@@ -1088,7 +1143,10 @@ app.delete('/api/rooms/:id', authMiddleware, async (req, res) => {
         const _id = new ObjectId(id);
         const room = await db.collection('rooms').findOne({ _id });
         if (!room) return res.status(404).json({ error: 'Salón no encontrado' });
-        if (req.user.role !== 'superusuario' && room.gymId !== req.user.gymId) return res.status(403).json({ error: 'No tenés permisos para eliminar este salón' });
+        if (req.user.role !== 'superusuario') {
+            if (room.gymId && req.user.gymId && String(room.gymId) !== String(req.user.gymId)) return res.status(403).json({ error: 'No tenés permisos para eliminar este salón' });
+            if (!req.user.gymId) console.warn('[PERM] user has no gymId on profile while deleting room', { userId: req.user && req.user.id, roomId: _id });
+        }
         await db.collection('rooms').deleteOne({ _id });
         res.json({ ok: true });
     } catch (err) {
@@ -1137,35 +1195,104 @@ app.get('/api/classes', authMiddleware, async (req, res) => {
 
 app.post('/api/classes', authMiddleware, async (req, res) => {
     const { days, start, duration, roomId, professorId } = req.body;
-    if (!days || !Array.isArray(days) || !start || !duration || !roomId)
-        return res.status(400).json({ error: 'Faltan datos requeridos' });
+    // Only days and start (and room) are required now; duration is optional
+    // Debug: log incoming payload shape to help diagnose client/server mismatches
+    try {
+        console.log('[DEBUG] POST /api/classes - incoming body keys:', Object.keys(req.body || {}));
+        console.log('[DEBUG] POST /api/classes - raw days:', days);
+        console.log('[DEBUG] POST /api/classes - days type/len:', typeof days, Array.isArray(days), (Array.isArray(days) ? days.length : null));
+        console.log('[DEBUG] POST /api/classes - start:', start, 'roomId:', roomId, 'professorId:', professorId);
+    } catch (e) { console.warn('[DEBUG] POST /api/classes - failed to log incoming body', e); }
 
-    // Validar formato de hora y duración
-    if (!validateTime(start))
+    // Normalize days: accept array, comma-separated string, or object with numeric keys
+    let normDays = days;
+    if (normDays && !Array.isArray(normDays)) {
+        if (typeof normDays === 'string') {
+            // comma separated or single value
+            normDays = normDays.split(',').map(s => s.trim()).filter(Boolean);
+        } else if (typeof normDays === 'object') {
+            try {
+                normDays = Object.values(normDays).filter(v => typeof v === 'string' && v.trim().length > 0).map(s => s.trim());
+            } catch (e) { normDays = null; }
+        } else {
+            normDays = null;
+        }
+    }
+
+    // Trim start if present
+    const normStart = typeof start === 'string' ? start.trim() : start;
+
+    // Validate required fields and return descriptive errors (room is optional)
+    const missingFields = [];
+    if (!normDays || !Array.isArray(normDays) || normDays.length === 0) missingFields.push('días');
+    if (!normStart) missingFields.push('horario');
+    if (missingFields.length) {
+        const msg = 'Faltan datos requeridos: ' + missingFields.join(', ');
+        console.warn('[VALIDATION] POST /api/classes - ' + msg, { body: req.body });
+        return res.status(400).json({ error: msg });
+    }
+
+    // Assign normalized values back for downstream logic
+    req.body.days = normDays;
+    req.body.start = normStart;
+
+    // Validar formato de hora. duration is optional and validated only when provided
+    if (!validateTime(normStart))
         return res.status(400).json({ error: 'Formato de hora inválido. Use HH:MM (24h)' });
-    if (!validateDuration(Number(duration)))
-        return res.status(400).json({ error: 'Duración inválida. Debe estar entre 1 y 180 minutos' });
+    if (duration !== undefined && duration !== null && duration !== '') {
+        if (!validateDuration(Number(duration)))
+            return res.status(400).json({ error: 'Duración inválida. Debe estar entre 1 y 180 minutos' });
+    }
 
     try {
-        // Validar capacidad del salón y que exista
-        const room = await validateClassCapacity(roomId);
-        if (!room) return res.status(404).json({ error: 'Salón no encontrado' });
+        // If a roomId was provided, validate capacity and existence; room is optional
+        let room = null;
+        let roomDoc = null;
+        if (roomId) {
+            room = await validateClassCapacity(roomId);
+            if (!room) return res.status(404).json({ error: 'Salón no encontrado' });
 
-        // Verificar que el salón pertenece al mismo gym que el admin
-        const roomDoc = await db.collection('rooms').findOne({ _id: new ObjectId(roomId) });
-        if (req.user.role !== 'superusuario' && roomDoc && roomDoc.gymId !== req.user.gymId) {
-            return res.status(403).json({ error: 'No tenés permisos para usar ese salón' });
+            // Verificar que el salón pertenece al mismo gym que el admin
+            roomDoc = await db.collection('rooms').findOne({ _id: new ObjectId(roomId) });
+        }
+
+        // Defensive enrichment: if authMiddleware didn't attach gymId for any reason,
+        // try to load it here so permission checks are reliable.
+        if (req.user && !req.user.gymId && req.user.id) {
+            try {
+                const u = await db.collection('users').findOne({ _id: new ObjectId(req.user.id) });
+                if (u && u.gymId) {
+                    req.user.gymId = u.gymId;
+                    console.log('[ENRICH] POST /api/classes - attached gymId from users collection to req.user:', req.user.gymId);
+                } else {
+                    console.log('[ENRICH] POST /api/classes - no gymId found on user doc for', req.user.id);
+                }
+            } catch (e) {
+                console.warn('[ENRICH] POST /api/classes - failed to enrich req.user with gymId', e && e.message ? e.message : e);
+            }
+        }
+
+        if (req.user.role !== 'superusuario' && roomDoc) {
+            if (roomDoc.gymId && req.user.gymId && String(roomDoc.gymId) !== String(req.user.gymId)) {
+                return res.status(403).json({ error: 'No tenés permisos para usar ese salón' });
+            }
+            if (!req.user.gymId) {
+                console.warn('[PERM] user has no gymId on profile while creating class - allowing operation but consider fixing user.gymId', { userId: req.user.id });
+            }
         }
 
         // Validar duplicados: mismo room, mismo start y días intersectan
-        const conflict = await db.collection('classes').findOne({
-            roomId: roomId,
-            start: start,
-            days: { $in: days },
-            gymId: req.user.gymId
-        });
-        if (conflict)
-            return res.status(409).json({ error: 'Ya existe una clase en ese salón con el mismo horario y días' });
+        // Check for conflicts in the same room only when a room was provided
+        if (roomId) {
+            const conflict = await db.collection('classes').findOne({
+                roomId: roomId,
+                start: normStart,
+                days: { $in: normDays },
+                gymId: req.user.gymId
+            });
+            if (conflict)
+                return res.status(409).json({ error: 'Ya existe una clase en ese salón con el mismo horario y días' });
+        }
 
         // Validar que el profesor exista si se proporciona
         if (professorId) {
@@ -1178,10 +1305,10 @@ app.post('/api/classes', authMiddleware, async (req, res) => {
         }
 
         const doc = {
-            days,
-            start,
-            duration: Number(duration),
-            roomId,
+            days: normDays,
+            start: normStart,
+            duration: (duration !== undefined && duration !== null && duration !== '') ? Number(duration) : null,
+            roomId: roomId || null,
             professorId: professorId || null,
             gymId: req.user.gymId,
             students: [],
@@ -1199,14 +1326,47 @@ app.post('/api/classes', authMiddleware, async (req, res) => {
 app.put('/api/classes/:id', authMiddleware, async (req, res) => {
     const { id } = req.params;
     const { days, start, duration, roomId, professorId } = req.body;
-    if (!days || !Array.isArray(days) || !start || !duration || !roomId)
-        return res.status(400).json({ error: 'Faltan datos requeridos' });
 
-    // Validar formato de hora y duración
-    if (!validateTime(start))
+    // Debug: log incoming payload for PUT
+    try {
+        console.log('[DEBUG] PUT /api/classes/%s - incoming body keys: %o', id, Object.keys(req.body || {}));
+        console.log('[DEBUG] PUT /api/classes/%s - raw days: %o', id, days);
+        console.log('[DEBUG] PUT /api/classes/%s - start: %s roomId: %s professorId: %s', id, start, roomId, professorId);
+    } catch (e) { console.warn('[DEBUG] PUT /api/classes - failed to log incoming body', e); }
+
+    // Normalize days similar to POST: accept array, comma-separated string, or object
+    let normDays = days;
+    if (normDays && !Array.isArray(normDays)) {
+        if (typeof normDays === 'string') {
+            normDays = normDays.split(',').map(s => s.trim()).filter(Boolean);
+        } else if (typeof normDays === 'object') {
+            try {
+                normDays = Object.values(normDays).filter(v => typeof v === 'string' && v.trim().length > 0).map(s => s.trim());
+            } catch (e) { normDays = null; }
+        } else {
+            normDays = null;
+        }
+    }
+
+    const normStart = typeof start === 'string' ? start.trim() : start;
+
+    // Validate required fields: only days and start are mandatory; room is optional
+    const missing = [];
+    if (!normDays || !Array.isArray(normDays) || normDays.length === 0) missing.push('días');
+    if (!normStart) missing.push('horario');
+    if (missing.length) {
+        const msg = 'Faltan datos requeridos: ' + missing.join(', ');
+        console.warn('[VALIDATION] PUT /api/classes - ' + msg, { body: req.body });
+        return res.status(400).json({ error: msg });
+    }
+
+    // Validar formato de hora. duration is optional and validated only when provided
+    if (!validateTime(normStart))
         return res.status(400).json({ error: 'Formato de hora inválido. Use HH:MM (24h)' });
-    if (!validateDuration(Number(duration)))
-        return res.status(400).json({ error: 'Duración inválida. Debe estar entre 1 y 180 minutos' });
+    if (duration !== undefined && duration !== null && duration !== '') {
+        if (!validateDuration(Number(duration)))
+            return res.status(400).json({ error: 'Duración inválida. Debe estar entre 1 y 180 minutos' });
+    }
 
     try {
         const _id = new ObjectId(id);
@@ -1233,75 +1393,69 @@ app.put('/api/classes/:id', authMiddleware, async (req, res) => {
         if (!existingClass)
             return res.status(404).json({ error: 'Clase no encontrada' });
 
-        // Validar capacidad del salón y que exista
-        const room = await validateClassCapacity(roomId);
-        if (!room)
-            return res.status(404).json({ error: 'Salón no encontrado' });
+        // Determine whether the client actually provided a roomId (non-empty string).
+        // Treat empty string / null / undefined as "not provided" so editing without
+        // touching the room field doesn't trigger room lookups or errors.
+        const providedRoom = req.body.hasOwnProperty('roomId') && roomId !== undefined && roomId !== null && String(roomId).trim() !== '';
+        // Determine which room to validate: prefer provided roomId (when non-empty),
+        // otherwise fall back to existing class room for display only — but DO NOT
+        // perform validation/lookups when the client didn't provide a roomId.
+        const effectiveRoomId = providedRoom ? roomId : (existingClass.roomId || null);
 
-        // Ensure the requester has permission to modify this class (must belong to same gym unless superusuario)
-        // Add debug logs to surface why a 403 may be returned.
-        const roomDoc = await db.collection('rooms').findOne({ _id: new ObjectId(roomId) });
+        let room = null;
+        let roomDoc = null;
+        if (providedRoom) {
+            try {
+                room = await validateClassCapacity(effectiveRoomId);
+            } catch (e) {
+                return res.status(404).json({ error: 'Salón no encontrado' });
+            }
+            roomDoc = await db.collection('rooms').findOne({ _id: new ObjectId(effectiveRoomId) });
+        }
+
+        // Permission checks: ensure requester can modify this class (same gym unless superusuario)
         try {
             console.log('[DEBUG] PUT /api/classes/:id - user payload:', req.user);
             console.log('[DEBUG] PUT /api/classes/:id - existingClass.gymId:', existingClass.gymId, ' roomDoc.gymId:', roomDoc ? roomDoc.gymId : null, ' req.user.gymId:', req.user.gymId);
         } catch (e) { /* ignore logging errors */ }
 
         if (req.user.role !== 'superusuario') {
-            // If both sides have a gymId, compare them as strings to be robust
             if (existingClass.gymId && req.user.gymId && String(existingClass.gymId) !== String(req.user.gymId)) {
                 console.warn('[PERM] deny modify class - existingClass.gymId mismatch', { existingClassGymId: existingClass.gymId, userGymId: req.user.gymId });
-                return res.status(403).json({
-                    error: 'No tenés permisos para modificar esta clase',
-                    debug: {
-                        existingClassGymId: existingClass.gymId ? String(existingClass.gymId) : null,
-                        roomGymId: roomDoc && roomDoc.gymId ? String(roomDoc.gymId) : null,
-                        userGymId: req.user.gymId ? String(req.user.gymId) : null,
-                        userId: req.user.id || null
-                    }
-                });
+                return res.status(403).json({ error: 'No tenés permisos para modificar esta clase' });
             }
-            // If the user doesn't have a gymId attached, warn but allow for now
-            if (!req.user.gymId) {
-                console.warn('[PERM] user has no gymId on profile - allowing operation but consider fixing user.gymId for stricter multi-tenant checks', { userId: req.user.id });
-            }
+            if (!req.user.gymId) console.warn('[PERM] user has no gymId on profile - allowing operation but consider fixing user.gymId', { userId: req.user.id });
         }
 
-        // Ensure the room belongs to the same gym as the admin (unless superusuario)
+        // If there's a room involved, ensure it belongs to the same gym as the admin (unless superusuario)
         if (req.user.role !== 'superusuario' && roomDoc) {
             if (roomDoc.gymId && req.user.gymId && String(roomDoc.gymId) !== String(req.user.gymId)) {
                 console.warn('[PERM] deny use room - roomDoc.gymId mismatch', { roomGymId: roomDoc.gymId, userGymId: req.user.gymId });
-                return res.status(403).json({
-                    error: 'No tenés permisos para usar ese salón',
-                    debug: {
-                        existingClassGymId: existingClass.gymId ? String(existingClass.gymId) : null,
-                        roomGymId: roomDoc.gymId ? String(roomDoc.gymId) : null,
-                        userGymId: req.user.gymId ? String(req.user.gymId) : null,
-                        userId: req.user.id || null
-                    }
-                });
+                return res.status(403).json({ error: 'No tenés permisos para usar ese salón' });
             }
-            if (!req.user.gymId) {
-                console.warn('[PERM] user has no gymId on profile while using room', { userId: req.user.id, roomId: roomDoc._id });
-            }
+            if (!req.user.gymId) console.warn('[PERM] user has no gymId on profile while using room', { userId: req.user.id, roomId: roomDoc._id });
         }
 
-        // Si hay estudiantes inscritos, validar que la capacidad del nuevo salón sea suficiente
-        if (existingClass.students && existingClass.students.length > room.capacity) {
+        // If there are students enrolled, validate capacity only when the client
+        // provided a new room (we validated it above). Do not error when the client
+        // didn't touch the room field and the existing room record is missing.
+        if (providedRoom && room && existingClass.students && existingClass.students.length > room.capacity) {
             return res.status(400).json({
                 error: `No se puede cambiar al salón ${room.name} porque tiene ${existingClass.students.length} estudiantes y solo tiene capacidad para ${room.capacity}`
             });
         }
 
-        // Verificar conflicto con otras clases (excluyendo esta)
-        const conflict = await db.collection('classes').findOne({
-            _id: { $ne: _id },
-            roomId: roomId,
-            start: start,
-            days: { $in: days },
-            gymId: existingClass.gymId
-        });
-        if (conflict)
-            return res.status(409).json({ error: 'Conflicto con otra clase en ese salón' });
+        // Verificar conflicto con otras clases (excluyendo esta) cuando hay un salón efectivo
+        if (providedRoom && effectiveRoomId) {
+            const conflict = await db.collection('classes').findOne({
+                _id: { $ne: _id },
+                roomId: effectiveRoomId,
+                start: normStart,
+                days: { $in: normDays },
+                gymId: existingClass.gymId
+            });
+            if (conflict) return res.status(409).json({ error: 'Conflicto con otra clase en ese salón' });
+        }
 
         // Validar que el profesor exista si se proporciona
         if (professorId) {
@@ -1313,18 +1467,20 @@ app.put('/api/classes/:id', authMiddleware, async (req, res) => {
                 return res.status(404).json({ error: 'Profesor no encontrado' });
         }
 
+        const updateFields = {
+            days: normDays,
+            start: normStart,
+            professorId: professorId || null,
+            updatedAt: new Date()
+        };
+        // Only override roomId if the caller provided a non-empty value in the payload;
+        // if the field was omitted or provided as an empty string, do not change it.
+        if (providedRoom) updateFields.roomId = roomId || null;
+        if (duration !== undefined && duration !== null && duration !== '') updateFields.duration = Number(duration);
+
         await db.collection('classes').updateOne(
             { _id },
-            {
-                $set: {
-                    days,
-                    start,
-                    duration: Number(duration),
-                    roomId,
-                    professorId: professorId || null,
-                    updatedAt: new Date()
-                }
-            }
+            { $set: updateFields }
         );
         res.json({ ok: true });
     } catch (err) {
@@ -1344,8 +1500,11 @@ app.post('/api/classes/:id/assign-professor', authMiddleware, async (req, res) =
         if (!cls) return res.status(404).json({ error: 'Clase no encontrada' });
 
         // Permission: ensure admin belongs to same gym as class (unless superusuario)
-        if (req.user.role !== 'superusuario' && cls.gymId && cls.gymId !== req.user.gymId) {
-            return res.status(403).json({ error: 'No tenés permisos para modificar esta clase' });
+        if (req.user.role !== 'superusuario') {
+            if (cls.gymId && req.user.gymId && String(cls.gymId) !== String(req.user.gymId)) {
+                return res.status(403).json({ error: 'No tenés permisos para modificar esta clase' });
+            }
+            if (!req.user.gymId) console.warn('[PERM] user has no gymId on profile while assigning/unassigning professor to class', { userId: req.user && req.user.id, classId: _id });
         }
 
         // If assigning, ensure professor exists and belongs to same gym
@@ -1371,7 +1530,10 @@ app.delete('/api/classes/:id', authMiddleware, async (req, res) => {
         const _id = new ObjectId(id);
         const cls = await db.collection('classes').findOne({ _id });
         if (!cls) return res.status(404).json({ error: 'Clase no encontrada' });
-        if (req.user.role !== 'superusuario' && cls.gymId !== req.user.gymId) return res.status(403).json({ error: 'No tenés permisos para eliminar esta clase' });
+        if (req.user.role !== 'superusuario') {
+            if (cls.gymId && req.user.gymId && String(cls.gymId) !== String(req.user.gymId)) return res.status(403).json({ error: 'No tenés permisos para eliminar esta clase' });
+            if (!req.user.gymId) console.warn('[PERM] user has no gymId on profile while deleting class', { userId: req.user && req.user.id, classId: _id });
+        }
         await db.collection('classes').deleteOne({ _id });
         res.json({ ok: true });
     } catch (err) {
@@ -1496,8 +1658,11 @@ app.put('/api/professors/:id', authMiddleware, async (req, res) => {
         if (!professor) return res.status(404).json({ error: 'Profesor no encontrado' });
 
         // Verificar que el profesor pertenece al mismo gym (salvo superusuario)
-        if (req.user.role !== 'superusuario' && professor.gymId && professor.gymId !== req.user.gymId) {
-            return res.status(403).json({ error: 'No tenés permisos para modificar este profesor' });
+        if (req.user.role !== 'superusuario') {
+            if (professor.gymId && req.user.gymId && String(professor.gymId) !== String(req.user.gymId)) {
+                return res.status(403).json({ error: 'No tenés permisos para modificar este profesor' });
+            }
+            if (!req.user.gymId) console.warn('[PERM] user has no gymId on profile while updating professor', { userId: req.user && req.user.id, professorId: _id });
         }
 
         // Verificar DNI duplicado (excepto si es el mismo profesor)
@@ -1711,8 +1876,11 @@ app.delete('/api/classes/:id/students/:studentId', authMiddleware, async (req, r
             return res.status(404).json({ error: 'Clase no encontrada' });
 
         // Verificar que la clase pertenece al mismo gym que el admin
-        if (req.user.role !== 'superusuario' && classDoc.gymId !== req.user.gymId) {
-            return res.status(403).json({ error: 'No tenés permisos para inscribir estudiantes en esta clase' });
+        if (req.user.role !== 'superusuario') {
+            if (classDoc.gymId && req.user.gymId && String(classDoc.gymId) !== String(req.user.gymId)) {
+                return res.status(403).json({ error: 'No tenés permisos para inscribir estudiantes en esta clase' });
+            }
+            if (!req.user.gymId) console.warn('[PERM] user has no gymId on profile while enrolling student into class', { userId: req.user && req.user.id, classId: _id });
         }
 
         // Validar que el estudiante esté inscrito
