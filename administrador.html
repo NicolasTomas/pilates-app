@@ -2890,27 +2890,27 @@
         function renderGymConfig(config) {
             const form = document.createElement('form');
             form.innerHTML = `
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+                <div style="display:flex;flex-direction:column;gap:12px">
                     <div>
-                        <div>Horas mínimas de cancelación:</div>
+                        <div>Horas mínimas de cancelación para permitir recuperar clase:</div>
                         <input type="number" id="minCancellationHours" value="${config.minCancellationHours}"
-                            min="1" style="width:100%;padding:8px;margin:4px 0;border:1px solid #ddd;border-radius:4px" />
+                            min="1" style="width:100%;padding:8px;margin:8px 0;border:1px solid #ddd;border-radius:4px" />
                     </div>
                     <div>
                         <div>Días de vencimiento de créditos:</div>
                         <input type="number" id="creditExpirationDays" value="${config.creditExpirationDays}"
-                            min="1" style="width:100%;padding:8px;margin:4px 0;border:1px solid #ddd;border-radius:4px" />
+                            min="1" style="width:100%;padding:8px;margin:8px 0;border:1px solid #ddd;border-radius:4px" />
                     </div>
                     <div>
                         <div>Días extra para recuperación de clases tras vencimiento de cuota:</div>
                         <div style="font-size:13px;color:#6b7280;margin:6px 0">Permite definir cuántos días más los alumnos pueden seguir recuperando clases luego de que su cuota haya vencido. Este número se suma a la fecha de vencimiento al mostrar las clases de cada alumno.</div>
                         <input type="number" id="autoCancelDueOverdueDays" value="${config.autoCancelDueOverdueDays}"
-                            min="0" style="width:100%;padding:8px;margin:4px 0;border:1px solid #ddd;border-radius:4px" />
+                            min="0" style="width:100%;padding:8px;margin:8px 0;border:1px solid #ddd;border-radius:4px" />
                     </div>
                     <div>
                         <div>Máximo de créditos acumulables:</div>
                         <input type="number" id="maxCredits" value="${config.maxCredits}"
-                            min="1" style="width:100%;padding:8px;margin:4px 0;border:1px solid #ddd;border-radius:4px" />
+                            min="1" style="width:100%;padding:8px;margin:8px 0;border:1px solid #ddd;border-radius:4px" />
                     </div>
                 </div>
 
@@ -2997,8 +2997,20 @@
                 if (ev.target.id === 'addMembershipBtn') {
                     const input = form.querySelector('#newMembershipInput');
                     const v = (input && input.value || '').trim();
-                    if (!v) return alert('Ingresá el nombre del tipo de cuota');
-                    if (membershipTypes.includes(v)) return alert('Ese tipo ya existe');
+                    if (!v) {
+                        try {
+                            showToast('Ingresá el nombre del tipo de cuota', 'error');
+                            input && input.focus();
+                        } catch (e) {
+                            alert('Ingresá el nombre del tipo de cuota');
+                            input && input.focus();
+                        }
+                        return;
+                    }
+                    if (membershipTypes.includes(v)) {
+                        try { showToast('Ese tipo ya existe', 'error'); input && input.focus(); } catch (e) { alert('Ese tipo ya existe'); input && input.focus(); }
+                        return;
+                    }
                     membershipTypes.push(v);
                     input.value = '';
                     refreshMembershipList();
