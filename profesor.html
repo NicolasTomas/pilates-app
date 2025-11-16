@@ -81,7 +81,7 @@
             border-radius: 24px;
             /* box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08); */
             max-width: 1200px;
-            margin:  auto;
+            margin: auto;
         }
 
         h1,
@@ -824,9 +824,26 @@
                     `).join('');
                 }
 
-                // Load public gym config and populate membership select so it reflects admin settings
+                // Load gym config and populate membership select so it reflects admin settings
                 try {
-                    const cfgRes = await fetch('/api/gym/config/public').then(r => r.ok ? r.json() : null).catch(() => null);
+                    const token = localStorage.getItem('token');
+                    let cfgRes = null;
+                    if (token) {
+                        try {
+                            // Use the new endpoint that is available to any authenticated user
+                            const res = await fetch('/api/gym/config/me', { headers: { Authorization: 'Bearer ' + token } });
+                            if (res.ok) cfgRes = await res.json();
+                        } catch (e) {
+                            cfgRes = null;
+                        }
+                    }
+                    // fallback to public config if authenticated fetch failed or no token
+                    if (!cfgRes) {
+                        try {
+                            const res2 = await fetch('/api/gym/config/public');
+                            if (res2.ok) cfgRes = await res2.json();
+                        } catch (e) { cfgRes = null; }
+                    }
                     if (cfgRes) window.currentGymConfig = cfgRes;
                 } catch (ee) { /* ignore */ }
                 try {
@@ -1109,6 +1126,89 @@
             check();
             const id = setInterval(check, 8000);
             window.addEventListener('beforeunload', () => clearInterval(id));
+        })();
+
+        // Refresh professor's classes list used in the inline create-student form
+        async function refreshProfessorClasses() {
+            try {
+                const me = await pilatesAuth.getMe();
+                const classes = await adminClasses.listClasses();
+                const myClasses = classes.filter(c => String(c.professorId) === String(me.id));
+                const container = document.getElementById('newStudentClassesContainer');
+                if (!container) return;
+                if (!myClasses.length) {
+                    container.innerHTML = '<i>No tienes clases para asignar</i>';
+                } else {
+                    container.innerHTML = myClasses.map(c => `
+                        <label style="display:block;padding:8px;border-bottom:1px solid #eee">
+                            <input type="checkbox" value="${c._id}" class="newStudentClass" />
+                            ${(c.days || []).join(', ')} ${c.start} - ${c.roomName || ''} (${(c.camillasFree || 0)} lugares libres)
+                        </label>
+                    `).join('');
+                }
+            } catch (e) {
+                // ignore errors silently; existing UI will show older data
+            }
+        }
+
+        // Try Server-Sent Events (SSE) for cross-device real-time updates. Fall back to BroadcastChannel and polling.
+        (function connectRealtime() {
+            const token = localStorage.getItem('token');
+            if (token) {
+                try {
+                    const es = new EventSource('/api/events?token=' + encodeURIComponent(token));
+                    es.onmessage = async function (ev) {
+                        try {
+                            const payload = ev && ev.data ? JSON.parse(ev.data) : null;
+                            if (!payload || !payload.type) return;
+                            if (payload.type === 'gymConfig') {
+                                const data = payload.payload || {};
+                                window.currentGymConfig = window.currentGymConfig || {};
+                                window.currentGymConfig.membershipTypes = data.membershipTypes || window.currentGymConfig.membershipTypes;
+                                try {
+                                    const ms = document.getElementById('newStudentMembership');
+                                    if (ms) { const cur = ms.value; ms.innerHTML = getMembershipOptionsHTML(cur); }
+                                    document.querySelectorAll('select.membership-select').forEach(s => { const cur = s.value; s.innerHTML = getMembershipOptionsHTML(cur); });
+                                } catch (e) { }
+                            } else if (payload.type === 'classes') {
+                                try { await refreshProfessorClasses(); } catch (e) { }
+                            } else if (payload.type === 'students') {
+                                try { await loadStudents(); await refreshProfessorClasses(); } catch (e) { }
+                            }
+                        } catch (e) { /* ignore parse errors */ }
+                    };
+                    es.onerror = function (err) { console.warn('SSE error', err); };
+                } catch (e) {
+                    console.warn('Failed to create EventSource', e);
+                }
+            }
+
+            // Also support BroadcastChannel for same-browser tabs
+            try {
+                const bc = new BroadcastChannel('pilates-updates');
+                bc.onmessage = async (ev) => {
+                    try {
+                        const data = ev && ev.data ? ev.data : {};
+                        if (data.type === 'gymConfig') {
+                            window.currentGymConfig = window.currentGymConfig || {};
+                            window.currentGymConfig.membershipTypes = data.membershipTypes || window.currentGymConfig.membershipTypes;
+                            try {
+                                const ms = document.getElementById('newStudentMembership');
+                                if (ms) { const cur = ms.value; ms.innerHTML = getMembershipOptionsHTML(cur); }
+                                document.querySelectorAll('select.membership-select').forEach(s => { const cur = s.value; s.innerHTML = getMembershipOptionsHTML(cur); });
+                            } catch (e) { }
+                        } else if (data.type === 'classes') {
+                            try { await refreshProfessorClasses(); } catch (e) { }
+                        }
+                    } catch (e) { /* ignore malformed messages */ }
+                };
+            } catch (e) {
+                // As a last resort poll classes periodically
+                try {
+                    const _fallbackId = setInterval(() => { try { refreshProfessorClasses(); } catch (e) { } }, 10000);
+                    window.addEventListener('beforeunload', () => clearInterval(_fallbackId));
+                } catch (ee) { /* ignore */ }
+            }
         })();
     </script>
 </body>

@@ -31,6 +31,24 @@ const DEFAULT_GYM_CONFIG = {
 
 let db;
 
+// Server-Sent Events clients
+const sseClients = new Set();
+
+function sendSseEvent(type, payload, targetGymId = null) {
+    const msg = `data: ${JSON.stringify({ type, payload })}\n\n`;
+    for (const client of Array.from(sseClients)) {
+        try {
+            // If targetGymId is specified, only send to clients matching that gym
+            if (targetGymId && client.gymId && String(client.gymId) !== String(targetGymId)) continue;
+            client.res.write(msg);
+        } catch (e) {
+            // remove problematic client
+            try { client.res.end(); } catch (er) { }
+            sseClients.delete(client);
+        }
+    }
+}
+
 async function connectDB() {
     // Build mongo options with optional TLS flags from env
     const mongoOptions = { useUnifiedTopology: true };
@@ -752,6 +770,14 @@ app.post('/api/students/:id/recover-instance/:instanceId', async (req, res) => {
             { $set: { 'tickets.$.status': 'used', 'tickets.$.usedAt': new Date(), updatedAt: new Date() } }
         );
 
+        try { sendSseEvent('classes', { action: 'studentAdded', classId: id, studentId }, req.user && req.user.gymId ? req.user.gymId : null); } catch (e) { }
+        try { sendSseEvent('classes', { action: 'studentRemoved', classId: id, studentId }, req.user && req.user.gymId ? req.user.gymId : null); } catch (e) { }
+        try { sendSseEvent('classes', { action: 'studentUpdated', studentId: id, classesAdded: classesToAdd, classesRemoved: classesToRemove }, req.user && req.user.gymId ? req.user.gymId : null); } catch (e) { }
+        // fetch the updated config to include membershipTypes in the event
+        try {
+            const updatedConfig = gymId ? await db.collection('gyms').findOne({ gymId }) : await db.collection('gyms').findOne({});
+            try { sendSseEvent('gymConfig', { membershipTypes: (updatedConfig && updatedConfig.membershipTypes) || [] }, gymId || null); } catch (e) { }
+        } catch (e) { /* ignore */ }
         res.json({ ok: true });
     } catch (err) {
         console.error(err);
@@ -856,6 +882,7 @@ app.post('/api/students', authAny, async (req, res) => {
         }
 
         res.json({ id: studentId });
+        try { sendSseEvent('classes', { action: 'studentCreated', studentId: studentId, classIds }, req.user && req.user.gymId ? req.user.gymId : null); } catch (e) { }
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: 'Error al crear alumno' });
@@ -1091,6 +1118,7 @@ app.delete('/api/students/:id', authMiddleware, async (req, res) => {
         // Eliminar alumno
         await db.collection('users').deleteOne({ _id });
 
+        try { sendSseEvent('students', { action: 'deleted', studentId: id }, req.user && req.user.gymId ? req.user.gymId : null); } catch (e) { }
         res.json({ ok: true });
     } catch (err) {
         console.error(err);
@@ -1191,6 +1219,35 @@ app.get('/api/classes', authMiddleware, async (req, res) => {
         console.error(err);
         res.status(500).json({ error: 'Error al listar clases' });
     }
+});
+
+// Server-Sent Events endpoint for real-time updates
+app.get('/api/events', async (req, res) => {
+    // Allow token via query param for EventSource (browsers don't allow custom headers)
+    const token = req.query && req.query.token ? req.query.token : null;
+    let payload = null;
+    try {
+        if (!token) return res.status(401).end('token required');
+        payload = jwt.verify(token, JWT_SECRET);
+    } catch (err) {
+        return res.status(401).end('invalid token');
+    }
+
+    // set headers for SSE
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.flushHeaders && res.flushHeaders();
+
+    const client = { id: new ObjectId().toString(), res, gymId: payload.gymId || null };
+    sseClients.add(client);
+
+    // send an initial ping so the client knows connection is live
+    try { res.write(`data: ${JSON.stringify({ type: 'connected', payload: { gymId: client.gymId } })}\n\n`); } catch (e) { }
+
+    req.on('close', () => {
+        sseClients.delete(client);
+    });
 });
 
 app.post('/api/classes', authMiddleware, async (req, res) => {
@@ -1316,6 +1373,8 @@ app.post('/api/classes', authMiddleware, async (req, res) => {
         };
 
         const result = await db.collection('classes').insertOne(doc);
+        // Broadcast classes change to connected clients in this gym
+        try { sendSseEvent('classes', { action: 'created', id: result.insertedId }, req.user && req.user.gymId ? req.user.gymId : null); } catch (e) { }
         res.json({ id: result.insertedId });
     } catch (err) {
         console.error(err);
@@ -1482,6 +1541,7 @@ app.put('/api/classes/:id', authMiddleware, async (req, res) => {
             { _id },
             { $set: updateFields }
         );
+        try { sendSseEvent('classes', { action: 'updated', id: id }, req.user && req.user.gymId ? req.user.gymId : null); } catch (e) { }
         res.json({ ok: true });
     } catch (err) {
         console.error(err);
@@ -1535,6 +1595,7 @@ app.delete('/api/classes/:id', authMiddleware, async (req, res) => {
             if (!req.user.gymId) console.warn('[PERM] user has no gymId on profile while deleting class', { userId: req.user && req.user.id, classId: _id });
         }
         await db.collection('classes').deleteOne({ _id });
+        try { sendSseEvent('classes', { action: 'deleted', id: id }, req.user && req.user.gymId ? req.user.gymId : null); } catch (e) { }
         res.json({ ok: true });
     } catch (err) {
         console.error(err);
@@ -1746,6 +1807,18 @@ app.get('/api/gym/config', authMiddleware, async (req, res) => {
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: 'Error al obtener configuración' });
+    }
+});
+
+// Endpoint seguro para que cualquier usuario autenticado obtenga la config de su gym
+app.get('/api/gym/config/me', authAny, async (req, res) => {
+    try {
+        const gymId = req.user && req.user.gymId ? req.user.gymId : null;
+        const config = gymId ? await db.collection('gyms').findOne({ gymId }) : await db.collection('gyms').findOne({});
+        res.json(config || DEFAULT_GYM_CONFIG);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Error al obtener configuración del gimnasio' });
     }
 });
 

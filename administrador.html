@@ -1190,6 +1190,43 @@
             border: none !important;
             box-shadow: 0 8px 26px rgba(72, 187, 120, 0.12) !important;
         }
+
+        /* Scroll fade indicators for lists (show subtle gradient when content overflows) */
+        #newUserClassesContainer {
+            position: relative;
+            overflow-y: scroll;
+        }
+
+        #newUserClassesContainer::before,
+        #newUserClassesContainer::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            right: 0;
+            height: 18px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity .18s ease;
+            z-index: 2;
+        }
+
+        #newUserClassesContainer::before {
+            top: 0;
+            background: linear-gradient(to bottom, rgba(0, 0, 0, 0.12), transparent);
+        }
+
+        #newUserClassesContainer::after {
+            bottom: 0;
+            background: linear-gradient(to top, rgba(0, 0, 0, 0.12), transparent);
+        }
+
+        #newUserClassesContainer.has-top::before {
+            opacity: 1;
+        }
+
+        #newUserClassesContainer.has-bottom::after {
+            opacity: 1;
+        }
     </style>
 </head>
 
@@ -1555,7 +1592,10 @@
                     </div>
                     <div id="classesDivInline" style="margin-top:12px">
                         <div id="classesDivInlineLabel" style="font-size:13px;margin-bottom:6px">Clases asignadas: <span id="classesRequiredAsterisk" class="required">*</span></div>
-                        <div id="newUserClassesContainer" style="max-height:150px;overflow-y:auto;border:1px solid #ddd;border-radius:8px;padding:6px;background:#fff"></div>
+                        <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
+                            <input id="newUserClassSearch" placeholder="Buscar clases por día u horario" style="flex:1;padding:8px;border:1px solid #ddd;border-radius:6px" />
+                        </div>
+                        <div id="newUserClassesContainer" style="max-height:150px;overflow-y:scroll;border:1px solid #ddd;border-radius:8px;padding:6px;background:#fff"></div>
                     </div>
                     <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
                         <button type="submit" id="saveNewUser" style="background:#38a169;color:#fff">Guardar</button>
@@ -1564,19 +1604,79 @@
             `;
             document.querySelector('#usersSection').appendChild(formContainer);
 
-            // populate classes immediately (form is visible by default)
-            try {
-                const classes = await adminClasses.listClasses();
-                const container = document.getElementById('newUserClassesContainer');
-                container.innerHTML = classes.map(c => `
-                    <label style="display:block;padding:8px;border-bottom:1px solid #eee">
-                        <input type="checkbox" value="${esc(c._id)}" class="newUserClass" />
-                        ${esc((c.days || []).join(', '))} ${esc(c.start || '')}${c.roomName ? ' - ' + esc(c.roomName) : ''}
-                    </label>
-                `).join('');
-            } catch (err) {
-                document.getElementById('newUserClassesContainer').innerHTML = '<i>Error cargando clases</i>';
-            }
+            // helper to refresh the classes list inside the create-user form with a single textual filter
+            (function () {
+                let _refreshTimer = null;
+                window.refreshNewUserClasses = async function refreshNewUserClasses(filter) {
+                    const container = document.getElementById('newUserClassesContainer');
+                    if (!container) return;
+                    try {
+                        const classes = await adminClasses.listClasses();
+                        // filter using the same accent-insensitive logic as loadClasses
+                        const q = (filter || (document.getElementById('newUserClassSearch') && document.getElementById('newUserClassSearch').value) || '').toString().trim().toLowerCase();
+                        function norm(s) {
+                            if (!s) return '';
+                            try { return s.toString().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase(); } catch (e) { return s.toString().toLowerCase(); }
+                        }
+                        const normQ = norm(q);
+
+                        const filtered = classes.filter(c => {
+                            if (!q) return true;
+                            const start = (c.start || '').toString().toLowerCase();
+                            const daysText = Array.isArray(c.days) ? c.days.join(' ').toLowerCase() : (c.days || '').toString().toLowerCase();
+                            const normDays = norm(daysText);
+                            if (start.includes(q) || start.startsWith(q)) return true;
+                            if (normDays.includes(normQ)) return true;
+                            const dayMatches = Array.isArray(c.days) && c.days.some(d => norm(d).includes(normQ));
+                            if (dayMatches) return true;
+                            return false;
+                        });
+
+                        container.innerHTML = filtered.map(c => `
+                            <label style="display:block;padding:8px;border-bottom:1px solid #eee">
+                                <input type="checkbox" value="${esc(c._id)}" class="newUserClass" />
+                                ${esc((c.days || []).join(', '))} ${esc(c.start || '')}${c.roomName ? ' - ' + esc(c.roomName) : ''}
+                            </label>
+                        `).join('');
+
+                        // attach scroll-fade behavior: show subtle top/bottom gradients when applicable
+                        function updateScrollFades(ctn) {
+                            try {
+                                const top = ctn.scrollTop > 2;
+                                const bottom = ctn.scrollTop + ctn.clientHeight < ctn.scrollHeight - 2;
+                                ctn.classList.toggle('has-top', top);
+                                ctn.classList.toggle('has-bottom', bottom);
+                            } catch (e) { }
+                        }
+
+                        if (!container._scrollFadeAttached) {
+                            container.addEventListener('scroll', () => updateScrollFades(container));
+                            container._scrollFadeAttached = true;
+                        }
+                        // compute initial state
+                        updateScrollFades(container);
+                    } catch (err) {
+                        container.innerHTML = '<i>Error cargando clases</i>';
+                    }
+                };
+
+                // small debounce wrapper used by the search control
+                function scheduleRefresh() {
+                    try { if (_refreshTimer) clearTimeout(_refreshTimer); _refreshTimer = setTimeout(() => { try { window.refreshNewUserClasses(); } catch (e) { } }, 180); } catch (e) { }
+                }
+
+                // wire up the new single search input
+                try {
+                    const usersSection = document.getElementById('usersSection');
+                    usersSection.addEventListener('input', (e) => {
+                        if (!e.target) return;
+                        if (e.target.id === 'newUserClassSearch') scheduleRefresh();
+                    });
+                } catch (e) { /* ignore wiring errors */ }
+
+                // populate initially
+                try { window.refreshNewUserClasses().catch(() => { }); } catch (e) { /* ignore */ }
+            })();
 
             function toggleAlumnoFields() {
                 const role = document.getElementById('newUserRole').value;
@@ -2022,6 +2122,8 @@
                 });
 
                 renderClasses(filtered);
+                // If the create-user form exists, refresh its classes list so new classes appear without reload
+                try { if (window.refreshNewUserClasses) window.refreshNewUserClasses(); } catch (e) { /* ignore */ }
             } catch (err) { document.getElementById('classesList').textContent = 'Error cargando clases' }
         }
 
@@ -2058,6 +2160,8 @@
                             await adminClasses.deleteClass(id);
                             showToast('Clase eliminada', 'success');
                             await loadClasses(document.getElementById('searchClasses').value);
+                            // notify other tabs about classes change
+                            try { const bc = new BroadcastChannel('pilates-updates'); bc.postMessage({ type: 'classes' }); } catch (e) { }
                         } catch (err) {
                             showToast(err && err.message ? err.message : 'Error eliminando clase', 'error');
                         }
@@ -2069,6 +2173,8 @@
                         await adminClasses.deleteClass(id);
                         showToast('Clase eliminada', 'success');
                         await loadClasses(document.getElementById('searchClasses').value);
+                        // notify other tabs about classes change
+                        try { const bc = new BroadcastChannel('pilates-updates'); bc.postMessage({ type: 'classes' }); } catch (e) { }
                     } catch (e) {
                         showToast(e && e.message ? e.message : 'Error eliminando clase', 'error');
                     }
@@ -2148,6 +2254,23 @@
                 });
             } catch (e) { console.warn('[DEBUG] error logging modal elements', e); }
 
+            // Auto-close native time picker: blur input when a full HH:MM value is selected
+            try {
+                const startInput = modal.querySelector('#classStart');
+                if (startInput) {
+                    const _onTimePicked = () => {
+                        try {
+                            const v = (startInput.value || '').trim();
+                            if (/^\d{2}:\d{2}$/.test(v)) {
+                                setTimeout(() => { try { startInput.blur(); } catch (e) { } }, 40);
+                            }
+                        } catch (e) { }
+                    };
+                    startInput.addEventListener('change', _onTimePicked);
+                    startInput.addEventListener('input', _onTimePicked);
+                }
+            } catch (e) { }
+
             function getSelectedDays(containerId) {
                 const c = modal.querySelector('#' + containerId);
                 if (!c) return [];
@@ -2191,6 +2314,8 @@
                     modal.remove();
                     showToast('Clase creada', 'success');
                     await loadClasses();
+                    // notify other tabs (professors) about classes change
+                    try { const bc = new BroadcastChannel('pilates-updates'); bc.postMessage({ type: 'classes' }); } catch (e) { }
                 } catch (err) {
                     showToast(err && err.message ? err.message : 'Error creando clase', 'error');
                 }
@@ -2253,6 +2378,23 @@
                 });
             })('classDaysEdit', c.days || []);
 
+            // Auto-close native time picker in edit modal when a full HH:MM is chosen
+            try {
+                const startInputEdit = modal.querySelector('#classStartEdit');
+                if (startInputEdit) {
+                    const _onTimePickedEdit = () => {
+                        try {
+                            const v = (startInputEdit.value || '').trim();
+                            if (/^\d{2}:\d{2}$/.test(v)) {
+                                setTimeout(() => { try { startInputEdit.blur(); } catch (e) { } }, 40);
+                            }
+                        } catch (e) { }
+                    };
+                    startInputEdit.addEventListener('change', _onTimePickedEdit);
+                    startInputEdit.addEventListener('input', _onTimePickedEdit);
+                }
+            } catch (e) { }
+
             function getSelectedDaysEdit(containerId) {
                 const ctn = modal.querySelector('#' + containerId);
                 if (!ctn) return [];
@@ -2279,6 +2421,8 @@
                     modal.remove();
                     showToast('Clase actualizada', 'success');
                     await loadClasses();
+                    // notify other tabs about classes change
+                    try { const bc = new BroadcastChannel('pilates-updates'); bc.postMessage({ type: 'classes' }); } catch (e) { }
                 } catch (err) {
                     showToast(err && err.message ? err.message : 'Error actualizando clase', 'error');
                 }
@@ -2359,6 +2503,7 @@
                     showToast('Estudiante inscrito', 'success');
                     openManageStudentsModal(classId); // Reabrir modal actualizado
                     await loadClasses(); // Actualizar lista de clases
+                    try { const bc = new BroadcastChannel('pilates-updates'); bc.postMessage({ type: 'classes' }); } catch (e) { }
                 } catch (err) {
                     showToast(err.message || 'Error al inscribir estudiante', 'error');
                 }
@@ -2375,6 +2520,7 @@
                                 showToast('Estudiante dado de baja', 'success');
                                 openManageStudentsModal(classId); // Reabrir modal actualizado
                                 await loadClasses(); // Actualizar lista de clases
+                                try { const bc = new BroadcastChannel('pilates-updates'); bc.postMessage({ type: 'classes' }); } catch (e) { }
                             } catch (err) {
                                 showToast(err && err.message ? err.message : 'Error al dar de baja estudiante', 'error');
                             }
@@ -2892,23 +3038,26 @@
             form.innerHTML = `
                 <div style="display:flex;flex-direction:column;gap:12px">
                     <div>
-                        <div>Horas mínimas de cancelación para permitir recuperar clase:</div>
+                        <div style="font-weight:700">Horas mínimas de cancelación para permitir recuperar clase</div>
+                        <div style="font-size:13px;color:#6b7280;margin:6px 0">Cantidad mínima de horas previas para poder sumar una clase para recuperar. Si cancela antes de este límite, recibe un crédito para recuperar la clase.</div>
                         <input type="number" id="minCancellationHours" value="${config.minCancellationHours}"
                             min="1" style="width:100%;padding:8px;margin:8px 0;border:1px solid #ddd;border-radius:4px" />
                     </div>
                     <div>
-                        <div>Días de vencimiento de créditos:</div>
+                        <div style="font-weight:700">Días de vencimiento de créditos</div>
+                        <div style="font-size:13px;color:#6b7280;margin:6px 0">Cantidad de días que dura un crédito generado. Después de este tiempo, el crédito vence y ya no se podrá usar para recuperar clases.</div>
                         <input type="number" id="creditExpirationDays" value="${config.creditExpirationDays}"
                             min="1" style="width:100%;padding:8px;margin:8px 0;border:1px solid #ddd;border-radius:4px" />
                     </div>
                     <div>
-                        <div>Días extra para recuperación de clases tras vencimiento de cuota:</div>
-                        <div style="font-size:13px;color:#6b7280;margin:6px 0">Permite definir cuántos días más los alumnos pueden seguir recuperando clases luego de que su cuota haya vencido. Este número se suma a la fecha de vencimiento al mostrar las clases de cada alumno.</div>
+                        <div style="font-weight:700">Días extra para recuperación de clases tras vencimiento de cuota</div>
+                        <div style="font-size:13px;color:#6b7280;margin:6px 0">Permite agregar días adicionales para que los alumnos sigan pudiendo usar sus créditos incluso si su cuota ya venció. Este número se suma a la fecha de vencimiento de la cuota.</div>
                         <input type="number" id="autoCancelDueOverdueDays" value="${config.autoCancelDueOverdueDays}"
                             min="0" style="width:100%;padding:8px;margin:8px 0;border:1px solid #ddd;border-radius:4px" />
                     </div>
                     <div>
-                        <div>Máximo de créditos acumulables:</div>
+                        <div style="font-weight:700">Máximo de créditos acumulables</div>
+                        <div style="font-size:13px;color:#6b7280;margin:6px 0">Define cuántos créditos como máximo puede tener un alumno al mismo tiempo. Si llega al límite, ya no generará nuevos créditos aunque cancele clases.</div>
                         <input type="number" id="maxCredits" value="${config.maxCredits}"
                             min="1" style="width:100%;padding:8px;margin:8px 0;border:1px solid #ddd;border-radius:4px" />
                     </div>
@@ -2950,6 +3099,11 @@
                     // reflect saved config globally and update selects elsewhere
                     window.currentGymConfig = payload;
                     updateMembershipSelects();
+                    // notify other tabs (professors) about gym config changes
+                    try {
+                        const bc = new BroadcastChannel('pilates-updates');
+                        bc.postMessage({ type: 'gymConfig', membershipTypes: payload.membershipTypes });
+                    } catch (e) { /* BroadcastChannel may not be available in all environments */ }
                 } catch (err) {
                     console.error('Error saving gym config', err);
                 }
