@@ -80,7 +80,7 @@
             border-radius: 25px;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
             width: 350px;
-            height: 40vh;
+            height: auto !important;
             position: relative;
             z-index: 1;
             /* ensure the card never forces the page to scroll vertically */
@@ -98,8 +98,7 @@
             color: #000000;
             font-size: 25px !important;
             font-weight: 700;
-            margin-bottom: 7px;
-            margin-top: var(--card-edge-gap);
+
             text-align: center;
             font-family: 'Orbitron', sans-serif;
         }
@@ -181,11 +180,8 @@
 
         /* In-card admin button (shown inside the card on all viewports) */
         .admin-in-card {
-            display: block;
-            position: absolute;
-            top: 5px;
-            right: 5px;
-            z-index: 2;
+            display: none;
+            /* hide the floating in-card admin button — we provide an inline button under login */
         }
 
         .admin-in-card button {
@@ -216,6 +212,36 @@
             /* consistent height across devices */
             width: 100%;
 
+        }
+
+        /* New admin inline button: same sizing as #btnLogin but gray variant */
+        #btnAdminInline {
+            box-sizing: border-box;
+            padding-top: 14px;
+            padding-bottom: 14px;
+            padding-left: 16px;
+            padding-right: 16px;
+            line-height: 1;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 48px;
+            width: 100%;
+            margin-top: 12px;
+            background: linear-gradient(135deg, #e6e6e6 0%, #cfcfcf 100%);
+            color: #0f172a;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.22s ease;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+
+        #btnAdminInline:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 22px rgba(0, 0, 0, 0.12);
         }
 
         .admin-btn-container button {
@@ -337,7 +363,9 @@
                 opacity: 1;
             }
         }
-        #toggleRegPass, #toggleRegConfirm{
+
+        #toggleRegPass,
+        #toggleRegConfirm {
             box-shadow: none !important;
         }
     </style>
@@ -350,6 +378,7 @@
         <p>Ingresá tu DNI para acceder</p>
         <input id="dni" placeholder="DNI" maxlength="15" />
         <button id="btnLogin">Ingresar</button>
+        <button id="btnAdminInline" style="display:none;margin-top:12px">Ingreso Administrador</button>
         <p style="text-align:center;margin:10px 0 0 0;color:#475569;font-size:13px">
             ¿No tienes una cuenta?
             <a id="btnCreateAccount" href="#" role="button"
@@ -447,21 +476,41 @@
             openAdminModal();
         });
 
+        // inline admin button under the login form
+        const btnAdminInline = document.getElementById('btnAdminInline');
+        if (btnAdminInline) {
+            // make it visible (was added with inline style hidden) and wire to open modal
+            btnAdminInline.style.display = 'inline-flex';
+            btnAdminInline.addEventListener('click', () => { openAdminModal(); });
+            // ensure touch interactions don't pan the page
+            btnAdminInline.addEventListener('touchstart', (e) => { e.stopPropagation(); });
+            btnAdminInline.addEventListener('touchmove', (e) => { e.preventDefault(); }, { passive: false });
+        }
+
         function openAdminModal() {
             const modal = document.createElement('div');
             modal.style = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);backdrop-filter:blur(5px);display:flex;align-items:center;justify-content:center;z-index:1000';
             modal.innerHTML = `
-                    <div style="background:#fff;padding:32px;border-radius:24px;width:380px;box-shadow:0 20px 60px rgba(0,0,0,0.3)">
-                        <h3 style="color:#000000;font-size:24px;margin-bottom:20px;text-align:center">Ingreso Administrador</h3>
-                        <input id="adminEmail" placeholder="Email" style="width:100%;padding:14px 16px;margin:12px 0;border:2px solid #e2e8f0;border-radius:12px;font-size:15px;background:#f8fafc" />
-                        <input id="adminPass" type="password" placeholder="Contraseña" style="width:100%;padding:14px 16px;margin:12px 0;border:2px solid #e2e8f0;border-radius:12px;font-size:15px;background:#f8fafc" />
-                        <div style="display:flex;gap:12px;margin-top:20px">
-                            <button id="cancelAdmin" style="flex:1;padding:12px;border-radius:12px;background:#e2e8f0;color:#475569;box-shadow:none">Cancelar</button>
-                            <button id="submitAdmin" style="flex:1;padding:12px;border-radius:12px;background-color:#000000;color:#fff;box-shadow:0 4px 15px rgba(102,126,234,0.4)">Entrar</button>
+                    <div style="background:#fff;padding:24px;border-radius:16px;width:380px;box-shadow:0 20px 60px rgba(0,0,0,0.3)">
+                        <h3 style="color:#000000;font-size:22px;margin-bottom:12px;text-align:center">Ingreso Administrador</h3>
+                        <input id="adminEmail" placeholder="Email" style="width:100%;padding:12px 14px;margin:8px 0;border:2px solid #e2e8f0;border-radius:10px;font-size:14px;background:#f8fafc" />
+                        <input id="adminPass" type="password" placeholder="Contraseña" style="width:100%;padding:12px 14px;margin:8px 0;border:2px solid #e2e8f0;border-radius:10px;font-size:14px;background:#f8fafc" />
+                        <div style="display:flex;gap:10px;margin-top:14px">
+                            <button id="cancelAdmin" style="flex:1;padding:10px;border-radius:10px;background:#e2e8f0;color:#475569;box-shadow:none">Cancelar</button>
+                            <button id="submitAdmin" style="flex:1;padding:10px;border-radius:10px;background-color:#000000;color:#fff;box-shadow:0 4px 12px rgba(0,0,0,0.12)">Entrar</button>
                         </div>
+                        <div style="text-align:center;margin-top:10px">
+                            <a id="adminForgotLink" href="#" style="color:#6b7280;font-size:13px;text-decoration:underline;cursor:pointer">¿Olvidaste tu contraseña?</a>
+                        </div>
+                        
                     </div>`;
+
             document.body.appendChild(modal);
-            document.getElementById('cancelAdmin').addEventListener('click', () => modal.remove());
+
+            // cleanup helper
+            function removeModal() { try { modal.remove(); } catch (e) { } }
+
+            document.getElementById('cancelAdmin').addEventListener('click', () => removeModal());
             document.getElementById('submitAdmin').addEventListener('click', async () => {
                 const email = document.getElementById('adminEmail').value.trim();
                 const pass = document.getElementById('adminPass').value;
@@ -477,6 +526,53 @@
                     alert(err.message || 'Error en login admin');
                 }
             });
+
+            // forgot password handler: open small modal to request reset email
+            const forgotLink = document.getElementById('adminForgotLink');
+            if (forgotLink) {
+                forgotLink.addEventListener('click', (ev) => {
+                    ev.preventDefault();
+                    const fm = document.createElement('div');
+                    fm.style = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:1100';
+                    fm.innerHTML = `
+                        <div style="background:#fff;padding:18px;border-radius:12px;width:360px;box-shadow:0 20px 60px rgba(0,0,0,0.25)">
+                            <h4 style="margin:0 0 10px 0;text-align:center">Recuperar contraseña</h4>
+                            <div style="font-size:13px;color:#374151;margin-bottom:8px;text-align:center">Te enviaremos un email con instrucciones para restablecer la contraseña.</div>
+                            <input id="forgotEmail" placeholder="Email" style="width:100%;padding:10px 12px;margin:8px 0;border:1px solid #e6edf3;border-radius:8px" />
+                            <div style="display:flex;gap:8px;margin-top:8px">
+                                <button id="cancelForgot" type="button" style="flex:1;padding:10px;border-radius:8px;border:none;background:#e2e8f0;color:#0f172a">Cancelar</button>
+                                <button id="sendForgot" type="button" style="flex:1;padding:10px;border-radius:8px;border:none;background:#2563eb;color:#fff">Enviar email</button>
+                            </div>
+                        </div>`;
+                    document.body.appendChild(fm);
+
+                    const removeForgot = () => { try { fm.remove(); } catch (e) { } };
+                    fm.querySelector('#cancelForgot').addEventListener('click', removeForgot);
+                    const input = fm.querySelector('#forgotEmail');
+                    input && input.focus();
+                    input && input.addEventListener('keydown', (e) => { if (e.key === 'Enter') fm.querySelector('#sendForgot').click(); });
+
+                    fm.querySelector('#sendForgot').addEventListener('click', async () => {
+                        const email = (fm.querySelector('#forgotEmail').value || '').trim();
+                        if (!email) return alert('Ingresá un email válido');
+                        try {
+                            const r = await fetch('/api/password-reset/request', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) });
+                            const body = await r.json().catch(() => ({}));
+                            if (!r.ok) {
+                                alert(body && body.error ? body.error : 'Error enviando email');
+                                return;
+                            }
+                            alert('Si existe una cuenta con ese email, recibirás instrucciones para restablecer la contraseña');
+                            removeForgot();
+                        } catch (e) {
+                            console.error('Error requesting password reset', e);
+                            alert('Error de red al enviar solicitud');
+                        }
+                    });
+                });
+            }
+
+
         }
     </script>
     <script>
@@ -550,13 +646,14 @@
                                                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z" stroke="#374151" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="3" stroke="#374151" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
                                                 </button>
                                             </div>
+                                            
                                             <label style="display:flex;align-items:center;gap:8px;margin-top:4px">
                                                 <input id="regSubscribe" type="checkbox" />
                                                 <span style="font-size:13px;color:#374151">Quiero suscripción mensual automática</span>
                                             </label>
                                             <div style="display:flex;gap:8px;margin-top:8px">
                                                 <button type="button" id="regCancel" style="flex:1;padding:10px;border-radius:8px;border:none;background:#e2e8f0;color:#0f172a">Cancelar</button>
-                                                <button type="submit" style="flex:1;padding:10px;border-radius:8px;border:none;background:#2563eb;color:#fff">Registrarme</button>
+                                                <button type="submit" style="flex:1;padding:10px;border-radius:8px;border:none;background:linear-gradient(135deg,#0c0c0c 0%,#303030 100%);color:#fff">Registrarme</button>
                                             </div>
                                         </form>`;
 
@@ -638,6 +735,7 @@
                         showToast('Error de red al enviar solicitud', 'error');
                     }
                 });
+
             });
 
             // keyboard accessibility on the link

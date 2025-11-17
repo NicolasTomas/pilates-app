@@ -3,6 +3,8 @@ const express = require('express');
 const { MongoClient, ObjectId } = require('mongodb');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
+const nodemailer = require('nodemailer');
+const crypto = require('crypto');
 const cors = require('cors');
 require('dotenv').config();
 
@@ -20,6 +22,28 @@ const MONGO_TLS_ALLOW_INVALID = process.env.MONGO_TLS_ALLOW_INVALID === '1' || p
 const MONGO_TLS_CA_FILE = process.env.MONGO_TLS_CA_FILE || null;
 const DB_NAME = process.env.DB_NAME || 'pilatesdb';
 const JWT_SECRET = process.env.JWT_SECRET || 'dev_secret_change';
+
+// SMTP / App config for password reset emails
+const SMTP_HOST = process.env.SMTP_HOST || null;
+const SMTP_PORT = Number(process.env.SMTP_PORT || 587);
+const SMTP_SECURE = process.env.SMTP_SECURE === '1' || process.env.SMTP_SECURE === 'true';
+const SMTP_USER = process.env.SMTP_USER || null;
+const SMTP_PASS = process.env.SMTP_PASS || null;
+const APP_BASE_URL = (process.env.APP_BASE_URL || `http://localhost:${process.env.PORT || 3000}`).replace(/\/$/, '');
+
+let mailTransporter = null;
+if (SMTP_HOST && SMTP_USER && SMTP_PASS) {
+    try {
+        mailTransporter = nodemailer.createTransport({ host: SMTP_HOST, port: SMTP_PORT, secure: SMTP_SECURE, auth: { user: SMTP_USER, pass: SMTP_PASS } });
+        // verify transporter asynchronously
+        mailTransporter.verify().then(() => console.log('SMTP transporter ready')).catch(err => console.warn('SMTP verify failed:', err && err.message ? err.message : err));
+    } catch (e) {
+        console.warn('Failed to create SMTP transporter', e && e.message ? e.message : e);
+        mailTransporter = null;
+    }
+} else {
+    console.log('SMTP not configured. Password reset links will be logged to console.');
+}
 
 // Configuración por defecto del gimnasio
 const DEFAULT_GYM_CONFIG = {
@@ -197,6 +221,69 @@ app.post('/api/admin/login', async (req, res) => {
     }
 });
 
+// Expose Google client ID to the frontend (optional)
+app.get('/api/auth/google/client-id', async (req, res) => {
+    try {
+        const clientId = process.env.GOOGLE_CLIENT_ID || null;
+        res.json({ clientId });
+    } catch (err) {
+        console.error('Error returning google client id', err);
+        res.status(500).json({ clientId: null });
+    }
+});
+
+// Login with Google ID token (issued by Google Identity Services)
+app.post('/api/auth/google', async (req, res) => {
+    const { idToken } = req.body || {};
+    if (!idToken) return res.status(400).json({ error: 'idToken requerido' });
+
+    try {
+        // Verify token with Google's tokeninfo endpoint
+        const tokenInfoUrl = 'https://oauth2.googleapis.com/tokeninfo?id_token=' + encodeURIComponent(idToken);
+        let info = null;
+        if (typeof fetch === 'function') {
+            const r = await fetch(tokenInfoUrl);
+            if (!r.ok) return res.status(401).json({ error: 'Token inválido' });
+            info = await r.json();
+        } else {
+            // fallback to https
+            info = await new Promise((resolve, reject) => {
+                const https = require('https');
+                https.get(tokenInfoUrl, (r) => {
+                    let data = '';
+                    r.on('data', chunk => data += chunk);
+                    r.on('end', () => {
+                        try { resolve(JSON.parse(data)); } catch (e) { reject(e); }
+                    });
+                }).on('error', reject);
+            });
+        }
+
+        // Basic checks
+        const email = info && (info.email || info.email_verified && info.email) ? info.email : null;
+        const aud = info && info.aud ? info.aud : null;
+        const emailVerified = info && (info.email_verified === 'true' || info.email_verified === true);
+
+        const expectedAud = process.env.GOOGLE_CLIENT_ID || null;
+        if (expectedAud && aud && String(aud) !== String(expectedAud)) {
+            console.warn('Google token aud mismatch', { aud, expectedAud });
+            return res.status(401).json({ error: 'Token no válido para esta aplicación' });
+        }
+        if (!email || !emailVerified) return res.status(401).json({ error: 'Email no verificado por Google' });
+
+        // Find user by email
+        const user = await db.collection('users').findOne({ email: String(email).toLowerCase() });
+        if (!user) return res.status(401).json({ error: 'Usuario no encontrado' });
+        if (!['administrador', 'superusuario'].includes(user.role)) return res.status(403).json({ error: 'No tiene permisos de administrador' });
+
+        const token = generateToken(user);
+        res.json({ token, role: user.role });
+    } catch (err) {
+        console.error('Error verifying google token', err && err.message ? err.message : err);
+        res.status(500).json({ error: 'Error verificando token de Google' });
+    }
+});
+
 app.get('/api/me', async (req, res) => {
     const auth = req.headers.authorization;
     if (!auth) return res.status(401).json({ error: 'No autorizado' });
@@ -220,6 +307,80 @@ app.get('/api/me', async (req, res) => {
         console.warn('Failed to load full user for /api/me, returning token payload only', err && err.message ? err.message : err);
         return res.json({ id: payload.id, role: payload.role, dni: payload.dni, gymId: payload.gymId });
     }
+});
+
+// Password reset: request a reset (sends email with token link)
+app.post('/api/password-reset/request', async (req, res) => {
+    const { email } = req.body || {};
+    if (!email) return res.status(400).json({ error: 'Email requerido' });
+    try {
+        // normalize
+        const user = await getUserByEmail(String(email).toLowerCase());
+        // For privacy, always return 200 even if user not found
+        if (!user) {
+            return res.json({ ok: true });
+        }
+
+        const token = crypto.randomBytes(32).toString('hex');
+        const expiresAt = new Date(Date.now() + (60 * 60 * 1000)); // 1 hour
+
+        await db.collection('password_resets').insertOne({ userId: user._id, token, expiresAt, used: false, createdAt: new Date() });
+
+        const resetLink = `${APP_BASE_URL}/password-reset?token=${token}`;
+
+        if (mailTransporter) {
+            const mailOpts = {
+                from: SMTP_USER,
+                to: user.email,
+                subject: 'Restablecer contraseña',
+                text: `Ingresá al siguiente enlace para restablecer tu contraseña:\n\n${resetLink}\n\nSi no solicitaste este correo, ignoralo.`,
+                html: `<p>Ingresá al siguiente enlace para restablecer tu contraseña:</p><p><a href="${resetLink}">${resetLink}</a></p><p>Si no solicitaste este correo, ignoralo.</p>`
+            };
+            try {
+                await mailTransporter.sendMail(mailOpts);
+            } catch (e) {
+                console.error('Error sending password reset email', e && e.message ? e.message : e);
+                // fallback to logging
+                console.log('Password reset link (fallback):', resetLink);
+            }
+        } else {
+            // Not configured: log link for developer/testing
+            console.log('Password reset link for', user.email, resetLink);
+        }
+
+        return res.json({ ok: true });
+    } catch (err) {
+        console.error('Error in password reset request:', err && err.message ? err.message : err);
+        return res.status(500).json({ error: 'Error procesando solicitud' });
+    }
+});
+
+// Confirm password reset: accept token + newPassword
+app.post('/api/password-reset/confirm', async (req, res) => {
+    const { token, newPassword } = req.body || {};
+    if (!token || !newPassword) return res.status(400).json({ error: 'Token y nueva contraseña requeridos' });
+    try {
+        const rec = await db.collection('password_resets').findOne({ token });
+        if (!rec) return res.status(400).json({ error: 'Token inválido' });
+        if (rec.used) return res.status(400).json({ error: 'Token ya utilizado' });
+        if (rec.expiresAt && new Date(rec.expiresAt) < new Date()) return res.status(400).json({ error: 'Token expirado' });
+
+        const hashed = await bcrypt.hash(newPassword, 10);
+        await db.collection('users').updateOne({ _id: new ObjectId(rec.userId) }, { $set: { password: hashed } });
+        await db.collection('password_resets').updateOne({ _id: rec._id }, { $set: { used: true, usedAt: new Date() } });
+
+        return res.json({ ok: true });
+    } catch (err) {
+        console.error('Error confirming password reset', err && err.message ? err.message : err);
+        return res.status(500).json({ error: 'Error actualizando contraseña' });
+    }
+});
+
+// Minimal password reset page: serves a tiny form that POSTs to /api/password-reset/confirm
+app.get('/password-reset', (req, res) => {
+    const token = req.query.token || '';
+    res.setHeader('Content-Type', 'text/html');
+    res.send(`<!doctype html><html><head><meta charset="utf-8"><title>Restablecer contraseña</title></head><body style="font-family:Arial,Helvetica,sans-serif;padding:20px"><h2>Restablecer contraseña</h2><p>Completá la nueva contraseña:</p><div><input id="pw" type="password" placeholder="Nueva contraseña" style="padding:8px;width:320px;margin-bottom:8px"/></div><div><input id="pw2" type="password" placeholder="Confirmar contraseña" style="padding:8px;width:320px;margin-bottom:8px"/></div><div><button id="btn">Restablecer</button></div><div id="msg" style="margin-top:12px;color:#b91c1c"></div><script>document.getElementById('btn').addEventListener('click', async ()=>{const pw=document.getElementById('pw').value;const pw2=document.getElementById('pw2').value;const t='${token}';if(!pw||!pw2){document.getElementById('msg').textContent='Completá ambos campos';return;}if(pw!==pw2){document.getElementById('msg').textContent='Las contraseñas no coinciden';return;}try{const r=await fetch('/api/password-reset/confirm',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:t,newPassword:pw})});const b=await r.json();if(!r.ok){document.getElementById('msg').textContent=b && b.error ? b.error : 'Error';return;}document.body.innerHTML='<div style="padding:20px;font-family:Arial,Helvetica,sans-serif"><h3>Contraseña restablecida</h3><p>Puedes cerrar esta ventana e ingresar con tu nueva contraseña.</p></div>';}catch(e){document.getElementById('msg').textContent='Error de red';}});</script></body></html>`);
 });
 
 // Middleware para verificar token y rol admin/superusuario
@@ -938,6 +1099,82 @@ app.post('/api/register-request', async (req, res) => {
     } catch (err) {
         console.error('Error en /api/register-request:', err);
         res.status(500).json({ error: 'Error al procesar la solicitud' });
+    }
+});
+
+// Register request via Google Sign-In (id_token)
+app.post('/api/register-request/google', async (req, res) => {
+    try {
+        const { idToken, gymName, phone, wantsSubscription } = req.body || {};
+        if (!idToken || !gymName) return res.status(400).json({ error: 'idToken y gymName son requeridos' });
+
+        // Verify token with Google's tokeninfo endpoint (same logic used in /api/auth/google)
+        const tokenInfoUrl = 'https://oauth2.googleapis.com/tokeninfo?id_token=' + encodeURIComponent(idToken);
+        let info = null;
+        if (typeof fetch === 'function') {
+            const r = await fetch(tokenInfoUrl);
+            if (!r.ok) return res.status(401).json({ error: 'Token inválido' });
+            info = await r.json();
+        } else {
+            info = await new Promise((resolve, reject) => {
+                const https = require('https');
+                https.get(tokenInfoUrl, (r) => {
+                    let data = '';
+                    r.on('data', chunk => data += chunk);
+                    r.on('end', () => {
+                        try { resolve(JSON.parse(data)); } catch (e) { reject(e); }
+                    });
+                }).on('error', reject);
+            });
+        }
+
+        const email = info && (info.email || (info.email_verified && info.email)) ? info.email : null;
+        const emailVerified = info && (info.email_verified === 'true' || info.email_verified === true);
+        if (!email || !emailVerified) return res.status(401).json({ error: 'Email no verificado por Google' });
+
+        // Normalize email
+        const normalizedEmail = String(email).toLowerCase();
+
+        // Create register request entry (without password) to be reviewed by admin
+        const requestDoc = {
+            gymName,
+            phone: phone || null,
+            email: normalizedEmail,
+            provider: 'google',
+            providerId: info && info.sub ? String(info.sub) : null,
+            wantsSubscription: !!wantsSubscription,
+            status: 'pending',
+            createdAt: new Date()
+        };
+
+        const result = await db.collection('registerRequests').insertOne(requestDoc);
+
+        // If subscription requested, create a subscriptions record for later processing
+        if (wantsSubscription) {
+            const defaultAmount = Number(process.env.SUBSCRIPTION_AMOUNT || 2000);
+            const defaultCurrency = process.env.SUBSCRIPTION_CURRENCY || 'ARS';
+            const subDoc = {
+                requestId: result.insertedId,
+                email: normalizedEmail,
+                gymName,
+                phone: phone || null,
+                plan: {
+                    name: process.env.SUBSCRIPTION_PLAN_NAME || 'Membresía mensual',
+                    amount: defaultAmount,
+                    currency: defaultCurrency,
+                    interval: 'months',
+                    intervalCount: 1
+                },
+                status: 'pending',
+                createdAt: new Date()
+            };
+            await db.collection('subscriptions').insertOne(subDoc);
+        }
+
+        return res.status(201).json({ ok: true, id: result.insertedId });
+    } catch (err) {
+        console.error('Error in /api/register-request/google:', err && err.message ? err.message : err);
+        res.status(500).json({ error: 'Error procesando registro con Google' });
     }
 });
 

@@ -584,11 +584,15 @@
                         </div>
 
                         <div id="classesDivInline" style="margin-top:12px">
-                            <div style="font-size:13px;margin-bottom:6px">Clases asignadas: <span
-                                    class="required">*</span>
+                            <div style="margin-bottom:6px">
+                                <div style="font-size:13px">Clases asignadas: <span class="required">*</span></div>
+                                <div style="margin-top:8px">
+                                    <input id="searchClassesInline" placeholder="Buscar por día u horario"
+                                        style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px" />
+                                </div>
                             </div>
                             <div id="newStudentClassesContainer"
-                                style="max-height:150px;overflow-y:auto;border:1px solid #ddd;border-radius:8px;padding:6px;background:#fff">
+                                style="max-height:150px;overflow-y:auto;border:1px solid #ddd;border-radius:8px;padding:6px;background:#fff;margin-top:8px">
                                 Cargando...</div>
                         </div>
 
@@ -813,15 +817,12 @@
                 const myClasses = classes.filter(c => String(c.professorId) === String(me.id));
                 const container = document.getElementById('newStudentClassesContainer');
                 if (!container) return;
+                // cache classes for filtering + initial render
+                window.professorClassesCache = myClasses;
                 if (!myClasses.length) {
                     container.innerHTML = '<i>No tienes clases para asignar</i>';
                 } else {
-                    container.innerHTML = myClasses.map(c => `
-                        <label style="display:block;padding:8px;border-bottom:1px solid #eee">
-                            <input type="checkbox" value="${c._id}" class="newStudentClass" />
-                            ${(c.days || []).join(', ')} ${c.start} - ${c.roomName || ''} (${(c.camillasFree || 0)} lugares libres)
-                        </label>
-                    `).join('');
+                    renderProfessorClasses('');
                 }
 
                 // Load gym config and populate membership select so it reflects admin settings
@@ -1134,22 +1135,68 @@
                 const me = await pilatesAuth.getMe();
                 const classes = await adminClasses.listClasses();
                 const myClasses = classes.filter(c => String(c.professorId) === String(me.id));
+                // cache for filtering
+                window.professorClassesCache = myClasses;
                 const container = document.getElementById('newStudentClassesContainer');
                 if (!container) return;
-                if (!myClasses.length) {
-                    container.innerHTML = '<i>No tienes clases para asignar</i>';
-                } else {
-                    container.innerHTML = myClasses.map(c => `
-                        <label style="display:block;padding:8px;border-bottom:1px solid #eee">
-                            <input type="checkbox" value="${c._id}" class="newStudentClass" />
-                            ${(c.days || []).join(', ')} ${c.start} - ${c.roomName || ''} (${(c.camillasFree || 0)} lugares libres)
-                        </label>
-                    `).join('');
-                }
+                // render using current search value (if any)
+                const searchEl = document.getElementById('searchClassesInline');
+                const q = searchEl ? searchEl.value.trim() : '';
+                renderProfessorClasses(q);
             } catch (e) {
                 // ignore errors silently; existing UI will show older data
             }
         }
+
+        // Normalize strings for accent-insensitive search
+        function normalizeForSearch(s) {
+            if (!s) return '';
+            try {
+                return String(s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[\s]+/g, ' ').trim();
+            } catch (e) {
+                return String(s).toLowerCase();
+            }
+        }
+
+        // Render cached professor classes, optionally filtered by query
+        function renderProfessorClasses(query) {
+            const container = document.getElementById('newStudentClassesContainer');
+            if (!container) return;
+            const classes = Array.isArray(window.professorClassesCache) ? window.professorClassesCache : [];
+            if (!classes.length) {
+                container.innerHTML = '<i>No tienes clases para asignar</i>';
+                return;
+            }
+            const q = (query || '').trim();
+            const nq = normalizeForSearch(q);
+            const rows = classes.filter(c => {
+                if (!nq) return true;
+                const days = Array.isArray(c.days) ? c.days.join(', ') : (c.days || '');
+                const candidate = `${days} ${c.start || ''} ${c.roomName || ''}`;
+                const nc = normalizeForSearch(candidate);
+                return nc.indexOf(nq) !== -1;
+            }).map(c => `
+                <label style="display:block;padding:8px;border-bottom:1px solid #eee">
+                    <input type="checkbox" value="${c._id}" class="newStudentClass" />
+                    ${(c.days || []).join(', ')} ${c.start} - ${c.roomName || ''} (${(c.camillasFree || 0)} lugares libres)
+                </label>
+            `);
+            container.innerHTML = rows.length ? rows.join('') : '<i>No se encontraron clases que coincidan</i>';
+        }
+
+        // Wire the inline search input to filter the classes (debounced)
+        (function wireInlineClassSearch() {
+            let timeout = null;
+            const el = document.getElementById('searchClassesInline');
+            if (!el) return;
+            el.addEventListener('input', function (e) {
+                clearTimeout(timeout);
+                const v = e.target.value;
+                timeout = setTimeout(() => {
+                    renderProfessorClasses(v);
+                }, 180);
+            });
+        })();
 
         // Try Server-Sent Events (SSE) for cross-device real-time updates. Fall back to BroadcastChannel and polling.
         (function connectRealtime() {
