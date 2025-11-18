@@ -280,6 +280,16 @@
                 font-family: 'Orbitron', sans-serif;
             }
 
+            #mpCheckoutLink {
+
+                font-family: 'Orbitron', sans-serif;
+                border-radius: 16px;
+
+
+                background: linear-gradient(to right, #00A3EE, #00C8FF);
+                border: none;
+            }
+
             .card p {
                 font-size: 13px;
             }
@@ -368,6 +378,13 @@
         #toggleRegConfirm {
             box-shadow: none !important;
         }
+
+        .division {
+            width: 100%;
+            border-bottom: 1px solid #00000076;
+            margin-top: 1rem;
+            margin-bottom: 1rem;
+        }
     </style>
 </head>
 
@@ -378,7 +395,12 @@
         <p>Ingresá tu DNI para acceder</p>
         <input id="dni" placeholder="DNI" maxlength="15" />
         <button id="btnLogin">Ingresar</button>
-        <button id="btnAdminInline" style="display:none;margin-top:12px">Ingreso Administrador</button>
+        <div class="division">
+
+        </div>
+        <button id="btnAdminInline"
+            style="display:none;margin-top:0px;background:#e2e8f0;color:#475569;box-shadow:none;border:none;padding:10px;border-radius:10px">Ingreso
+            Administradores</button>
         <p style="text-align:center;margin:10px 0 0 0;color:#475569;font-size:13px">
             ¿No tienes una cuenta?
             <a id="btnCreateAccount" href="#" role="button"
@@ -492,7 +514,7 @@
             modal.style = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);backdrop-filter:blur(5px);display:flex;align-items:center;justify-content:center;z-index:1000';
             modal.innerHTML = `
                     <div style="background:#fff;padding:24px;border-radius:16px;width:380px;box-shadow:0 20px 60px rgba(0,0,0,0.3)">
-                        <h3 style="color:#000000;font-size:22px;margin-bottom:12px;text-align:center">Ingreso Administrador</h3>
+                        <h3 style="color:#000000;font-size:22px;margin-bottom:12px;text-align:center">Ingreso Administradores</h3>
                         <input id="adminEmail" placeholder="Email" style="width:100%;padding:12px 14px;margin:8px 0;border:2px solid #e2e8f0;border-radius:10px;font-size:14px;background:#f8fafc" />
                         <input id="adminPass" type="password" placeholder="Contraseña" style="width:100%;padding:12px 14px;margin:8px 0;border:2px solid #e2e8f0;border-radius:10px;font-size:14px;background:#f8fafc" />
                         <div style="display:flex;gap:10px;margin-top:14px">
@@ -541,7 +563,7 @@
                             <input id="forgotEmail" placeholder="Email" style="width:100%;padding:10px 12px;margin:8px 0;border:1px solid #e6edf3;border-radius:8px" />
                             <div style="display:flex;gap:8px;margin-top:8px">
                                 <button id="cancelForgot" type="button" style="flex:1;padding:10px;border-radius:8px;border:none;background:#e2e8f0;color:#0f172a">Cancelar</button>
-                                <button id="sendForgot" type="button" style="flex:1;padding:10px;border-radius:8px;border:none;background:#2563eb;color:#fff">Enviar email</button>
+                                <button id="sendForgot" type="button" style="flex:1;padding:12px;border-radius:12px;border:none;background:linear-gradient(135deg,#0c0c0c 0%,#303030 100%);color:#fff;font-size:16px;font-weight:600;box-shadow:0 4px 15px rgba(102,126,234,0.4)">Enviar email</button>
                             </div>
                         </div>`;
                     document.body.appendChild(fm);
@@ -647,13 +669,9 @@
                                                 </button>
                                             </div>
                                             
-                                            <label style="display:flex;align-items:center;gap:8px;margin-top:4px">
-                                                <input id="regSubscribe" type="checkbox" />
-                                                <span style="font-size:13px;color:#374151">Quiero suscripción mensual automática</span>
-                                            </label>
                                             <div style="display:flex;gap:8px;margin-top:8px">
                                                 <button type="button" id="regCancel" style="flex:1;padding:10px;border-radius:8px;border:none;background:#e2e8f0;color:#0f172a">Cancelar</button>
-                                                <button type="submit" style="flex:1;padding:10px;border-radius:8px;border:none;background:linear-gradient(135deg,#0c0c0c 0%,#303030 100%);color:#fff">Registrarme</button>
+                                                <button type="submit" style="flex:1;padding:10px;border-radius:8px;border:none;background:linear-gradient(135deg,#0c0c0c 0%,#303030 100%);color:#fff">Siguiente</button>
                                             </div>
                                         </form>`;
 
@@ -710,29 +728,138 @@
                     const email = dialog.querySelector('#regEmail').value.trim();
                     const pass = dialog.querySelector('#regPass').value;
                     const conf = dialog.querySelector('#regConfirm').value;
-                    const wantsSubscription = !!dialog.querySelector('#regSubscribe').checked;
 
                     if (pass !== conf) {
                         showToast('Las contraseñas no coinciden', 'error');
                         return;
                     }
 
+                    // Open payment modal where user will click to go to Mercado Pago subscription plan
                     try {
-                        const res = await fetch('/api/register-request', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ gymName, phone, email, password: pass, wantsSubscription })
+                        const paymentModal = document.createElement('div');
+                        paymentModal.style = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:1100';
+                        const mpPlanLink = 'https://www.mercadopago.com.ar/subscriptions/checkout?preapproval_plan_id=1531b5a4151a4a76a099fc119a97abec';
+
+                        // Build modal DOM safely (avoid template literals with backticks)
+                        const modalInner = document.createElement('div');
+                        modalInner.style.cssText = 'background:#fff;padding:18px;border-radius:12px;width:420px;box-shadow:0 20px 60px rgba(0,0,0,0.25)';
+
+                        const h4 = document.createElement('h4');
+                        h4.style.margin = '0 0 10px 0';
+                        h4.style.textAlign = 'center';
+                        h4.textContent = 'Pago de suscripción';
+                        h4.className = 'modal-title';
+                        modalInner.appendChild(h4);
+
+                        const desc = document.createElement('div');
+                        desc.style.cssText = 'font-size:13px;color:#374151;margin-bottom:12px;text-align:center';
+                        desc.textContent = 'Para completar el registro, realizá el pago de la suscripción mensual.';
+                        desc.className = 'modal-desc';
+                        modalInner.appendChild(desc);
+
+                        const actions = document.createElement('div');
+                        actions.style.cssText = 'display:flex;flex-direction:column;gap:8px;align-items:stretch;width:100%';
+
+                        // shared button style: full width, same gray gradient as other gray buttons
+                        const actionBtnStyle = 'display:inline-flex;align-items:center;justify-content:center;width:100%;padding:12px;border-radius:12px;border:none;background:linear-gradient(135deg,#e6e6e6 0%,#cfcfcf 100%);color:#0f172a;font-weight:600;text-align:center;text-decoration:none;box-shadow:0 4px 12px rgba(0,0,0,0.08);min-height:48px';
+
+                        const mpLink = document.createElement('a');
+                        mpLink.id = 'mpCheckoutLink';
+                        mpLink.href = mpPlanLink;
+                        mpLink.setAttribute('name', 'MP-payButton');
+                        mpLink.style.cssText = actionBtnStyle + ';border:1px solid rgba(0,0,0,0.04)';
+                        mpLink.textContent = 'Suscribirme';
+                        // ensure the anchor behaves like a button for accessibility
+                        mpLink.setAttribute('role', 'button');
+                        mpLink.setAttribute('tabindex', '0');
+                        actions.appendChild(mpLink);
+
+                        modalInner.appendChild(actions);
+
+                        // divider removed per design request
+
+                        const footer = document.createElement('div');
+                        footer.style.cssText = 'display:flex;flex-direction:column;gap:8px;margin-top:0;align-items:stretch;width:100%';
+                        const backBtn = document.createElement('button');
+                        backBtn.id = 'backToForm';
+                        backBtn.type = 'button';
+                        backBtn.style.cssText = actionBtnStyle + ';background:transparent;border:1px solid #e6e9ef;color:#374151;margin-top:5px';
+                        backBtn.textContent = 'Volver';
+                        footer.appendChild(backBtn);
+
+                        modalInner.appendChild(footer);
+
+                        // style for blue-button and modal typography
+                        const styleEl = document.createElement('style');
+                        styleEl.textContent = "\n.modal-title { font-family: 'Orbitron', Arial, sans-serif; font-size:20px; letter-spacing:0.2px; color:#0f172a }\n.modal-desc { color: #475569; font-size:14px }\n";
+                        modalInner.appendChild(styleEl);
+
+                        // loader for Mercado Pago render.js
+                        const loaderScript = document.createElement('script');
+                        loaderScript.type = 'text/javascript';
+                        loaderScript.async = true;
+                        loaderScript.src = (document.location.protocol || 'https:') + '//secure.mlstatic.com/mptools/render.js';
+
+                        paymentModal.appendChild(modalInner);
+                        paymentModal.appendChild(loaderScript);
+
+                        document.body.appendChild(paymentModal);
+
+                        const removePayment = () => { try { paymentModal.remove(); } catch (e) { } };
+                        backBtn.addEventListener('click', () => { window.removeEventListener('message', mpMessageHandler); removePayment(); });
+                        // closeBtn removed — use 'Volver' to close the modal
+
+                        // Message listener to handle events from Mercado Pago modal (optional)
+                        const mpMessageHandler = (ev) => {
+                            try {
+                                if (!ev || !ev.data) return;
+                                const data = typeof ev.data === 'string' ? (ev.data) : (ev.data);
+                                // If MP sends a preapproval id or similar, try redirecting to mp-return
+                                // Many MP widgets post messages with preapproval_id or status; we do a best-effort check
+                                const text = JSON.stringify(data);
+                                if (text && text.indexOf('preapproval_id') !== -1) {
+                                    // close UI and redirect to mp-return to let server finalize login
+                                    removePayment();
+                                    closeModal();
+                                    try { window.location.href = '/mp-return?email=' + encodeURIComponent(email); } catch (e) { }
+                                }
+                            } catch (e) { /* ignore */ }
+                        };
+                        window.addEventListener('message', mpMessageHandler);
+
+                        paymentModal.querySelector('#mpCheckoutLink').addEventListener('click', async (ev) => {
+                            ev.preventDefault();
+                            try {
+                                // Save pending subscription on our server before redirecting to checkout
+                                const r = await fetch('/api/mercadopago/create-subscription-plan', {
+                                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ gymName, phone, email, password: pass, planUrl: mpPlanLink })
+                                });
+                                const b = await r.json().catch(() => ({}));
+                                if (!r.ok) {
+                                    showToast(b && b.error ? b.error : 'Error iniciando pago', 'error');
+                                    return;
+                                }
+                                if (b.checkoutUrl) {
+                                    // close modals and redirect to checkout (this may open MP modal/widget)
+                                    removePayment();
+                                    closeModal();
+                                    window.location.href = b.checkoutUrl;
+                                    return;
+                                }
+                                showToast('No se pudo iniciar el pago', 'error');
+                            } catch (e) {
+                                console.error('Error iniciando pago:', e);
+                                showToast('Error de red al iniciar pago', 'error');
+                            }
                         });
-                        const body = await res.json();
-                        if (!res.ok) {
-                            showToast(body && body.error ? body.error : 'Error al enviar solicitud', 'error');
-                            return;
-                        }
-                        showToast('Registro enviado correctamente', 'success');
-                        setTimeout(() => { closeModal(); document.removeEventListener('keydown', onKey); }, 700);
+
+                        // Cleanup listener when modal closed via 'Volver' or removed
+                        paymentModal.querySelector('#backToForm').addEventListener('click', () => { window.removeEventListener('message', mpMessageHandler); removePayment(); });
+
                     } catch (e) {
-                        console.error('Error enviando solicitud:', e);
-                        showToast('Error de red al enviar solicitud', 'error');
+                        console.error('Error preparando pago:', e);
+                        showToast('Error preparando pago', 'error');
                     }
                 });
 

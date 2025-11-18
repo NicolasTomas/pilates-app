@@ -6,11 +6,243 @@ const bcrypt = require('bcryptjs');
 const nodemailer = require('nodemailer');
 const crypto = require('crypto');
 const cors = require('cors');
+const mercadopago = require('mercadopago');
 require('dotenv').config();
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+// Configure Mercado Pago SDK if access token is provided
+try {
+    if (process.env.MERCADOPAGO_ACCESS_TOKEN) {
+        mercadopago.configure({ access_token: process.env.MERCADOPAGO_ACCESS_TOKEN });
+        console.log('Mercado Pago SDK configured');
+    } else {
+        console.log('Mercado Pago ACCESS_TOKEN not configured; SDK disabled');
+    }
+} catch (e) {
+    console.warn('Failed to configure Mercado Pago SDK', e && e.message ? e.message : e);
+}
+app.post('/api/mercadopago/webhook', express.json(), async (req, res) => {
+    try {
+        const body = req.body || {};
+        // Try to extract a resource id or payer email
+        const resourceId = body && (body.id || (body.data && body.data.id)) ? (body.id || (body.data && body.data.id)) : null;
+
+        // Helper to fetch MP resource when access token is available
+        async function fetchMpResource(path) {
+            if (!process.env.MERCADOPAGO_ACCESS_TOKEN) return null;
+            const token = process.env.MERCADOPAGO_ACCESS_TOKEN;
+            const https = require('https');
+            const url = `https://api.mercadopago.com${path}`;
+            return await new Promise((resolve, reject) => {
+                const opts = { headers: { Authorization: `Bearer ${token}` } };
+                https.get(url, opts, (r) => {
+                    let data = '';
+                    r.on('data', c => data += c);
+                    r.on('end', () => {
+                        try { resolve(JSON.parse(data)); } catch (e) { resolve(null); }
+                    });
+                }).on('error', (e) => resolve(null));
+            });
+        }
+
+        let mpData = null;
+        if (resourceId && process.env.MERCADOPAGO_ACCESS_TOKEN) {
+            // Try payments endpoint first
+            mpData = await fetchMpResource(`/v1/payments/${encodeURIComponent(resourceId)}`);
+            if (!mpData) mpData = await fetchMpResource(`/preapproval/${encodeURIComponent(resourceId)}`);
+            if (!mpData) mpData = await fetchMpResource(`/v1/subscriptions/${encodeURIComponent(resourceId)}`);
+        }
+
+        // Fallback: try to extract payer email from webhook body
+        const payerEmail = (mpData && mpData.payer && mpData.payer.email) ? mpData.payer.email : (body && body.payer && body.payer.email ? body.payer.email : (body && body.data && body.data.payer && body.data.payer.email ? body.data.payer.email : null));
+
+        if (!payerEmail) {
+            console.warn('MP webhook received but no payer email found; ignoring');
+            return res.json({ ok: true });
+        }
+
+        const email = String(payerEmail).toLowerCase();
+
+        // Find pending subscription for this email
+        const sub = await db.collection('subscriptions').findOne({ email, status: { $in: ['pending', 'pending_payment'] } });
+        if (!sub) {
+            console.warn('MP webhook: no pending subscription found for', email);
+            return res.json({ ok: true });
+        }
+
+        // Update subscription as active and store mp info
+        const mpInfo = mpData || body;
+        const updateFields = { status: 'active', activatedAt: new Date(), mp_raw: mpInfo };
+        // store any id found
+        const possibleId = (mpInfo && (mpInfo.id || mpInfo.subscription_id || mpInfo.preapproval_id || mpInfo.recurring_payment_id)) || null;
+        if (possibleId) updateFields['mp.subscription_id'] = possibleId;
+
+        await db.collection('subscriptions').updateOne({ _id: sub._id }, { $set: updateFields });
+
+        // Create admin user if not exists
+        const existing = await db.collection('users').findOne({ email });
+        if (!existing) {
+            const newUser = {
+                email: email,
+                password: sub.hashedPassword || null,
+                role: 'administrador',
+                gymId: null,
+                name: sub.gymName || null,
+                phone: sub.phone || null,
+                createdAt: new Date()
+            };
+            await db.collection('users').insertOne(newUser);
+            console.log('Admin user created after MP webhook for', email);
+        } else {
+            console.log('Admin user already exists for', email);
+        }
+
+        return res.json({ ok: true });
+    } catch (err) {
+        console.error('Error processing MP webhook', err && err.message ? err.message : err);
+        return res.status(500).json({ error: 'Error processing webhook' });
+    }
+});
+
+// Return page after Mercado Pago checkout (optional redirect target)
+app.get('/mp-return', async (req, res) => {
+    try {
+        const email = req.query.email || null;
+        if (!email) return res.status(400).send('email query param required');
+        const normalized = String(email).toLowerCase();
+        // Find user and ensure subscription active
+        const sub = await db.collection('subscriptions').findOne({ email: normalized, status: 'active' });
+        if (!sub) {
+            return res.send(`<html><body><h3>Pago recibido, pero la suscripción aún no está activa. Esperá unos minutos e intentá ingresar nuevamente.</h3></body></html>`);
+        }
+        // Ensure user exists
+        let user = await db.collection('users').findOne({ email: normalized });
+        if (!user) {
+            // create user
+            const newUser = { email: normalized, password: sub.hashedPassword || null, role: 'administrador', gymId: null, name: sub.gymName || null, phone: sub.phone || null, createdAt: new Date() };
+            const r = await db.collection('users').insertOne(newUser);
+            user = await db.collection('users').findOne({ _id: r.insertedId });
+        }
+
+        const token = generateToken(user);
+        // Return a small page that sets token in localStorage and redirects to admin panel
+        res.setHeader('Content-Type', 'text/html');
+        return res.send(`<!doctype html><html><body><script>try{localStorage.setItem('token','${token}');location.href='/administrador.html';}catch(e){document.write('Error redirigiendo: '+e.message);}</script></body></html>`);
+    } catch (e) {
+        console.error('Error in /mp-return', e && e.message ? e.message : e);
+        return res.status(500).send('error');
+    }
+});
+
+// Create a subscription record for a Mercado Pago subscription-plan link
+app.post('/api/mercadopago/create-subscription-plan', async (req, res) => {
+    try {
+        const { gymName, phone, email, password, planUrl } = req.body || {};
+        if (!gymName || !email || !password || !planUrl) return res.status(400).json({ error: 'gymName, email, password y planUrl son requeridos' });
+
+        const normalizedEmail = String(email).toLowerCase();
+        const hashed = await bcrypt.hash(String(password), 10);
+
+        const subDoc = {
+            email: normalizedEmail,
+            gymName,
+            phone: phone || null,
+            hashedPassword: hashed,
+            planUrl,
+            status: 'pending_payment',
+            createdAt: new Date(),
+            mp: { plan_link: planUrl }
+        };
+
+        const r = await db.collection('subscriptions').insertOne(subDoc);
+        const subId = r.insertedId.toString();
+
+        // Try to build a return URL so MP can redirect after checkout (best-effort)
+        const returnUrl = `${APP_BASE_URL}/mp-return?email=${encodeURIComponent(normalizedEmail)}`;
+        let checkoutUrl = planUrl;
+
+        // If we have an access token, try to create a preapproval subscription using the SDK
+        const mpToken = process.env.MERCADOPAGO_ACCESS_TOKEN || null;
+        try {
+            // Attempt to extract a preapproval_plan_id from the provided plan URL
+            let planId = null;
+            try {
+                const u = new URL(planUrl);
+                planId = u.searchParams.get('preapproval_plan_id') || u.searchParams.get('preapproval_plan_id');
+            } catch (e) { /* ignore URL parse errors */ }
+
+            if (mpToken && planId) {
+                // Try SDK call first (if mercadopago.post is available)
+                let mpResp = null;
+                try {
+                    if (mercadopago && typeof mercadopago.post === 'function') {
+                        const body = {
+                            payer_email: normalizedEmail,
+                            preapproval_plan_id: planId,
+                            back_url: returnUrl,
+                            reason: `Membresía ${gymName || 'cliente'}`
+                        };
+                        mpResp = await mercadopago.post('/preapproval_subscriptions', body);
+                        // SDK may return various shapes
+                        checkoutUrl = (mpResp && mpResp.response && mpResp.response.init_point) || (mpResp && mpResp.init_point) || (mpResp && mpResp.body && mpResp.body.init_point) || checkoutUrl;
+                        // store mp ids if available
+                        const mpId = (mpResp && ((mpResp.response && mpResp.response.id) || mpResp.id || (mpResp.body && mpResp.body.id))) || null;
+                        if (mpId) {
+                            await db.collection('subscriptions').updateOne({ _id: r.insertedId }, { $set: { 'mp.preapproval_subscription_id': String(mpId) } });
+                        }
+                    } else {
+                        // Fallback: direct HTTPS call to MP REST API
+                        const https = require('https');
+                        const payload = JSON.stringify({ payer_email: normalizedEmail, preapproval_plan_id: planId, back_url: returnUrl, reason: `Membresía ${gymName || 'cliente'}` });
+                        const opts = {
+                            hostname: 'api.mercadopago.com',
+                            path: '/preapproval_subscriptions',
+                            method: 'POST',
+                            headers: {
+                                'Authorization': `Bearer ${mpToken}`,
+                                'Content-Type': 'application/json',
+                                'Content-Length': Buffer.byteLength(payload)
+                            }
+                        };
+                        mpResp = await new Promise((resolve, reject) => {
+                            const reqMp = https.request(opts, (resMp) => {
+                                let data = '';
+                                resMp.on('data', c => data += c);
+                                resMp.on('end', () => {
+                                    try { resolve(JSON.parse(data)); } catch (e) { resolve(null); }
+                                });
+                            });
+                            reqMp.on('error', (e) => resolve(null));
+                            reqMp.write(payload);
+                            reqMp.end();
+                        });
+                        if (mpResp) {
+                            checkoutUrl = mpResp.init_point || mpResp.initPoint || checkoutUrl;
+                            if (mpResp.id) await db.collection('subscriptions').updateOne({ _id: r.insertedId }, { $set: { 'mp.preapproval_subscription_id': String(mpResp.id) } });
+                        }
+                    }
+                } catch (e) {
+                    console.warn('Error creando preapproval via MP SDK/REST:', e && e.message ? e.message : e);
+                }
+            }
+        } catch (e) {
+            console.warn('Error preparing Mercado Pago checkout:', e && e.message ? e.message : e);
+        }
+
+        // If we didn't get an init_point from MP, append a return_url to the original plan link (best-effort)
+        if (!checkoutUrl || checkoutUrl === planUrl) {
+            if (planUrl.indexOf('?') === -1) checkoutUrl = `${planUrl}?return_url=${encodeURIComponent(returnUrl)}`;
+            else checkoutUrl = `${planUrl}&return_url=${encodeURIComponent(returnUrl)}`;
+        }
+
+        return res.json({ ok: true, subId, checkoutUrl });
+    } catch (err) {
+        console.error('Error creating plan-based subscription', err && err.message ? err.message : err);
+        return res.status(500).json({ error: 'Error creando suscripción' });
+    }
+});
 
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017';
 // Optional fallback URI (useful for local development if Atlas SRV fails due to TLS/OpenSSL issues)
@@ -213,6 +445,11 @@ app.post('/api/admin/login', async (req, res) => {
         if (!user.password) return res.status(401).json({ error: 'Usuario sin contraseña' });
         const ok = await bcrypt.compare(password, user.password);
         if (!ok) return res.status(401).json({ error: 'Credenciales incorrectas' });
+        // If administrador, ensure they have an active subscription
+        if (user.role === 'administrador') {
+            const sub = await db.collection('subscriptions').findOne({ email: String(user.email).toLowerCase(), status: 'active' });
+            if (!sub) return res.status(403).json({ error: 'No tiene suscripción activa' });
+        }
         const token = generateToken(user);
         res.json({ token, role: user.role });
     } catch (err) {
@@ -1061,11 +1298,12 @@ app.post('/api/register-request', async (req, res) => {
             return res.status(400).json({ error: 'gymName, email y password son requeridos' });
         }
 
+        const hashed = await bcrypt.hash(String(password), 10);
         const requestDoc = {
             gymName,
             phone: phone || null,
-            email,
-            passwordHash: password ? String(password) : null, // store raw for now; you may choose to hash later
+            email: String(email).toLowerCase(),
+            hashedPassword: hashed,
             wantsSubscription: !!wantsSubscription,
             status: 'pending',
             createdAt: new Date()
@@ -1079,9 +1317,10 @@ app.post('/api/register-request', async (req, res) => {
             const defaultCurrency = process.env.SUBSCRIPTION_CURRENCY || 'ARS';
             const subDoc = {
                 requestId: result.insertedId,
-                email,
+                email: String(email).toLowerCase(),
                 gymName,
                 phone: phone || null,
+                hashedPassword: hashed,
                 plan: {
                     name: process.env.SUBSCRIPTION_PLAN_NAME || 'Membresía mensual',
                     amount: defaultAmount,
@@ -1089,7 +1328,7 @@ app.post('/api/register-request', async (req, res) => {
                     interval: 'months',
                     intervalCount: 1
                 },
-                status: 'pending', // pending until credentials/process executed
+                status: 'pending', // pending until webhook confirms
                 createdAt: new Date()
             };
             await db.collection('subscriptions').insertOne(subDoc);
