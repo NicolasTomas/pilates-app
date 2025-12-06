@@ -445,8 +445,9 @@ app.post('/api/admin/login', async (req, res) => {
         if (!user.password) return res.status(401).json({ error: 'Usuario sin contraseña' });
         const ok = await bcrypt.compare(password, user.password);
         if (!ok) return res.status(401).json({ error: 'Credenciales incorrectas' });
-        // If administrador, ensure they have an active subscription
-        if (user.role === 'administrador') {
+        // If administrador, ensure they have an active subscription (except for test accounts)
+        const testAccounts = ['adminpilates.local', 'admin@pilates.local'];
+        if (user.role === 'administrador' && !testAccounts.includes(user.email)) {
             const sub = await db.collection('subscriptions').findOne({ email: String(user.email).toLowerCase(), status: 'active' });
             if (!sub) return res.status(403).json({ error: 'No tiene suscripción activa' });
         }
@@ -2767,7 +2768,8 @@ connectDB().then(async () => {
     // Regenerar instancias cada 24 horas
     setInterval(() => generateClassInstances(30), 24 * 60 * 60 * 1000);
 
-    app.listen(PORT, () => console.log(`Server listening on port ${PORT}`));
+    const HOST = process.env.HOST || '0.0.0.0';
+    app.listen(PORT, HOST, () => console.log(`Server listening on ${HOST}:${PORT}`));
 }).catch(err => {
     console.error('Failed to connect to DB', err);
     process.exit(1);
