@@ -309,9 +309,10 @@ async function connectDB() {
     // Build mongo options with optional TLS flags from env
     const mongoOptions = { 
         useUnifiedTopology: true,
-        // Allow invalid TLS certificates (needed for some deployment environments)
-        tlsAllowInvalidCertificates: true,
-        tlsInsecure: true
+        // For production, we might need to allow invalid certificates in some environments
+        tlsAllowInvalidCertificates: process.env.NODE_ENV !== 'production',
+        retryWrites: true,
+        w: 'majority'
     };
     if (MONGO_TLS_ALLOW_INVALID) mongoOptions.tlsAllowInvalidCertificates = true;
     if (MONGO_TLS_CA_FILE) mongoOptions.tlsCAFile = MONGO_TLS_CA_FILE;
