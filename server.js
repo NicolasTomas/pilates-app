@@ -425,14 +425,22 @@ async function getUserByDni(dni) {
 
 app.post('/api/login', async (req, res) => {
     const { dni } = req.body;
+    console.log('[LOGIN] Received DNI:', dni, 'Type:', typeof dni);
+    console.log('[LOGIN] DB connected:', !!db);
     if (!dni) return res.status(400).json({ error: 'DNI es requerido' });
     try {
         const user = await getUserByDni(dni);
-        if (!user) return res.status(401).json({ error: 'Usuario no encontrado' });
+        console.log('[LOGIN] User found:', !!user, user ? `(${user.name} - ${user.role})` : '');
+        if (!user) {
+            // Try to see what users exist
+            const count = await db.collection('users').countDocuments();
+            console.log('[LOGIN] Total users in DB:', count);
+            return res.status(401).json({ error: 'Usuario no encontrado' });
+        }
         const token = generateToken(user);
         res.json({ token, role: user.role });
     } catch (err) {
-        console.error(err);
+        console.error('[LOGIN] Error:', err);
         res.status(500).json({ error: 'Error en el servidor' });
     }
 });
