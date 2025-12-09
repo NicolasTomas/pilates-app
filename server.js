@@ -317,13 +317,25 @@ async function connectDB() {
     if (MONGO_TLS_ALLOW_INVALID) mongoOptions.tlsAllowInvalidCertificates = true;
     if (MONGO_TLS_CA_FILE) mongoOptions.tlsCAFile = MONGO_TLS_CA_FILE;
 
+    // Extract database name from URI if present, otherwise use DB_NAME env var
+    let dbName = DB_NAME;
+    try {
+        const uriMatch = MONGO_URI.match(/\.net\/([^?]+)/);
+        if (uriMatch && uriMatch[1]) {
+            dbName = uriMatch[1];
+            console.log('Using database name from URI:', dbName);
+        }
+    } catch (e) {
+        console.log('Could not extract DB name from URI, using env var:', dbName);
+    }
+
     let lastErr = null;
     for (let attempt = 1; attempt <= MONGO_CONNECT_MAX_RETRIES; attempt++) {
         try {
             const client = new MongoClient(MONGO_URI, mongoOptions);
             await client.connect();
-            db = client.db(DB_NAME);
-            console.log('Connected to MongoDB', MONGO_URI, DB_NAME);
+            db = client.db(dbName);
+            console.log('Connected to MongoDB', MONGO_URI, dbName);
             return;
         } catch (err) {
             lastErr = err;
