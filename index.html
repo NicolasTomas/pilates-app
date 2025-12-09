@@ -385,6 +385,10 @@
             margin-top: 1rem;
             margin-bottom: 1rem;
         }
+
+    #toggleAdminPass {
+            box-shadow: none !important;
+        }
     </style>
 </head>
 
@@ -516,7 +520,12 @@
                     <div style="background:#fff;padding:24px;border-radius:16px;width:380px;box-shadow:0 20px 60px rgba(0,0,0,0.3)">
                         <h3 style="color:#000000;font-size:22px;margin-bottom:12px;text-align:center">Ingreso Administradores</h3>
                         <input id="adminEmail" placeholder="Email" style="width:100%;padding:12px 14px;margin:8px 0;border:2px solid #e2e8f0;border-radius:10px;font-size:14px;background:#f8fafc" />
-                        <input id="adminPass" type="password" placeholder="Contraseña" style="width:100%;padding:12px 14px;margin:8px 0;border:2px solid #e2e8f0;border-radius:10px;font-size:14px;background:#f8fafc" />
+                        <div style="position:relative;margin:8px 0;">
+                            <input id="adminPass" type="password" placeholder="Contraseña" style="width:100%;padding:12px 44px 12px 14px;border:2px solid #e2e8f0;border-radius:10px;font-size:14px;background:#f8fafc" />
+                            <button id="toggleAdminPass" type="button" aria-label="Mostrar contraseña" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:transparent;border:none;width:20px;height:20px;padding:0;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;line-height:0"> 
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z" stroke="#374151" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="3" stroke="#374151" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            </button>
+                        </div>
                         <div style="display:flex;gap:10px;margin-top:14px">
                             <button id="cancelAdmin" style="flex:1;padding:10px;border-radius:10px;background:#e2e8f0;color:#475569;box-shadow:none">Cancelar</button>
                             <button id="submitAdmin" style="flex:1;padding:10px;border-radius:10px;background-color:#000000;color:#fff;box-shadow:0 4px 12px rgba(0,0,0,0.12)">Entrar</button>
@@ -528,6 +537,26 @@
                     </div>`;
 
             document.body.appendChild(modal);
+
+            // Toggle password visibility
+            const adminPassInput = document.getElementById('adminPass');
+            const adminPassToggle = document.getElementById('toggleAdminPass');
+            const eyeSvg = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z" stroke="#374151" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="3" stroke="#374151" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+            const eyeOffSvg = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-7 0-11-7-11-7 .95-1.63 2.28-3.21 3.84-4.5M9.88 9.88A3 3 0 0 0 14.12 14.12M1 1l22 22" stroke="#374151" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+            
+            if (adminPassToggle) {
+                adminPassToggle.addEventListener('click', () => {
+                    if (adminPassInput.type === 'password') {
+                        adminPassInput.type = 'text';
+                        adminPassToggle.setAttribute('aria-label', 'Ocultar contraseña');
+                        adminPassToggle.innerHTML = eyeOffSvg;
+                    } else {
+                        adminPassInput.type = 'password';
+                        adminPassToggle.setAttribute('aria-label', 'Mostrar contraseña');
+                        adminPassToggle.innerHTML = eyeSvg;
+                    }
+                });
+            }
 
             // cleanup helper
             function removeModal() { try { modal.remove(); } catch (e) { } }
