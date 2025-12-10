@@ -614,7 +614,7 @@
                 <div id="studentsList">Cargando...</div>
             </section>
             <section id="classesSection" style="display:none">
-                <h4>Mis Clases</h4>
+                <h4 style="margin-bottom: 1rem;">Mis Clases</h4>
                 <div id="classesList">Cargando...</div>
             </section>
         </div>
@@ -969,8 +969,16 @@
                 document.getElementById('classesList').innerHTML = '<i>No tienes clases asignadas</i>';
                 return;
             }
+            
+            // Ordenar clases por horario de menor a mayor
+            const sortedClasses = classes.sort((a, b) => {
+                const timeA = a.start || '00:00';
+                const timeB = b.start || '00:00';
+                return timeA.localeCompare(timeB);
+            });
+            
             // Render as a responsive card grid for a cleaner professor view
-            const cards = classes.map(c => {
+            const cards = sortedClasses.map(c => {
                 const days = esc((c.days || []).join(', '));
                 const time = esc(c.start || '');
                 const duration = esc(c.duration || '');
@@ -1169,13 +1177,22 @@
             }
             const q = (query || '').trim();
             const nq = normalizeForSearch(q);
-            const rows = classes.filter(c => {
+            const filtered = classes.filter(c => {
                 if (!nq) return true;
                 const days = Array.isArray(c.days) ? c.days.join(', ') : (c.days || '');
                 const candidate = `${days} ${c.start || ''} ${c.roomName || ''}`;
                 const nc = normalizeForSearch(candidate);
                 return nc.indexOf(nq) !== -1;
-            }).map(c => `
+            });
+            
+            // Ordenar por horario de menor a mayor
+            const sorted = filtered.sort((a, b) => {
+                const timeA = a.start || '00:00';
+                const timeB = b.start || '00:00';
+                return timeA.localeCompare(timeB);
+            });
+            
+            const rows = sorted.map(c => `
                 <label style="display:block;padding:8px;border-bottom:1px solid #eee">
                     <input type="checkbox" value="${c._id}" class="newStudentClass" />
                     ${(c.days || []).join(', ')} ${c.start} - ${c.roomName || ''} (${(c.camillasFree || 0)} lugares libres)

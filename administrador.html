@@ -1632,10 +1632,17 @@
                             return false;
                         });
 
-                        container.innerHTML = filtered.map(c => `
+                        // Ordenar clases por horario de menor a mayor
+                        const sorted = filtered.sort((a, b) => {
+                            const timeA = a.start || '00:00';
+                            const timeB = b.start || '00:00';
+                            return timeA.localeCompare(timeB);
+                        });
+
+                        container.innerHTML = sorted.map(c => `
                             <label style="display:block;padding:8px;border-bottom:1px solid #eee">
                                 <input type="checkbox" value="${esc(c._id)}" class="newUserClass" />
-                                ${esc((c.days || []).join(', '))} ${esc(c.start || '')}${c.roomName ? ' - ' + esc(c.roomName) : ''}
+                                ${esc((c.days || []).join(', '))} ${esc(c.start || '')}${c.start ? ' hrs' : ''}${c.roomName ? ' - ' + esc(c.roomName) : ''}
                             </label>
                         `).join('');
 
@@ -2130,8 +2137,16 @@
         function renderClasses(classes) {
             const container = document.getElementById('classesList');
             if (!classes.length) { container.innerHTML = '<i>No hay clases</i>'; return }
+            
+            // Ordenar clases por horario de menor a mayor
+            const sortedClasses = classes.sort((a, b) => {
+                const timeA = a.start || '00:00';
+                const timeB = b.start || '00:00';
+                return timeA.localeCompare(timeB);
+            });
+            
             // always render cards
-            const cards = classes.map(c => `
+            const cards = sortedClasses.map(c => `
                 <div class="item-card" data-id="${esc(c._id)}">
                     <div>
                         <h4>${esc((c.days || []).join(', '))}${c.start ? ' - ' + esc(c.start + ' hrs') : ''}</h4>
@@ -2421,6 +2436,8 @@
                     modal.remove();
                     showToast('Clase actualizada', 'success');
                     await loadClasses();
+                    // refrescar panel de profesores para ver asignaciones sin recargar
+                    try { await loadProfessors(); } catch (e) { console.warn('No se pudo refrescar profesores', e); }
                     // notify other tabs about classes change
                     try { const bc = new BroadcastChannel('pilates-updates'); bc.postMessage({ type: 'classes' }); } catch (e) { }
                 } catch (err) {
@@ -2846,6 +2863,15 @@
             }
         }
 
+        // Global refresh function for professors list
+        window.refreshProfessorsList = async function() {
+            try {
+                await loadProfessors();
+            } catch (e) {
+                console.error('Error refreshing professors list:', e);
+            }
+        };
+
         async function renderProfessors(professors) {
             const container = document.getElementById('professorsList');
             if (!professors.length) { container.innerHTML = '<i>No hay profesores</i>'; return }
@@ -2854,20 +2880,25 @@
             let classes = [];
             try { classes = await adminClasses.listClasses(); } catch (e) { classes = []; }
 
-            // build map of professorId -> list of class descriptions
+            // build map of professorId -> list of class descriptions (sorted by time)
             const byProf = {};
             for (const c of classes) {
                 const pid = c.professorId ? String(c.professorId) : null;
                 const desc = `${(c.days || []).join(', ')} ${c.start} - ${c.roomName || ''}`;
                 if (!pid) continue;
                 if (!byProf[pid]) byProf[pid] = [];
-                byProf[pid].push(desc);
+                byProf[pid].push({ desc, start: c.start || '00:00' });
+            }
+            
+            // Sort assigned classes by start time
+            for (const pid in byProf) {
+                byProf[pid].sort((a, b) => a.start.localeCompare(b.start));
             }
 
             // always render cards, including assigned classes as pills
             const cards = professors.map(p => {
                 const pid = String(p._id);
-                const assigned = byProf[pid] || [];
+                const assigned = (byProf[pid] || []).map(x => x.desc);
                 const full = assigned.length ? assigned.join(' • ') : 'Sin asignar';
                 return `
                     <div class="item-card" data-id="${esc(p._id)}">
@@ -3228,7 +3259,11 @@
                     <div style="margin:8px 0">
                         <div>Clases asignadas:</div>
                         <div style="max-height:160px;overflow:auto;border:1px solid #ddd;border-radius:4px;margin-top:6px;padding:6px;background:#fff">
-                            ${classes.map(c => `
+                            ${classes.sort((a, b) => {
+                                const timeA = a.start || '00:00';
+                                const timeB = b.start || '00:00';
+                                return timeA.localeCompare(timeB);
+                            }).map(c => `
                                 <label style="display:block;padding:6px;border-bottom:1px solid #eee">
                                     <input type="checkbox" value="${c._id}" class="editProfessorClass" ${c.professorId === prof._id ? 'checked' : ''} />
                                     ${esc((c.days || []).join(', '))} ${esc(c.start)} - ${esc(c.roomName || '')}
@@ -3273,8 +3308,12 @@
                         }
 
                         modal.remove();
+                        // Esperar un poco y luego recargar todo
+                        await new Promise(r => setTimeout(r, 300));
                         await loadProfessors();
                         await loadClasses();
+                        // Refresh professor section to show updated classes
+                        try { if (window.refreshProfessorsList) window.refreshProfessorsList(); } catch (e) { /* ignore */ }
                         showToast('Cambios guardados', 'success');
                     } catch (err) {
                         showToast(err.message || 'Error actualizando profesor', 'error');
