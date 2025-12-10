@@ -17,6 +17,34 @@
             box-sizing: border-box;
         }
 
+        /* Logo sizing based on context */
+        @media (display-mode: standalone) {
+            /* En la aplicación instalada: aumento del 5% */
+            .logo {
+                width: 105px;
+                height: 105px;
+            }
+        }
+
+        @media (display-mode: browser) {
+            /* En navegador (Google): aumento del 50% */
+            .logo {
+                width: 150px;
+                height: 150px;
+            }
+        }
+
+        /* Fallback para navegador cuando display-mode no es soportado */
+        .logo {
+            width: 150px;
+            height: 150px;
+            background-image: url('/public/icons/app-icon.png');
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            margin: 0 auto 20px;
+        }
+
         html,
         body {
             height: 100%;
@@ -439,6 +467,7 @@
     </div>
 
     <div class="card card-surface">
+        <div class="logo"></div>
         <h2>Iniciar sesión</h2>
         <p>Ingresá tu DNI para acceder</p>
         <input id="dni" placeholder="DNI" maxlength="15" />
