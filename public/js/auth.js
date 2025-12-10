@@ -25,7 +25,7 @@ async function adminLogin(email, password) {
     });
     if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || 'Login admin failed');
+        throw new Error(err.error || 'Mail o contraseña incorrectas');
     }
     const data = await res.json();
     localStorage.setItem('token', data.token);

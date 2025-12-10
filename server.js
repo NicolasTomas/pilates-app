@@ -463,14 +463,14 @@ app.post('/api/admin/login', async (req, res) => {
     if (!email || !password) return res.status(400).json({ error: 'Email y password son requeridos' });
     try {
         const user = await getUserByEmail(email);
-        if (!user) return res.status(401).json({ error: 'Usuario no encontrado' });
+        if (!user) return res.status(401).json({ error: 'Mail o contraseña incorrectas' });
         // validar rol
         if (!['administrador', 'superusuario'].includes(user.role)) {
-            return res.status(403).json({ error: 'No tiene permisos de administrador' });
+            return res.status(403).json({ error: 'Mail o contraseña incorrectas' });
         }
-        if (!user.password) return res.status(401).json({ error: 'Usuario sin contraseña' });
+        if (!user.password) return res.status(401).json({ error: 'Mail o contraseña incorrectas' });
         const ok = await bcrypt.compare(password, user.password);
-        if (!ok) return res.status(401).json({ error: 'Credenciales incorrectas' });
+        if (!ok) return res.status(401).json({ error: 'Mail o contraseña incorrectas' });
         // If administrador, ensure they have an active subscription (except for test accounts)
         const testAccounts = ['adminpilates.local', 'admin@pilates.local'];
         if (user.role === 'administrador' && !testAccounts.includes(user.email)) {
