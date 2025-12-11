@@ -563,25 +563,31 @@
             const cta = document.querySelector('.install-cta');
             const btnA2hs = document.getElementById('btnAddToHome');
 
-            const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
-            // Show CTA when using the web (not standalone), hide when installed
-            if (cta) cta.style.display = isStandalone ? 'none' : 'block';
+            const updateCtaVisibility = () => {
+                const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+                if (cta) cta.style.display = isStandalone ? 'none' : 'block';
+            };
+            updateCtaVisibility();
 
-            // Keep CTA visible on web, enable the button only when the browser fires the prompt
+            // Enable install flow when the browser allows it
             window.addEventListener('beforeinstallprompt', (e) => {
                 e.preventDefault();
                 deferredPrompt = e;
-                if (btnA2hs) btnA2hs.disabled = false;
             });
 
-            // If the event hasn't fired yet, keep button disabled to avoid confusion
-            if (btnA2hs) btnA2hs.disabled = true;
-
+            // Keep CTA present on web; provide fallback guidance when install isn't available
             if (btnA2hs) {
                 btnA2hs.addEventListener('click', async () => {
                     if (!deferredPrompt) {
-                        // Optional: provide quick instructions if installation isn't available
-                        alert('Para instalar, usá Chrome/Edge en Android y abrí el sitio desde el navegador.');
+                        // Show simple inline guidance for platforms without beforeinstallprompt (e.g., iOS Safari)
+                        const msg = document.createElement('div');
+                        msg.style = 'margin-top:8px;color:#fff;text-align:center;font-size:13px;opacity:0.9';
+                        msg.textContent = 'Si no ves la opción de instalar, abrí este sitio en Chrome o Edge en Android y tocá “Añadir a pantalla principal”.';
+                        const parent = btnA2hs.parentElement;
+                        if (parent && !parent.querySelector('div[data-install-help]')) {
+                            msg.setAttribute('data-install-help', 'true');
+                            parent.appendChild(msg);
+                        }
                         return;
                     }
                     deferredPrompt.prompt();
@@ -590,17 +596,13 @@
                     } catch (err) {
                         /* ignore */
                     }
-                    // After user acts, reset. CTA remains visible on web; will hide only in standalone
+                    // Reset prompt; CTA remains visible on web for future sessions
                     deferredPrompt = null;
-                    if (btnA2hs) btnA2hs.disabled = true;
                 });
             }
 
-            // On install, app will typically open in standalone; we rely on isStandalone check above
-            window.addEventListener('appinstalled', () => {
-                // No persistent hide; next web visit will show CTA again
-                if (cta) cta.style.display = 'none';
-            });
+            // If the visibility changes (e.g., app opened as standalone), update CTA
+            document.addEventListener('visibilitychange', updateCtaVisibility);
         })();
 
         // Ensure admin button is positioned correctly on mobile and prevent page pan while interacting
