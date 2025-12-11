@@ -590,15 +590,7 @@
             if (btnA2hs) {
                 btnA2hs.addEventListener('click', async () => {
                     if (!deferredPrompt) {
-                        // Show simple inline guidance for platforms without beforeinstallprompt (e.g., iOS Safari)
-                        const msg = document.createElement('div');
-                        msg.style = 'margin-top:8px;color:#fff;text-align:center;font-size:13px;opacity:0.9';
-                        msg.textContent = 'Si no ves la opción de instalar, abrí este sitio en Chrome o Edge en Android y tocá “Añadir a pantalla principal”.';
-                        const parent = btnA2hs.parentElement;
-                        if (parent && !parent.querySelector('div[data-install-help]')) {
-                            msg.setAttribute('data-install-help', 'true');
-                            parent.appendChild(msg);
-                        }
+                        // No guidance message; silently do nothing if install isn't available yet
                         return;
                     }
                     deferredPrompt.prompt();
