@@ -1,6 +1,6 @@
 {
-  "name": "Pilates Camilla",
-  "short_name": "Pilates",
+  "name": "Gym Control",
+  "short_name": "GymControl",
   "start_url": "/index.html",
   "display": "standalone",
   "background_color": "#111827",

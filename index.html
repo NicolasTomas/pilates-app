@@ -5,7 +5,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&display=swap" rel="stylesheet">
-    <title>Login - Pilates Camilla</title>
+    <title>Gym Control</title>
     <link rel="icon" type="image/png" href="/public/icons/app-icon.png">
     <link rel="apple-touch-icon" href="/public/icons/app-icon.png">
     <link rel="manifest" href="/public/manifest.webmanifest">
@@ -117,6 +117,7 @@
             display: flex;
             flex-direction: column;
             justify-content: center;
+            margin-bottom: 2rem;
 
         }
 
@@ -421,7 +422,7 @@
             right: 0;
             display: none;
             padding: 16px;
-            background: linear-gradient(135deg, #111827 0%, #1f2937 100%);
+    background: linear-gradient(135deg, #000000f0 0%, #141414ed 100%);
             box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
             z-index: 1000;
         }
@@ -434,7 +435,7 @@
             align-items: center;
             justify-content: center;
             gap: 12px;
-            padding: 14px 20px;
+            padding: 0.5rem;
             border-radius: 12px;
             border: none;
             font-weight: 600;
@@ -562,35 +563,44 @@
             const cta = document.querySelector('.install-cta');
             const btnA2hs = document.getElementById('btnAddToHome');
 
-            // Hide if already installed
             const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
-            if (isStandalone && cta) cta.style.display = 'none';
+            // Show CTA when using the web (not standalone), hide when installed
+            if (cta) cta.style.display = isStandalone ? 'none' : 'block';
 
-            function hideCta() {
-                if (cta) cta.style.display = 'none';
-            }
-
+            // Keep CTA visible on web, enable the button only when the browser fires the prompt
             window.addEventListener('beforeinstallprompt', (e) => {
                 e.preventDefault();
                 deferredPrompt = e;
-                if (cta) cta.style.display = 'block';
+                if (btnA2hs) btnA2hs.disabled = false;
             });
 
-            window.addEventListener('appinstalled', hideCta);
+            // If the event hasn't fired yet, keep button disabled to avoid confusion
+            if (btnA2hs) btnA2hs.disabled = true;
 
             if (btnA2hs) {
                 btnA2hs.addEventListener('click', async () => {
-                    if (!deferredPrompt) return;
+                    if (!deferredPrompt) {
+                        // Optional: provide quick instructions if installation isn't available
+                        alert('Para instalar, usá Chrome/Edge en Android y abrí el sitio desde el navegador.');
+                        return;
+                    }
                     deferredPrompt.prompt();
                     try {
                         await deferredPrompt.userChoice;
                     } catch (err) {
                         /* ignore */
                     }
+                    // After user acts, reset. CTA remains visible on web; will hide only in standalone
                     deferredPrompt = null;
-                    hideCta();
+                    if (btnA2hs) btnA2hs.disabled = true;
                 });
             }
+
+            // On install, app will typically open in standalone; we rely on isStandalone check above
+            window.addEventListener('appinstalled', () => {
+                // No persistent hide; next web visit will show CTA again
+                if (cta) cta.style.display = 'none';
+            });
         })();
 
         // Ensure admin button is positioned correctly on mobile and prevent page pan while interacting
