@@ -564,8 +564,8 @@
             const btnA2hs = document.getElementById('btnAddToHome');
 
             const updateCtaVisibility = () => {
-                const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
-                if (cta) cta.style.display = isStandalone ? 'none' : 'block';
+                // Always visible across contexts per user request
+                if (cta) cta.style.display = 'block';
             };
             updateCtaVisibility();
 
@@ -612,7 +612,7 @@
                 });
             }
 
-            // If the visibility changes (e.g., app opened as standalone), update CTA
+            // Keep CTA visible on any visibility change
             document.addEventListener('visibilitychange', updateCtaVisibility);
             window.addEventListener('pagehide', stopVisibilityWatch);
             window.addEventListener('beforeunload', stopVisibilityWatch);
