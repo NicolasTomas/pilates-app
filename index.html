@@ -1167,6 +1167,21 @@
             });
         })();
     </script>
+
+    <!-- Register Service Worker for PWA offline support -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/public/sw.js')
+                    .then(reg => {
+                        console.log('Service Worker registrado:', reg);
+                        // Check for updates periodically
+                        setInterval(() => reg.update(), 60000); // Every 60 seconds
+                    })
+                    .catch(err => console.log('Error registrando Service Worker:', err));
+            });
+        }
+    </script>
 </body>
 
 </html>
