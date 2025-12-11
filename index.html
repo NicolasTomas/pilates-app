@@ -569,6 +569,17 @@
             };
             updateCtaVisibility();
 
+            // Periodically verify context to ensure CTA stays visible in web after uninstall/reopen
+            let visInterval = null;
+            const startVisibilityWatch = () => {
+                if (visInterval) return;
+                visInterval = setInterval(updateCtaVisibility, 2000);
+            };
+            const stopVisibilityWatch = () => {
+                if (visInterval) { clearInterval(visInterval); visInterval = null; }
+            };
+            startVisibilityWatch();
+
             // Enable install flow when the browser allows it
             window.addEventListener('beforeinstallprompt', (e) => {
                 e.preventDefault();
@@ -603,6 +614,8 @@
 
             // If the visibility changes (e.g., app opened as standalone), update CTA
             document.addEventListener('visibilitychange', updateCtaVisibility);
+            window.addEventListener('pagehide', stopVisibilityWatch);
+            window.addEventListener('beforeunload', stopVisibilityWatch);
         })();
 
         // Ensure admin button is positioned correctly on mobile and prevent page pan while interacting
