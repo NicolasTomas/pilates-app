@@ -19,25 +19,25 @@
 
         /* Logo sizing based on context */
         @media (display-mode: standalone) {
-            /* En la aplicación instalada: aumento del 5% */
+            /* En la aplicación instalada: aumento del 5% + 50% extra = 155% */
             .logo {
-                width: 105px;
-                height: 105px;
+                width: 157.5px;
+                height: 157.5px;
             }
         }
 
         @media (display-mode: browser) {
-            /* En navegador (Google): aumento del 50% */
+            /* En navegador (Google): aumento del 50% + 50% extra = 225px */
             .logo {
-                width: 150px;
-                height: 150px;
+                width: 225px;
+                height: 225px;
             }
         }
 
         /* Fallback para navegador cuando display-mode no es soportado */
         .logo {
-            width: 150px;
-            height: 150px;
+            width: 225px;
+            height: 225px;
             background-image: url('/public/icons/app-icon.png');
             background-size: contain;
             background-repeat: no-repeat;
