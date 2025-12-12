@@ -1,21 +1,16 @@
 // Service Worker para PWA
-const CACHE_NAME = 'gym-control-v1';
-const STATIC_ASSETS = [
-  '/',
-  '/index.html',
-  '/alumno.html',
-  '/profesor.html',
-  '/administrador.html',
-  '/superusuario.html',
+const CACHE_NAME = 'gym-control-v3';
+// Cache solo lo esencial durante la instalacion para evitar demoras
+const CORE_ASSETS = [
   '/public/manifest.webmanifest',
   '/public/icons/app-icon.png'
 ];
 
-// Instalar: cachear assets estáticos
+// Instalar: cachear assets minimos para que la instalacion sea rapida
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(STATIC_ASSETS).catch(() => {
+      return cache.addAll(CORE_ASSETS).catch(() => {
         // Si algún asset falla, continuar sin fallar todo
         console.warn('Algunos assets no pudieron ser cacheados');
       });

@@ -6,8 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&display=swap" rel="stylesheet">
     <title>Gym Control</title>
-    <link rel="icon" type="image/png" href="/public/icons/app-icon.png">
-    <link rel="apple-touch-icon" href="/public/icons/app-icon.png">
+    <link rel="icon" type="image/png" sizes="64x64 128x128 192x192 512x512" href="/public/icons/app-icon.png?v=3">
+    <link rel="apple-touch-icon" sizes="192x192" href="/public/icons/app-icon.png">
     <link rel="manifest" href="/public/manifest.webmanifest">
     <meta name="theme-color" content="#111827">
     <style>
@@ -19,25 +19,23 @@
 
         /* Logo sizing based on context */
         @media (display-mode: standalone) {
-            /* En la aplicación instalada: aumento del 5% + 50% extra = 155% */
             .logo {
-                width: 157.5px;
-                height: 157.5px;
+                width: 297px;
+                height: 297px;
             }
         }
 
         @media (display-mode: browser) {
-            /* En navegador (Google): aumento del 50% + 50% extra = 225px */
             .logo {
-                width: 225px;
-                height: 225px;
+                width: 371.25px;
+                height: 371.25px;
             }
         }
 
         /* Fallback para navegador cuando display-mode no es soportado */
         .logo {
-            width: 225px;
-            height: 225px;
+            width: 371.25px;
+            height: 371.25px;
             background-image: url('/public/icons/app-icon.png');
             background-size: contain;
             background-repeat: no-repeat;
@@ -462,7 +460,7 @@
             width: 40px;
             height: 40px;
             background-image: url('/public/icons/app-icon.png');
-            background-size: contain;
+            background-size: 156%;
             background-repeat: no-repeat;
             background-position: center;
             flex-shrink: 0;
