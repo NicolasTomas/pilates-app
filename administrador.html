@@ -1424,6 +1424,16 @@
         </section>
     </div>
     <script src="/public/js/auth.js"></script>
+    <script>
+        // Verificar sesión persistente al cargar la página
+        (async () => {
+            try {
+                await pilatesAuth.checkSessionAndRedirect(['administrador', 'superusuario']);
+            } catch (err) {
+                console.error('Session check failed:', err);
+            }
+        })();
+    </script>
     <script src="/public/js/admin_rooms.js"></script>
     <script src="/public/js/admin_classes.js"></script>
     <script src="/public/js/admin_students.js"></script>

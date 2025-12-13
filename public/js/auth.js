@@ -51,6 +51,28 @@ async function getMe() {
     return res.json();
 }
 
+async function checkSessionAndRedirect(allowedRoles = null) {
+    const token = localStorage.getItem('token');
+    if (!token) {
+        window.location.href = '/index.html';
+        throw new Error('No token found');
+    }
+    try {
+        const me = await getMe();
+        if (allowedRoles && !allowedRoles.includes(me.role)) {
+            alert('No tenés permiso para ver esta página');
+            window.location.href = '/index.html';
+            throw new Error('Unauthorized role');
+        }
+        return me;
+    } catch (err) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('role');
+        window.location.href = '/index.html';
+        throw err;
+    }
+}
+
 function ensureRole(allowedRoles) {
     return async function () {
         try {
@@ -68,4 +90,4 @@ function ensureRole(allowedRoles) {
 }
 
 // Exports for browser
-window.pilatesAuth = { loginDni, adminLogin, logout, getMe, ensureRole };
+window.pilatesAuth = { loginDni, adminLogin, logout, getMe, ensureRole, checkSessionAndRedirect };

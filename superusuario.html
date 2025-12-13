@@ -198,6 +198,16 @@
 
     <script src="/public/js/auth.js"></script>
     <script>
+        // Verificar sesión persistente al cargar la página
+        (async () => {
+            try {
+                await pilatesAuth.checkSessionAndRedirect(['superusuario']);
+            } catch (err) {
+                console.error('Session check failed:', err);
+            }
+        })();
+    </script>
+    <script>
         const ensure = pilatesAuth.ensureRole(['superusuario']);
         ensure().then(me => {
             document.getElementById('meInfo').textContent = `${me.email || me.dni || ''} (${me.role})`;
